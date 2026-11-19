@@ -1,0 +1,28 @@
+# Set-up: a TLS-inspecting proxy (secure web gateway or corporate VPN). Edit here, then `make controls`.
+# title and pick_if are what the set-up question shows for this overlay.
+title: A work network that inspects encrypted traffic
+pick_if: your employer's network, VPN or security app (such as Zscaler, Netskope or Cloudflare WARP) inspects your web traffic, so
+  developer tools need your employer's certificate to connect.
+controls:
+- id: OV-TP-01
+  title: CA bundle exported for non-interactive shells
+  layer: overlay:tls-proxy
+  level: MUST
+  check: checks/macos/OV-TP-01.sh
+  fix: null
+  fix_needs_admin: false
+  risk: low
+  alternatives: []
+  teach: teach/OV-TP-01.md
+  timeout: 45
+- id: OV-TP-02
+  title: Safe Chain scans finish behind TLS inspection
+  layer: overlay:tls-proxy
+  level: SHOULD
+  check: checks/macos/OV-TP-02.sh
+  fix: null
+  fix_needs_admin: false
+  risk: low
+  alternatives: []
+  teach: teach/OV-TP-02.md
+  timeout: 60

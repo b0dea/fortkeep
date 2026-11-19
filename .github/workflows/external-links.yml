@@ -1,0 +1,39 @@
+name: External link report
+
+on:
+  schedule:
+    - cron: '23 5 * * 1'
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  report:
+    name: report external links
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # Tracked pages only: a glob would also walk node_modules, which lychee does not skip.
+      - run: git ls-files '*.md' > "$RUNNER_TEMP/markdown-files"
+      # A remote site that is down or refuses automated checking says nothing about this change,
+      # so the report is uploaded and read, never gated on.
+      - name: check external links without gating changes
+        uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2.9.0
+        with:
+          lycheeVersion: v0.24.2
+          args: --no-progress --files-from ${{ runner.temp }}/markdown-files
+          format: json
+          output: ${{ runner.temp }}/external-links.json
+          fail: false
+      - name: upload actionable report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: external-links
+          path: ${{ runner.temp }}/external-links.json
+          if-no-files-found: error

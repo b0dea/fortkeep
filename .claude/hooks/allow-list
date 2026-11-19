@@ -1,0 +1,22 @@
+# The only shell commands a person's session runs (guard.sh). One line per form: a devward script, spelled from the
+# repo folder, and its arguments word for word. A word in capitals is a value of that kind, checked by guard.sh
+# (arg_ok); a|b is one of these literal words. Everything else is refused. bin/devward can add its own lines here.
+checks/run.sh
+checks/run.sh --only ID
+checks/diff.sh
+checks/detect.sh
+checks/configure.sh --overlays OVERLAYS --teach yes|no
+checks/configure.sh --offered OVERLAYS --add-overlays OVERLAYS
+checks/overlays.sh new|list
+checks/private.sh count
+checks/private.sh add FOLDER
+checks/accept.sh ID TEXT
+checks/accept.sh --remove ID
+checks/ask.sh FIX apply|undo
+checks/ask.sh ID accept TEXT
+checks/ask.sh private add FOLDER
+checks/show.sh FILE
+checks/scan.sh FOLDER
+summary/name.sh
+summary/build.sh --name TEXT
+fixes/macos/FIX.sh apply|undo

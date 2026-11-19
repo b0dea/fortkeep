@@ -1,0 +1,11 @@
+# BL-AI-02 · A pre-command guard refuses package-manager bypasses
+
+**Why:** The shims only work if the agent goes through them. A guard that runs before every agent command refuses the known ways around them: a package manager by full path, `PATH=` or `env -i` rewrites, `SAFE_CHAIN_*=0`, registry overrides, `curl … | sh`, running a "font" file with node, and edits to the files that enforce all this. It also refuses commands whose purpose is to print a secret into the agent's context (`varlock printenv`, `security find-generic-password -w`).
+
+**Real attack:** A researcher found eight ways to make Claude Code run commands without asking the user, by slipping past its built-in check of "safe" commands; Anthropic fixed them in version 1.0.93 (CVE-2025-66032). The built-in check was not enough on its own, which is why a separate guard matters. ([source](https://flatt.tech/research/posts/pwning-claude-code-in-8-different-ways))
+
+**Check it yourself:** in Claude Code or Codex, ask it to run `/opt/homebrew/bin/npm install left-pad`. It must be refused by a hook, not just declined politely.
+
+**How to fix:** this repo ships a ready-made guard, `templates/agent-guard.sh`. Ask the agent to walk you through installing it. For Claude Code, you copy it to `~/.claude/hooks/` in Terminal and add it to your settings under `hooks.PreToolUse` for `Bash` and `Write|Edit|MultiEdit`. For Codex, you register the same guard in `~/.codex/hooks.json` as a `PreToolUse` hook for its shell commands and its file edits (`apply_patch`); the check tests both, and fails while Codex is installed without one. OpenCode: a plugin on `tool.execute.before`; Zed: `agent.tool_permissions.tools.terminal.always_deny`. The guard is pattern matching, not a sandbox: it stops an agent that slips or is talked into it. A repo's own `.claude/settings.json` can switch off your user-level hooks with `disableAllHooks`; only the managed copy (BL-AI-04) survives that.
+
+**What the agent is doing:** sending each registered hook (Claude Code's settings, the managed copy, enabled plugins and Codex's `hooks.json`) a few test commands and one test file edit, never running or writing them, and checking which ones the hook refuses.

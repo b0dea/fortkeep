@@ -1,0 +1,62 @@
+{
+  "permissions": {
+    "disableBypassPermissionsMode": "disable",
+    "deny": [
+      "Edit(~/.zshrc)",
+      "Edit(~/.zprofile)",
+      "Edit(~/.zshenv)",
+      "Edit(~/.zlogin)",
+      "Edit(~/.bashrc)",
+      "Edit(~/.bash_profile)",
+      "Edit(~/.profile)",
+      "Edit(~/.claude/settings.json)",
+      "Edit(~/.claude/settings.local.json)",
+      "Edit(~/.claude/hooks/**)",
+      "Edit(~/.claude/plugins/installed_plugins.json)",
+      "Edit(~/.claude/plugins/cache/**)",
+      "Edit(~/.claude.json)",
+      "Edit(~/.claude.json.backup)",
+      "Edit(//Library/Application Support/ClaudeCode/**)",
+      "Edit(//usr/local/lib/safe-chain-agent/**)",
+      "Edit(~/.codex/**)",
+      "Edit(//etc/codex/**)",
+      "Edit(~/.config/opencode/opencode.json)",
+      "Edit(~/.config/opencode/opencode.jsonc)",
+      "Edit(~/.config/opencode/plugin/**)",
+      "Edit(~/.config/opencode/plugins/**)",
+      "Edit(~/.config/zed/settings.json)",
+      "Edit(~/.cursor/hooks.json)",
+      "Edit(~/.cursor/hooks/**)",
+      "Edit(~/Library/Application Support/Cursor/User/**/settings.json)",
+      "Edit(~/Library/Application Support/Code/User/**/settings.json)",
+      "Edit(~/.safe-chain/**)",
+      "Edit(~/.npmrc)",
+      "Edit(~/.yarnrc)",
+      "Edit(~/.yarnrc.yml)",
+      "Edit(~/Library/Preferences/pnpm/rc)",
+      "Edit(~/.bunfig.toml)",
+      "Edit(~/.pip/pip.conf)",
+      "Edit(~/.config/pip/pip.conf)",
+      "Edit(~/Library/Application Support/pip/pip.conf)",
+      "Edit(~/.config/uv/uv.toml)",
+      "Edit(~/.gitconfig)",
+      "Edit(~/.config/git/config)",
+      "Edit(~/.ssh/**)",
+      "Edit(~/.netrc)",
+      "Edit(~/.aws/**)",
+      "Edit(~/.gnupg/**)",
+      "Edit(~/.kube/config)",
+      "Edit(~/.docker/config.json)",
+      "Edit(~/Library/LaunchAgents/**)",
+      "Edit(~/.config/devward/**)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|Write|Edit|MultiEdit|NotebookEdit",
+        "hooks": [ { "type": "command", "command": "/usr/local/lib/safe-chain-agent/agent-guard.sh" } ]
+      }
+    ]
+  }
+}

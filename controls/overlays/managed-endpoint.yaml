@@ -1,0 +1,40 @@
+# Set-up: endpoint protection or antivirus managed by your organisation (Defender, Bitdefender, CrowdStrike, ...).
+# Settings are read only where a read-only command exists (Defender: mdatp health). Never run `mdatp config`: it hangs.
+# title and pick_if are what the set-up question shows for this overlay.
+title: Security software managed by your organisation
+pick_if: your employer or school installed security software on this Mac and looks after it, such as Microsoft Defender, CrowdStrike
+  Falcon or Bitdefender.
+controls:
+- id: OV-ME-01
+  title: Endpoint protection installed (healthy, where its health can be read)
+  layer: overlay:managed-endpoint
+  level: MUST
+  check: checks/macos/OV-ME-01.sh
+  fix: null
+  fix_needs_admin: false
+  risk: low
+  alternatives: []
+  teach: teach/OV-ME-01.md
+  timeout: 20
+- id: OV-ME-02
+  title: Tamper protection on (block, for Defender)
+  layer: overlay:managed-endpoint
+  level: MUST
+  check: checks/macos/OV-ME-02.sh
+  fix: null
+  fix_needs_admin: false
+  risk: low
+  alternatives: []
+  teach: teach/OV-ME-02.md
+  timeout: 20
+- id: OV-ME-03
+  title: Behaviour monitoring as your organisation's IT or security team wants it
+  layer: overlay:managed-endpoint
+  level: SHOULD
+  check: checks/macos/OV-ME-03.sh
+  fix: null
+  fix_needs_admin: false
+  risk: low
+  alternatives: []
+  teach: teach/OV-ME-03.md
+  timeout: 20

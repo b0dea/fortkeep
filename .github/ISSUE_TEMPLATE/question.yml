@@ -1,0 +1,22 @@
+name: Question
+description: How something works, or whether devward fits your Mac.
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Leave out anything that identifies you or your organisation. For vulnerabilities see
+        [SECURITY.md](https://github.com/b0dea/devward/blob/main/SECURITY.md).
+  - type: textarea
+    id: goal
+    attributes:
+      label: What are you trying to do?
+    validations:
+      required: true
+  - type: textarea
+    id: tried
+    attributes:
+      label: What you read or tried
+      description: Which page or lesson you read and what you expected it to say.
+    validations:
+      required: true

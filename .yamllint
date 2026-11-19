@@ -1,0 +1,22 @@
+# yamllint config: the project standard's, relaxed for GitHub Actions expressions. Run: yamllint .
+extends: default
+
+rules:
+  line-length:
+    max: 140
+    level: warning
+  document-start: disable
+  truthy:
+    # GitHub Actions uses `on:` as a key.
+    check-keys: false
+  comments:
+    min-spaces-from-content: 1
+  braces:
+    max-spaces-inside: 1
+  indentation:
+    spaces: 2
+    indent-sequences: consistent
+
+ignore: |
+  reports/
+  .superpowers/

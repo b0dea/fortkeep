@@ -1,0 +1,19 @@
+# Per-device output and personal config: never committed
+reports/
+private-paths
+accepted.json
+*.local.yaml
+
+# Secrets and keys
+.env
+.env.*
+*.pem
+*.key
+id_*
+!id_*.example
+
+.DS_Store
+
+# OpenCode writes its own .gitignore, package.json and node_modules here on first run
+.opencode/*
+!.opencode/plugins/

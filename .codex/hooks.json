@@ -1,0 +1,26 @@
+{
+  "description": "devward guards: the same scripts Claude Code runs from .claude/settings.json. Codex runs them only after the person trusts this folder and its hooks (docs/agents.md).",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          { "type": "command", "command": "\"$(git rev-parse --show-toplevel)\"/.claude/hooks/session-start.sh" }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "hooks": [
+          { "type": "command", "command": "\"$(git rev-parse --show-toplevel)\"/.claude/hooks/guard.sh" }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          { "type": "command", "command": "\"$(git rev-parse --show-toplevel)\"/.claude/hooks/approval-recorder.sh" }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,12 @@
+# Dev tools, pinned. `make install` installs them; people who only check their Mac never need mise.
+# Runtime scripts use only stock macOS tools: nothing here is needed to run the checks.
+[tools]
+bats = "1.14.0"
+shellcheck = "0.11.0"
+uv = "0.13.1"  # mise installs yamllint (a Python tool) through uv
+# A pinned Python, not whichever is newest on the Mac: PyYAML ships no wheel for a Python newer than it, and the
+# source build then fails. uv downloads this Python when the Mac has none.
+yamllint = { version = "1.38.0", uvx_args = "--python 3.13" }
+gitleaks = "8.30.1"
+lefthook = "2.2.2"
+yq = "4.54.3"

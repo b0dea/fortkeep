@@ -1,0 +1,75 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(checks/run.sh:*)",
+      "Bash(checks/diff.sh:*)",
+      "Bash(checks/configure.sh:*)",
+      "Bash(checks/detect.sh)",
+      "Bash(checks/private.sh count)",
+      "Bash(summary/build.sh:*)",
+      "Read(reports/**)",
+      "Read(controls/**)",
+      "Read(teach/**)",
+      "Read(templates/**)",
+      "Bash(checks/overlays.sh new)",
+      "Bash(checks/overlays.sh list)",
+      "Bash(checks/ask.sh:*)",
+      "Bash(checks/show.sh:*)",
+      "Bash(checks/scan.sh:*)",
+      "Bash(summary/name.sh)"
+    ],
+    "deny": [
+      "Bash(sudo:*)",
+      "Read(private-paths)",
+      "Edit(private-paths)",
+      "Edit(reports/.approvals/**)",
+      "Edit(reports/knockknock/**)",
+      "Edit(~/.zshrc)",
+      "Edit(~/.zprofile)",
+      "Edit(~/.zshenv)",
+      "Edit(~/.zlogin)",
+      "Edit(~/.bashrc)",
+      "Edit(~/.bash_profile)",
+      "Edit(~/.profile)",
+      "Edit(~/.gitconfig)",
+      "Edit(~/.ssh/**)",
+      "Edit(~/Library/LaunchAgents/**)",
+      "Edit(~/.claude/settings.json)",
+      "Edit(~/.claude.json)"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/session-start.sh"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard.sh"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "AskUserQuestion",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/approval-recorder.sh"
+          }
+        ]
+      }
+    ]
+  }
+}

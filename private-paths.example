@@ -1,0 +1,2 @@
+# One folder per line, absolute or starting with ~/. Every check skips these, and the agent never opens them.
+# Don't edit by hand: ask your agent, or run checks/private.sh add <path>.

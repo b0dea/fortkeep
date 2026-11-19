@@ -1,0 +1,108 @@
+# Gold: extras on top of the baseline. A gold item that repeats a baseline control
+# isn't entered twice (see Plan 2a's Coverage table). Edit here, then `make controls`.
+# urgent: true marks a control whose FAIL can mean the Mac is compromised now. The skills put it first and send the
+# person to /if-red, /fix never offers a fix for it, and the weekly check sends its own notification. A FAIL whose
+# evidence starts with not_urgent_if is a set-up step (no baseline yet, no sweep yet), not a sign of compromise.
+- id: GD-SC-01
+  title: Safe Chain age gate at 168 hours in every shell type
+  layer: gold
+  level: NICE
+  check: checks/macos/GD-SC-01.sh
+  fix: null
+  fix_needs_admin: false
+  risk: low
+  alternatives: []
+  teach: teach/GD-SC-01.md
+  timeout: 90
+- id: GD-SE-01
+  title: GitHub token has an expiry date
+  layer: gold
+  level: SHOULD
+  check: checks/macos/GD-SE-01.sh
+  fix: null
+  fix_needs_admin: false
+  risk: low
+  alternatives: []
+  teach: teach/GD-SE-01.md
+  timeout: 30
+- id: GD-GT-01
+  title: Commits signed with an SSH key
+  layer: gold
+  level: NICE
+  check: checks/macos/GD-GT-01.sh
+  fix: null
+  fix_needs_admin: false
+  risk: low
+  alternatives: []
+  teach: teach/GD-GT-01.md
+  timeout: 30
+- id: GD-RT-01
+  title: KnockKnock scans compared with an accepted baseline
+  layer: gold
+  level: SHOULD
+  check: checks/macos/GD-RT-01.sh
+  fix: null
+  fix_needs_admin: false
+  risk: low
+  alternatives: []
+  teach: teach/GD-RT-01.md
+- id: GD-AI-02
+  title: Every installed coding agent has its own guard
+  layer: gold
+  level: MUST
+  check: checks/macos/GD-AI-02.sh
+  fix: null
+  fix_needs_admin: false
+  risk: low
+  alternatives: []
+  teach: teach/GD-AI-02.md
+  timeout: 30
+- id: GD-RT-02
+  title: No new network listeners since your baseline
+  layer: gold
+  level: SHOULD
+  check: checks/macos/GD-RT-02.sh
+  fix: null
+  fix_needs_admin: false
+  risk: low
+  alternatives: []
+  teach: teach/GD-RT-02.md
+  timeout: 30
+- id: GD-AI-01
+  title: Agent control files unchanged since your baseline
+  layer: gold
+  level: SHOULD
+  check: checks/macos/GD-AI-01.sh
+  fix: null
+  fix_needs_admin: false
+  risk: low
+  alternatives: []
+  teach: teach/GD-AI-01.md
+  timeout: 30
+  urgent: true
+  not_urgent_if: No accepted baseline yet
+- id: GD-RC-01
+  title: No repo-poisoning indicators in the repos or editor extensions on this Mac
+  layer: gold
+  level: SHOULD
+  check: checks/macos/GD-RC-01.sh
+  fix: null
+  fix_needs_admin: false
+  risk: low
+  alternatives: []
+  teach: teach/GD-RC-01.md
+  timeout: 160
+  urgent: true
+  not_urgent_if: The weekly sweep hasn't run
+- id: GD-RT-03
+  title: No live malware process, C2 connection or known backdoor file
+  layer: gold
+  level: MUST
+  check: checks/macos/GD-RT-03.sh
+  fix: null
+  fix_needs_admin: false
+  risk: low
+  alternatives: []
+  teach: teach/GD-RT-03.md
+  timeout: 60
+  urgent: true

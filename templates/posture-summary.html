@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Posture Summary (self-reported)</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* layout: single reading column; summary block, then the control table */
+:root{--bg:#f6f7f8;--surface:#fff;--fg:#1b2127;--muted:#5d6872;--line:#dde2e6;--accent:#2f5d62;
+--pass:#1e7a46;--pass-bg:#e1f3e8;--fail:#b3261e;--fail-bg:#fbe4e2;--acc:#8a5a00;--acc-bg:#fbefd2;--na:#5d6872;--na-bg:#e8ebee;
+--sans:"IBM Plex Sans",system-ui,sans-serif;--mono:"IBM Plex Mono",ui-monospace,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#111619;--surface:#192024;--fg:#e6eaed;--muted:#9aa5ad;--line:#2b353b;--accent:#7fb7bd;
+--pass:#6fd097;--pass-bg:#163525;--fail:#ff9a92;--fail-bg:#4a1f1c;--acc:#f0c364;--acc-bg:#3d3114;--na:#9aa5ad;--na-bg:#262f35;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#111619;--surface:#192024;--fg:#e6eaed;--muted:#9aa5ad;--line:#2b353b;--accent:#7fb7bd;
+--pass:#6fd097;--pass-bg:#163525;--fail:#ff9a92;--fail-bg:#4a1f1c;--acc:#f0c364;--acc-bg:#3d3114;--na:#9aa5ad;--na-bg:#262f35;color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font:15px/1.5 var(--sans);padding-block:32px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+main{max-width:860px;margin:0 auto;display:grid;gap:24px}
+h1{font-size:1.75rem;line-height:1.2;margin:0;text-wrap:balance;font-weight:600}
+.panel{background:var(--surface);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:20px;display:grid;gap:16px}
+dl{margin:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px 24px}
+dl div{min-width:0}
+dt{font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+dd{margin:2px 0 0;overflow-wrap:anywhere}
+.tally{display:flex;flex-wrap:wrap;gap:8px;align-items:center;border-top:1px solid var(--line);padding-top:16px}
+.tally b{font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:500;margin-right:4px}
+.legend{color:var(--muted);font-size:.85rem;margin:0;max-width:65ch}
+.wrap{overflow-x:auto;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--fg);padding:8px}
+table{border-collapse:collapse;width:100%;min-width:560px;color:var(--fg);font:inherit}
+th{text-align:left;font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:500;padding:10px 14px;border-bottom:1px solid var(--line)}
+td{padding:9px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:0}
+.id{font-family:var(--mono);font-size:.8rem;white-space:nowrap;color:var(--accent)}
+.lvl{font-family:var(--mono);font-size:.72rem;color:var(--muted)}
+.pill{display:inline-block;font-size:.72rem;font-weight:600;letter-spacing:.04em;padding:2px 9px;border-radius:99px}
+.pass{color:var(--pass);background:var(--pass-bg)}.fail{color:var(--fail);background:var(--fail-bg)}
+.accepted{color:var(--acc);background:var(--acc-bg)}.na,.error{color:var(--na);background:var(--na-bg)}
+h2{font-size:1.1rem;margin:0;font-weight:600}
+.tog{font:inherit;font-size:.72rem;font-weight:600;letter-spacing:.04em;border:0;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.tog:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.car{width:6px;height:6px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg) translate(-1px,-1px);transition:transform .15s}
+.tog[aria-expanded="true"] .car{transform:rotate(-135deg) translate(-1px,-1px)}
+.why-row td{background:var(--acc-bg);color:var(--fg);overflow-wrap:anywhere;border-bottom:1px solid var(--line)}
+.why-l{display:block;font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--acc);margin-bottom:2px}
+tr.has.open td{border-bottom-color:transparent}
+@media (prefers-reduced-motion:reduce){.car{transition:none}}
+footer{color:var(--muted);background:var(--bg);font-size:.85rem}
+</style>
+<main>
+<h1>Posture summary (self-reported)</h1>
+<section class="panel"><dl>{{META}}</dl>
+<div class="tally"><b>Result</b>{{TALLY}}</div>
+<p class="legend">PASS = met · FAIL = not met · ACCEPTED = not met, by the person&#x27;s recorded decision · NA = does not apply to this Mac · ERROR = could not be checked automatically.</p></section>
+<div class="wrap"><table><thead><tr><th>Control</th><th>Title</th><th>Level</th><th>Status</th></tr></thead><tbody>{{ROWS}}</tbody></table></div>
+<footer>This is a self-report, not proof. devward&#x27;s read-only checks ran on this Mac under the person&#x27;s own account, and anyone with that account could change the results or this page before sharing it: the summary is not tamper-evident. The version, commit and controls hash above say which checks produced it. It contains no file names, paths, hostnames or secrets, apart from the reasons the person wrote for ACCEPTED items.</footer>
+</main>
+<script>
+document.querySelectorAll('.tog').forEach(function(b){b.addEventListener('click',function(){var r=document.getElementById(b.getAttribute('aria-controls')),o=b.getAttribute('aria-expanded')!=='true';b.setAttribute('aria-expanded',o);r.hidden=!o;b.closest('tr').classList.toggle('open',o)})});
+</script>

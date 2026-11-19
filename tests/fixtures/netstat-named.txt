@@ -1,0 +1,10 @@
+Active Internet connections (including servers)
+Proto Recv-Q Send-Q  Local Address          Foreign Address        (state)          rxbytes      txbytes  rhiwat  shiwat          process:pid    state  options           gencnt    flags   flags1 usecnt rtncnt fltrs
+tcp4       0      0  192.168.1.5.57465      203.0.113.7.443        ESTABLISHED       4120         1904  131072  131072      Example App:8100   00104 00000000 00000000017f44e6 20000080 04000900      3      0 000004
+tcp4       0      0  127.0.0.1.631          *.*                    LISTEN                 0            0  131072  131072            cupsd:46876  00080 00000006 00000000017f286c 00000001 00000800      1      0 000000
+tcp6       0      0  ::1.3300               *.*                    LISTEN                 0            0  131072  131072      loopbackonly:24023  00100 00000106 00000000017e1ea1 00000001 00000800      1      0 000000
+tcp6       0      0  fe80::1%lo0.8021       *.*                    LISTEN                 0            0  131072  131072        lo0server:24030  00100 00000106 00000000017e1ea2 00000001 00000800      1      0 000000
+tcp4       0      0  *.12913                *.*                    LISTEN                 0            0  131072  131072             node:96198  00100 00000106 00000000017eab05 00000001 00000800      1      0 000000
+tcp46      0      0  *.53031                *.*                    LISTEN                 0            0  131072  131072         rapportd:809    00100 00000006 000000000179fc65 00000000 00080800      1      0 000000
+tcp46      0      0  *.53030                *.*                    LISTEN                 0            0  131072  131072         rapportd:809    00100 00000006 000000000179fc60 00000000 00080800      1      0 000000
+tcp4       0      0  192.168.1.5.8080       *.*                    LISTEN                 0            0  131072  131072   Example Helper:8100   00100 00000006 00000000016c63e0 00000000 00000800      1      0 000000

@@ -1,0 +1,1084 @@
+#!/usr/bin/python3 -I
+# Sources (indicator family → public source), checked 2026-11-19:
+#   HI v1-string, v2-string, seed, decoder-v1, decoder-v2, xor-key, version-tag, require-hijack —
+#     https://github.com/OpenSourceMalware/PolinRider
+#   HI global-i, obfuscator-rotator, xor-key-eth, payload-header —
+#     https://opensourcemalware.com/blog/polinrider-is-a-b-testing-its-way-past-your-detections
+#   HI global-letter — https://github.com/orgs/community/discussions/188732, https://github.com/Improwised/polinrider-scanner
+#   HI npm-sec-v-tag, C2_PATH :443 paths — https://www.sonatype.com/blog/polinrider-loader-reappears-in-hijacked-npm-packages
+#   HI npm3-tag — https://opensourcemalware.com/blog/nullreceiver-dprk-c2-technique
+#   DEAD_DROP hosts — https://github.com/OpenSourceMalware/PolinRider
+#   GAP (code after a padded run), CFG file names — https://github.com/OpenSourceMalware/PolinRider,
+#     https://github.com/OpenSourceMalware/PolinRider/issues/9, https://github.com/orgs/community/discussions/197873
+#   EXEC_RULES piped or shell-run download — https://github.com/OpenSourceMalware/PolinRider,
+#     https://opensourcemalware.com/blog/lazarus-group-uses-git-hooks-to-hide-malware, https://attack.mitre.org/techniques/T1059/004/
+#   EXEC_RULES base64 decode — https://attack.mitre.org/techniques/T1140/
+#   EXEC_RULES inline node code — https://github.com/OpenSourceMalware/PolinRider
+#   EXEC_RULES inline python code — https://attack.mitre.org/techniques/T1059/006/
+#   EXEC_RULES font or image run as code — https://github.com/orgs/community/discussions/188732,
+#     https://github.com/heisdeku/clean-injected-loader
+#   EXEC_RULES PowerShell — https://attack.mitre.org/techniques/T1059/001/
+#   EXEC_RULES loader staging folder — https://opensourcemalware.com/blog/polinrider-malware-found-in-2025-npm-packages,
+#     https://github.com/Improwised/polinrider-scanner
+#   C2_WALLETS Tron and Aptos — https://github.com/OpenSourceMalware/PolinRider, https://github.com/orgs/community/discussions/188732
+#   C2_WALLETS NullReceiver wallet and recipient — https://opensourcemalware.com/blog/nullreceiver-dprk-c2-technique
+#   C2_WALLETS Ethereum loader wallet (1st) — https://www.sonatype.com/blog/polinrider-loader-reappears-in-hijacked-npm-packages
+#   C2_WALLETS 2nd entry — https://github.com/Improwised/polinrider-scanner (published as a defanged substring)
+#   C2_IPS — https://github.com/orgs/community/discussions/188732, https://github.com/orgs/community/discussions/198490,
+#     https://opensourcemalware.com/blog/nullreceiver-dprk-c2-technique,
+#     https://opensourcemalware.com/blog/polinrider-malware-found-in-2025-npm-packages,
+#     https://www.ox.security/blog/polinrider-returns-hijacked-npm-packages-use-ethereum-blockchain-to-conceal-malware-infrastructure/,
+#     https://www.sonatype.com/blog/polinrider-loader-reappears-in-hijacked-npm-packages
+#   C2_IPS 15th entry — no public source found (as of 2026-11-19)
+#   C2_HOSTS first six, C2_PATH settings path — https://github.com/OpenSourceMalware/PolinRider
+#   C2_HOSTS auth-confirm-eight — https://github.com/heisdeku/clean-injected-loader,
+#     https://github.com/Syed-Bipul-Rahman/Security-Guard/issues/24
+#   C2_HOSTS auth-confirm-one to -seven — no public source found (as of 2026-11-19)
+#   DENY tailwind animation packages — https://github.com/OpenSourceMalware/PolinRider
+#   DENY bianira-ui, fluid-type-ui, post-css-transfer, scrollbar-hide-plugin, tailwind-anim, tailwind-animation-founder,
+#     tailwindcss-anim — https://thehackernews.com/2026/08/trojanized-npm-packages-decode-c2-ip.html
+#   DENY @adminide-stack, @cdmbase, @pubngo-stack, cdeops, server-hemera-mongo —
+#     https://www.sonatype.com/blog/polinrider-loader-reappears-in-hijacked-npm-packages
+#   DENY contact-form and form-kit packages —
+#     https://www.ox.security/blog/polinrider-returns-hijacked-npm-packages-use-ethereum-blockchain-to-conceal-malware-infrastructure/
+#   DENY @common-stack/generate-plugin — https://www.sonatype.com/blog/hijacked-npm-package-attempts-to-deliver-polinrider-linked-rat
+#   ARTIFACTS temp_auto_push.bat, config.bat — https://github.com/OpenSourceMalware/PolinRider
+#   ARTIFACTS temp_interactive_push.bat, branch_structure.json, .gitignore entries, .llf payloads —
+#     https://opensourcemalware.com/blog/polinrider-is-a-b-testing-its-way-past-your-detections
+#   ARTIFACTS spellright.dict — https://opensourcemalware.com/blog/dprk-malware-microsoft-vscode-dictionary-files
+#   TASK_ID, folderOpen tasks — https://github.com/OpenSourceMalware/PolinRider,
+#     https://www.abstract.security/blog/contagious-interview-tracking-the-vs-code-tasks-infection-vector
+#   fonts that are really JavaScript — https://github.com/OpenSourceMalware/PolinRider, https://github.com/OpenSourceMalware/PolinRider/issues/9
+#   AGENT_FILES, AGENT_EXEC (agent hooks and servers that run code) — https://unit42.paloaltonetworks.com/chaindrop-npm-worm-analysis/,
+#     https://safedep.io/miasma-worm-ai-coding-agent-config-injection/,
+#     https://www.bitdefender.com/en-us/blog/labs/how-ai-agents-become-new-targets-in-github-malware-campaign
+#   AGENT_SETUP, INSTRUCTION_FILES — https://www.bitdefender.com/en-us/blog/labs/how-ai-agents-become-new-targets-in-github-malware-campaign,
+#     https://unit42.paloaltonetworks.com/chaindrop-npm-worm-analysis/
+#   disableAllHooks (what the key does; no campaign seen setting it) — https://code.claude.com/docs/en/hooks
+#   lifecycle scripts that fetch or run code — https://unit42.paloaltonetworks.com/chaindrop-npm-worm-analysis/,
+#     https://github.com/nrwl/nx/security/advisories/GHSA-cxm3-wv7p-598c
+#   _bz package.json field — https://www.bitdefender.com/en-us/blog/labs/how-ai-agents-become-new-targets-in-github-malware-campaign,
+#     https://osv.dev/vulnerability/MAL-2026-19146
+#   git hooks (hook files, installed hooks, hook.* config) — https://opensourcemalware.com/blog/lazarus-group-uses-git-hooks-to-hide-malware,
+#     https://github.com/orgs/community/discussions/197873
+#   hooks padded past 3 MB — no public source found (as of 2026-11-19)
+#   registry overrides — https://attack.mitre.org/techniques/T1195/001/
+#   .aikido overrides (what the keys do; no campaign seen) — https://github.com/AikidoSec/safe-chain
+#   forged commit dates — https://github.com/OpenSourceMalware/PolinRider
+#   text-direction characters in author names — https://github.com/orgs/community/discussions/197873
+#   editor extension folders — https://cursor.com/blog/claude-code-extension-security-notice, https://github.com/OpenSourceMalware/PolinRider
+"""Global git hook installed by devward BL-RC-02: scans the files a git operation just brought in.
+Read-only, no network, always exits 0. With --sweep (GD-RC-01) it scans whole repos already on disk instead. Follows the PolinRider / BeaverTail indicator pack; marker strings are
+fragments so this file does not contain them (antivirus tools would quarantine it)."""
+import os, re, sys, json, subprocess, time, datetime, errno, collections, unicodedata
+
+T0 = time.time(); BUDGET = 8.0; MAXFILES = 400; MAXSIZE = 3_000_000
+DEADLINE = None  # a sweep's end: no git call it makes runs past it
+
+class OutOfTime(Exception):
+    pass
+
+HEAD_TAIL = 1_000_000      # bytes read from each end of a file over its size cap: payloads are appended at the end
+LOCK_MAXSIZE = 64_000_000  # lockfiles are read whole up to this, so a denylisted package in the middle isn't missed
+hook = sys.argv[1] if len(sys.argv) > 1 else ''
+args = sys.argv[2:]
+G = 'glo' + 'bal'
+A10 = 'A1' + '0-'
+
+# name, pattern, anchors: a pattern can match a line, as read or with long whitespace runs squeezed, only where the
+# text holds one of its anchors (literal, no whitespace).
+HI = [
+    ('v1-string', re.compile('rm' + 'cej%otb%'), ['rm' + 'cej%otb%']),
+    ('v2-string', re.compile('Cot%3' + 't=shtP'), ['Cot%3' + 't=shtP']),
+    ('seed', re.compile(r'\b(28' + r'57687|26' + r'67686|11' + r'11436|38' + r'96884)\b'), ['28' + '57687', '26' + '67686', '11' + '11436', '38' + '96884']),
+    ('decoder-v1', re.compile(r'_\$_[0-9a-f]{4}'), ['_$_']),
+    ('decoder-v2', re.compile('function M' + r'Dy\('), ['M' + 'Dy(']),
+    ('xor-key', re.compile(r'2\[g' + r'WfGj;<:-93Z\^C|m6:tTh\^D\)cBz\?NM\]'), ['2[g' + 'WfGj', 'm6:tTh']),
+    ('version-tag', re.compile(G + r'''\[['"](!|_V|_H)['"]\]\s*=\s*['"][0-9]'''), [G + '[']),
+    ('global-i', re.compile(G + r'''\.i\s*=\s*['"]A[0-9]{2}-'''), [G + '.i']),
+    ('global-letter', re.compile(G + r'''\.[a-z]\s*=\s*['"][0-9]{1,2}-[0-9A-Za-z-]{2,}['"]'''), [G + '.']),
+    ('require-hijack', re.compile(G + r'''(This)?\[['"]?[A-Za-z_$!][A-Za-z0-9_$]{0,15}['"]?\]\s*=\s*(require|module)\s*(;|,|$)'''), [G + '[', G + 'This[']),
+    ('obfuscator-rotator', re.compile(r'return [A-Za-z_$][A-Za-z0-9_$]*=function\([A-Za-z_$][A-Za-z0-9_$]*,[A-Za-z_$][A-Za-z0-9_$]*\)\{[A-Za-z_$][A-Za-z0-9_$]*=[A-Za-z_$][A-Za-z0-9_$]*-0x[0-9a-f]+;'), ['=function(']),
+    ('npm-sec-v-tag', re.compile(A10 + 'npm_in' + 'ject|Sec' + r'''-V["']?\s*[:,]\s*["']''' + A10), [A10]),
+    ('npm3-tag', re.compile(A10 + 'npm' + '3!'), [A10 + 'npm']),
+    ('xor-key-eth', re.compile(re.escape('q4FZ' + 'kxX{!h,Sr3=@')), ['q4FZ' + 'kxX']),
+    ('payload-header', re.compile('[Xx]-[Pp]ay' + 'load-[Bb]64'), ['ayload-']),
+]
+# Real code has seven-digit numbers and _$_ names too: these count only in a file with a second marker.
+WEAK_HI = ('seed', 'decoder-v1')
+
+def weigh(names):
+    return names if len(set(names)) > 1 else [n for n in names if n not in WEAK_HI]
+# Public blockchain RPC hosts the loader reads its next stage from. Legit code uses them too, so alone they are a warning;
+# beside a C2 wallet or after a padded gap they are a marker. Generic Ethereum RPC hosts stay out.
+DEAD_DROP = re.compile(r'api\.tron' + r'grid|tron' + r'grid\.io|fullnode\.mainnet\.apto' + r'slabs\.com/v1/|bsc-data' + r'seed\.binance\.org|bsc-rpc\.public' + r'node\.com')
+DEAD_DROP_ANCHORS = ['tron' + 'grid', 'apto' + 'slabs', 'bsc-data' + 'seed', 'bsc-rpc.public' + 'node']
+GAP = re.compile(r'(;|\}|\)|\]|`)[ \t]{40,}[^ \t/*]')
+DOWNLOAD = re.compile(r'\b(?:curl|wget)\b')
+# A pipe into a shell or interpreter, by name or full path, through sudo or env.
+TO_SHELL = re.compile(r'\|\s*(?:sudo\s+)?(?:/[^\s|]{0,100}/)?(?:env\s+)?(?:(?:ba|z|da|k)?sh|node|python[0-9.]*)\b')
+
+def piped_download(s):
+    # Anchored on the pipe, then a look back within its own pipeline stage: a pattern read from curl forward would
+    # rescan the rest of the line once for every curl in it.
+    for m in TO_SHELL.finditer(s):
+        stage = s[max(0, m.start() - 500):m.start()]
+        if DOWNLOAD.search(stage[max(stage.rfind('|'), stage.rfind('\n')) + 1:]):
+            return True
+    return False
+
+EXEC_RULES = [  # code that fetches or runs code, by rule, so a sweep can say which matched without quoting the script
+    ('download piped into a shell', piped_download),
+    ('download run by a shell', re.compile(r'''(?:sh\s+-c|\beval)\s+["']?(?:\$\(|`)\s*(?:curl|wget)\b|(?:sh|\bsource|\.)\s+<\(\s*(?:curl|wget)\b''').search),
+    ('base64 decode', re.compile(r'base64\s+(-d|--decode)').search),
+    ('inline node code', re.compile(r'\bnode\s+-e\b').search),
+    ('inline python code', re.compile(r'\bpython[0-9.]*\s+-c\b').search),
+    ('font or image file run as code', re.compile(r'node\s+(\./)?\S{1,300}\.(woff2?|ttf|otf|dict|png|jpg|ico|svg|llf)\b').search),
+    ('PowerShell', re.compile(r'powershell|Invoke-Expression|\biex\b').search),
+    ('loader staging folder', re.compile(r'/tmp/\.npm|/tmp/\.pip').search),
+]
+INLINE = ('inline node code', 'inline python code')
+# What turns node -e or python -c from a one-liner (husky's prepare) into a loader: it fetches, decodes or evaluates
+# code. A URL alone doesn't: a one-liner can print one.
+INLINE_RISK = re.compile(r'''\b(?:curl|wget)\b|fetch\(|require\(\s*\\?["'](?:node:)?https?\\?["']|\burlopen\(|\batob\(|Buffer\.from\([^)]{0,200}base64|b64decode|\beval\(|\bexec\(|child_process|Function\(''')
+
+def exec_rules(s):
+    return [n for n, found in EXEC_RULES if found(s)]
+
+def exec_verdict(s):
+    """(severity, rule) for S when it fetches or runs code, else None. Inline node or python alone is how hooks and
+    install scripts are written: HIGH only when it also fetches, decodes or evaluates code."""
+    rules = exec_rules(s)
+    if not rules:
+        return None
+    strong = [n for n in rules if n not in INLINE]
+    if strong:
+        return 'HIGH', strong[0]
+    return ('HIGH' if INLINE_RISK.search(s) else 'WARN'), rules[0]
+
+def exec_line_verdict(text):
+    """The first HIGH verdict of an uncommented line, else the first WARN one, else None. Inline code can span lines (a
+    quoted or YAML block script), so a WARN is HIGH when the uncommented text fetches, decodes or evaluates code."""
+    warn = None; code = []
+    for line in re.sub(r'\\\r?\n', ' ', text).splitlines():  # a command continued with \ is one line
+        if line.lstrip().startswith('#'):
+            continue
+        code.append(line)
+        v = exec_verdict(line)
+        if v and v[0] == 'HIGH':
+            return v
+        warn = warn or v
+    if warn and INLINE_RISK.search('\n'.join(code)):
+        return 'HIGH', warn[1]
+    return warn
+
+SQUEEZE = re.compile(r'\s{40,}')
+
+# C2: wallets (Ethereum ones may be checksummed, hence case-insensitive), IPs as whole addresses, hosts and URL paths.
+C2_WALLETS = ['0x1eef0849eda15d87f64e51c73c8442cf3c8bcef3', '0x33ff3edaf55a8e03dcbc7cb40d498a49cd499891',
+              '0x3f0e5781d0855fb460661ac63257376db1941b2bb522499e4757ecb3ebd5dce3', '0xa322e5f3d311d3080e6f0121063e9adc2490ef1a',
+              '0xa658863ea658863e68656c6c6f6970626f742121', '0xbe037400670fbf1c32364f762975908dc43eeb38759263e7dfcdabc76380811e',
+              'TA48dct6rFW8BXsiLAtjFaVFoSuryMjD3v', 'TCqf6ZkaQD84vYsC2cuu1jRwB6JveTaRrF', 'TMfKQEd7TJJa5xNZJZ2Lep838vrzrs7mAP',
+              'TXfxHUet9pJVU1BgVkBAbrES4YUc1nGzcG']
+C2_IPS = ['103.179.143.219', '136.0.9.8', '154.91.0.103', '166.88.134.62', '166.88.134.75', '166.88.134.82', '166.88.4.2',
+          '166.88.54.158', '181.214.149.148', '188.43.33.249', '198.105.127.210', '202.155.8.173', '23.27.120.142', '23.27.13.135',
+          '23.27.13.43', '23.27.13.72', '23.27.20.143', '23.27.20.187', '23.27.202.27', '95.135.181.151']
+# The pack's dead-drop hosts are DEAD_DROP above, searched in every text file.
+C2_HOSTS = ['260120.vercel.app', 'default-configuration.vercel.app', 'vscode-settings-bootstrap.vercel.app',
+            'vscode-settings-config.vercel.app', 'vscode-bootstrapper.vercel.app', 'vscode-load-config.vercel.app'] + \
+           ['auth-confirm-%s.vercel.app' % n for n in ('one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight')]
+# The lookbehind keeps a leading [class]+ from rescanning a long run quadratically; it changes no match.
+C2_PATH = r'(?<![a-z0-9-])[a-z0-9-]+\.vercel\.app/settings/(mac|linux|win)\?flag=|:443/0x/c?ls\b'
+C2 = re.compile('|'.join([re.escape(x) for x in C2_HOSTS + C2_WALLETS] + [r'\b%s\b' % re.escape(ip) for ip in C2_IPS] + [C2_PATH]), re.I)
+C2_WALLET = re.compile('|'.join(map(re.escape, C2_WALLETS)), re.I)
+C2_ANCHORS = [x.lower() for x in C2_HOSTS + C2_WALLETS + C2_IPS] + ['.vercel.app/settings/', ':443/0x/']
+
+DENY = ['@adminide-stack/client-redux', '@adminide-stack/forms-core', '@adminide-stack/health-api-server',
+        '@adminide-stack/user-activity-browser', '@adminide-stack/utils', '@adminide-stack/yantra-help-browser',
+        '@cdmbase/wiki-browser', '@common-stack/generate-plugin', '@pubngo-stack/help-browser', 'bianira-ui', 'cdeops',
+        'fluid-type-ui', 'post-css-transfer', 'react-contact-forms', 'scrollbar-hide-plugin', 'server-hemera-mongo',
+        'tailwind-anim', 'tailwind-animation-founder', 'tailwind-animationbased', 'tailwind-autoanimation',
+        'tailwind-contact-forms', 'tailwind-form-core', 'tailwind-forms-kit', 'tailwind-input-kit', 'tailwind-mainanimation',
+        'tailwindcss-anim', 'tailwindcss-animate-style', 'tailwindcss-contact-form', 'tailwindcss-form-utils',
+        'tailwindcss-style-animate', 'tailwindcss-style-modify', 'tailwindcss-typography-style']
+# A name as a lockfile writes it: quoted, after node_modules/, at a line start (yarn) or after spaces and an optional / (pnpm).
+DENY_RE = re.compile(r'''(?:^|["' ]/?|node_modules/)(''' + '|'.join(map(re.escape, DENY)) + r''')(?=["'@:/ ]|$)''', re.M)
+DEP_FIELDS = ('dependencies', 'devDependencies', 'optionalDependencies', 'peerDependencies')
+LOCKFILES = {'package-lock.json', 'yarn.lock', 'pnpm-lock.yaml', 'bun.lock'}
+
+def may_hit(text):
+    # One pass over the whole file before the per-line loop: no marker can match without its anchor. Plain substring
+    # checks: an alternation of the patterns scans slower than the loop.
+    return any(a in text for _, _, anchors in HI for a in anchors) or any(a in text for a in DEAD_DROP_ANCHORS)
+
+def marker_hits(lines, patterns):
+    """{line number: marker names} for LINES, long whitespace runs squeezed, weighed over the whole file."""
+    hits = {}
+    for i, line in enumerate(lines, 1):
+        sq = SQUEEZE.sub(' ', line) if len(line) > 400 else line
+        ids = [n for n, r, _ in patterns if r.search(sq)]
+        if ids:
+            hits[i] = ids
+    keep = set(weigh([n for ids in hits.values() for n in ids]))
+    if keep - set(WEAK_HI):  # a strong marker already flags the file: weak-only lines (a bundle's _$_ names) add nothing
+        return {i: ids for i, ids in hits.items() if set(ids) - set(WEAK_HI)}
+    return {i: [n for n in ids if n in keep] for i, ids in hits.items() if keep.intersection(ids)}
+
+def suspicious(text):
+    """2 when a part of a large file holds a payload marker, weighed as a file is (so a bundle's _$_ names don't count);
+    1 when it names a dead-drop or C2 host, which only code or a wallet beside it makes HIGH; else 0."""
+    found = [r for _, r, anchors in HI if any(a in text for a in anchors)]
+    if found:
+        sq = SQUEEZE.sub(' ', text)
+        if weigh([n for n, r, _ in HI if r in found and r.search(sq)]):
+            return 2
+    if any(a in text for a in DEAD_DROP_ANCHORS) and DEAD_DROP.search(text):
+        return 1
+    low = text.lower()
+    return int(any(a in low for a in C2_ANCHORS) and bool(C2.search(text)))
+
+def dead_drop(line, wallet):
+    """HIGH for a dead-drop host after a padded gap or in a file with a C2 WALLET, WARN for one alone, else None."""
+    m = DEAD_DROP.search(line)
+    if not m:
+        return None
+    return 'HIGH' if wallet or GAP.search(line, 0, m.start()) else 'WARN'
+
+CODE_EXT = ('.js', '.jsx', '.ts', '.tsx', '.mjs', '.cjs', '.vue', '.svelte')
+# Node can require() a file of any extension, so markers are searched in every text file but docs and data.
+NO_MARKER_EXT = ('.md', '.markdown', '.rst', '.csv', '.tsv')
+CFG = {'postcss.config.js', 'postcss.config.mjs', 'postcss.config.cjs', 'tailwind.config.js', 'tailwind.config.mjs', 'tailwind.config.ts',
+       'eslint.config.mjs', 'eslint.config.js', 'next.config.js', 'next.config.mjs', 'next.config.ts', 'vite.config.js', 'vite.config.mjs',
+       'vite.config.ts', 'webpack.config.js', 'babel.config.js', 'jest.config.js', 'vue.config.js', 'astro.config.mjs', 'gridsome.config.js',
+       'truffle.js', 'metro.config.js', 'browser-sync.config.js', 'playwright.config.js', 'playwright.config.ts', 'commitlint.config.mjs',
+       'prisma.config.ts', 'App.js', 'app.js', 'index.js', 'server.js', 'functions.php'}
+# Names real projects use too (a config.bat, a Spell Right dictionary): each alone is a warning. Two of the spreader's
+# .bat files, as files or .gitignore entries, or any other HIGH finding in the repo make them all HIGH.
+ARTIFACTS = {'temp_auto_push.bat', 'temp_interactive_push.bat', 'config.bat', 'spellright.dict', 'branch_structure.json'}
+SPREADER = {'temp_auto_push.bat', 'temp_interactive_push.bat', 'config.bat'}
+GITIGNORE_RE = re.compile(r'^(config\.bat|temp_auto_push\.bat|temp_interactive_push\.bat|branch_structure\.json)$')
+ARTIFACT_WHAT = 'file name matches a known loader artifact'
+HIDES_WHAT = '.gitignore hides a loader artifact'
+TASK_ID = 'e9b53a7c-2342' + '-4b15-b02d-' + 'bd8b8f6a03f9'  # the task the loader's .vscode/tasks.json carries
+# OpenType allows either outline kind under either extension, and a collection (ttcf) is often saved as .ttf.
+SFNT_MAGIC = [b'\x00\x01\x00\x00', b'true', b'OTTO', b'ttcf']
+FONT_MAGIC = {'.woff2': [b'wOF2'], '.woff': [b'wOFF'], '.ttf': SFNT_MAGIC, '.otf': SFNT_MAGIC}
+# A short line of plain prose standing in for a font (test fixtures ship these) can't carry a loader.
+PLACEHOLDER_MAX = 512; PLACEHOLDER_WORD_MAX = 24
+PLACEHOLDER_CODE = frozenset(b'(){}[];=<>`$\\/:+%&|^~*@#"\'')
+PLACEHOLDER_TEXT = re.compile(r'[A-Za-z0-9 .,!?\n\r\t-]+')
+AGENT_FILES = ('.claude/settings.json', '.claude/settings.local.json', '.codex/hooks.json', '.codex/config.toml', '.cursor/hooks.json',
+               '.cursor/mcp.json', '.mcp.json', '.vscode/mcp.json', 'opencode.json', '.gemini/settings.json')
+AGENT_WARN = 'agent/MCP/hook config arrived or changed: review before opening this repo in an agent'
+# A hook or server command that fetches or decodes code, or runs it inline or from a temp folder. A bash -c wrapper
+# alone is how hooks are written, so it doesn't count; what it runs still does.
+AGENT_EXEC = re.compile(r'curl|wget|base64|\bnode\s+-e|\bpython[0-9.]*\s+-c|\beval\b|/tmp/|\$TMPDIR|\.npm/|\.pip/')
+AGENT_CMD = re.compile(r'"command"\s*:|^\s*command\s*=')
+# Nov 2026 agent-repo campaigns: agent config (and the instructions beside it) that start a setup script or pipe code into bun.
+AGENT_SETUP = re.compile(r'''\bnode\s+(\./)?(scripts|\.claude|\.cursor|\.gemini)/setup\.[cm]?js\b|\bbun\s+run\s+-(?=[\s"'\\]|$)''')
+TOML_STR = r'"(?:\\.|[^"\\\n])*"' + r"|'[^'\n]*'"
+# Each alternative starts and ends differently, so a file without the closing ] can't backtrack exponentially.
+TOML_CMD = re.compile(r'(?m)^[ \t]*command[ \t]*=[ \t]*(%s)' % TOML_STR)
+TOML_ARGS = re.compile(r'(?m)^[ \t]*args[ \t]*=[ \t]*\[((?:%s|[\s,]|#[^\n]*\n)*)\]' % TOML_STR)
+
+# VS Code and Gemini read JSON with comments and trailing commas: strings stay, comments and those commas go. An
+# unclosed comment runs to the end, so no match fails and rescans.
+JSONC = re.compile(r'"(?:\\.|[^"\\])*"|//[^\n]*|/\*[\s\S]*?(?:\*/|$)|,(?=\s*[}\]])')
+# For a file that doesn't parse as JSON (TOML, or broken JSON an agent may still read).
+HOOKS_OFF = re.compile(r'''\bdisableAllHooks["']?\s*[:=]\s*true\b''')
+
+def jsonc(text):  # the parsed value of a JSON-with-comments text, or None when it doesn't parse
+    try:
+        return json.loads(JSONC.sub(lambda m: m.group(0) if m.group(0)[0] == '"' else '', text))
+    except (ValueError, RecursionError):
+        return None
+
+def dicts(v):  # every object in a parsed JSON value
+    todo = [v]
+    while todo:
+        v = todo.pop()
+        if isinstance(v, dict):
+            yield v
+            todo.extend(v.values())
+        elif isinstance(v, list):
+            todo.extend(v)
+
+def toml_str(s):
+    if s.startswith("'"):
+        return s[1:-1]
+    try:
+        return json.loads(s)
+    except ValueError:
+        return s[1:-1]
+
+def agent_commands(rel, text, doc):
+    """Each command in an agent config (DOC, its parsed JSON) joined with its args, so a server split over lines (node,
+    then scripts/setup.js) still reads as one command line. Empty when the file doesn't parse."""
+    out = []
+    if rel.endswith('.toml'):
+        for table in re.split(r'(?m)^[ \t]*\[', text):
+            c = TOML_CMD.search(table)
+            if c:
+                a = TOML_ARGS.search(table)
+                out.append(' '.join(toml_str(x) for x in [c.group(1)] + (re.findall(TOML_STR, a.group(1)) if a else [])))
+        return out
+    for v in dicts(doc):
+        cmd = v.get('command')
+        args = v.get('args') if isinstance(v.get('args'), list) else []
+        if isinstance(cmd, list):  # opencode writes the command and its args as one array
+            cmd, args = '', cmd
+        if isinstance(cmd, str):
+            out.append(' '.join([cmd] + [x for x in args if isinstance(x, str)]).strip())
+    return out
+
+INSTRUCTION_FILES = ('CLAUDE.md', 'AGENTS.md', 'GEMINI.md', '.cursorrules', '.windsurfrules', 'copilot-instructions.md')
+TASK_EXEC = re.compile(AGENT_EXEC.pattern + r'|\bsh\s+-c|\bbash\s+-c')
+HOOK_DIRS = ('/.husky/', '/.githooks/')
+HOOK_NAMES = {'lefthook.yml', 'lefthook.yaml', '.lefthook.yml', '.pre-commit-config.yaml'}
+REGISTRY_FILES = {'.npmrc', '.yarnrc.yml', '.yarnrc', 'bunfig.toml', 'pip.conf', 'pip.ini', 'uv.toml', 'pyproject.toml', '.pypirc', '.aikido'}
+REGISTRY_HOSTS = ('registry.npmjs.org', 'registry.yarnpkg.com', 'pypi.org', 'files.pythonhosted.org', 'npm.pkg.github.com', 'download.pytorch.org')
+REGISTRY_RE = re.compile(r'''(registry|index-url|extra-index-url|npmRegistryServer|url|find-links)\s*[=:]\s*['"]?(https?://[^'"\s]+)''')
+SWEEP_MAXFILES = 5000
+
+# Repo config can name programs git runs: an fsmonitor, a pager, gpg to check a signed commit, and an ssh command or
+# upload-pack for a partial clone's fetch of a missing object. The scan runs none and fetches nothing.
+SAFE_GIT = ['--no-pager', '-c', 'core.fsmonitor=false', '-c', 'core.pager=cat', '-c', 'log.showSignature=false']
+NO_FETCH = {'GIT_NO_LAZY_FETCH': '1', 'GIT_ALLOW_PROTOCOL': 'none'}  # the second for a git older than 2.44
+
+def git(*a):
+    try:
+        return subprocess.run(['git', *SAFE_GIT, *a], capture_output=True, text=True, errors='surrogateescape', timeout=10,
+                              env=dict(os.environ, **NO_FETCH)).stdout
+    except Exception:
+        return ''
+
+def names(out):  # NUL-separated (-z): names with spaces or non-ASCII letters arrive unquoted
+    return [f for f in out.split('\0') if f]
+
+def changed(old, new):
+    return names(git('diff', '--name-only', '-z', '--diff-filter=ACMR', old, new))
+
+def is_agent(rel):
+    return rel.endswith(AGENT_FILES)
+
+def is_hookfile(rel):
+    return any(d in '/' + rel for d in HOOK_DIRS) or os.path.basename(rel) in HOOK_NAMES
+
+def is_tasks(rel):
+    return rel == '.vscode/tasks.json' or rel.endswith('/.vscode/tasks.json')
+
+def wanted(f):  # a file the rules read by its name
+    b = os.path.basename(f)
+    return (b in CFG or b in LOCKFILES or b in REGISTRY_FILES or b in ARTIFACTS or b in ('package.json', '.gitignore')
+            or is_agent(f) or is_hookfile(f) or is_tasks(f))
+
+def path_rules(rel):  # the rules a file's folders pick, beyond its own name
+    return is_agent(rel), is_hookfile(rel), is_tasks(rel)
+
+# Folders whose files the rules read by their path: the agents' config folders, .vscode and the hook folders.
+LINK_DIRS = {f.split('/')[0] for f in AGENT_FILES if '/' in f} | {d.strip('/') for d in HOOK_DIRS}
+LINK_WARN = 'symlink leads %s, so it was not read: check where it points before you install, build or open this repo'
+
+def config_files(files, limit):  # what a scan too large to read in full still covers
+    return [f for f in files if wanted(f)][:limit]
+
+def links_to(top, files):
+    """The tracked symlinks not in FILES that lead to one of FILES or to a folder holding one: a change to what a link
+    leads to changes what runs under the link's name."""
+    if not files:
+        return []
+    root = os.path.realpath(top).rstrip('/') + '/'
+    reals = set()
+    for f in files:
+        r = os.path.realpath(os.path.join(top, f))
+        while (r + '/').startswith(root) and r not in reals:
+            reals.add(r); r = os.path.dirname(r)
+    have = set(files); out = []
+    for entry in names(git('ls-files', '-s', '-z')):
+        meta, _, f = entry.partition('\t')
+        if meta.startswith('120000 ') and f not in have and os.path.realpath(os.path.join(top, f)) in reals:
+            out.append(f)
+    return out
+
+def placeholder(size, head):
+    if size >= PLACEHOLDER_MAX or any(b in PLACEHOLDER_CODE for b in head):
+        return False
+    text = head.decode('ascii', 'replace'); words = text.split()
+    return bool(PLACEHOLDER_TEXT.fullmatch(text)) and len(words) >= 4 and max(map(len, words)) <= PLACEHOLDER_WORD_MAX
+
+def fake_font(ext, size, head):
+    """False when HEAD starts as a real font of EXT does: its format's magic, then a header field that fits the file."""
+    if len(head) < 12 or not any(head[:4] == m for m in FONT_MAGIC[ext]):
+        return True
+    if ext in ('.woff', '.woff2'):
+        return int.from_bytes(head[8:12], 'big') != size  # the total length
+    if head[:4] == b'ttcf':  # version 1 or 2, then numFonts, each with a 4-byte offset
+        n = int.from_bytes(head[8:12], 'big')
+        return head[4:8] not in (b'\x00\x01\x00\x00', b'\x00\x02\x00\x00') or not (0 < n <= 256 and 12 + 4 * n <= size)
+    n = int.from_bytes(head[4:6], 'big')  # numTables, each with a 16-byte entry after the 12-byte header
+    return not (0 < n <= 256 and 12 + 16 * n <= size)
+
+CHUNK = 1_000_000; OVERLAP = 4096; MAX_PARTS = 8
+# Every anchor as bytes, C2 ones lower-cased: a chunk without one is skipped undecoded (images and archives are big).
+ANCHOR_BYTES = [a.encode() for _, _, anchors in HI for a in anchors] + [a.encode() for a in DEAD_DROP_ANCHORS]
+C2_BYTES = [a.encode() for a in C2_ANCHORS]
+
+def middle(fh, carry, end, t0, budget):
+    """The chunks from where FH is to END that look suspicious. Each starts with the last OVERLAP bytes before it, so a
+    marker across a chunk boundary is whole in the next one. A payload marker ends the read, as the file is HIGH
+    already; hosts alone keep up to MAX_PARTS chunks but never stop it. Stops at the time budget."""
+    parts = []
+    while fh.tell() < end and time.time() - t0 <= budget:
+        chunk = fh.read(min(CHUNK, end - fh.tell()))
+        if not chunk:
+            break
+        buf = carry + chunk; carry = buf[-OVERLAP:]
+        if not any(a in buf for a in ANCHOR_BYTES):
+            low = buf.lower()
+            if not any(a in low for a in C2_BYTES):
+                continue
+        level = suspicious(buf.decode('utf-8', 'replace'))
+        if level == 2:
+            return parts + [buf]
+        if level and len(parts) < MAX_PARTS:
+            parts.append(buf)
+    return parts
+
+def read(path, size, cap, t0, budget):
+    """The file's bytes; for one over CAP, its two ends and the chunks between them that look suspicious. Raises
+    OutOfTime when the time runs out part way through a large file."""
+    with open(path, 'rb') as fh:
+        if size <= cap:
+            parts = []
+            while True:
+                if time.time() - t0 > budget:
+                    raise OutOfTime()
+                chunk = fh.read(CHUNK)
+                if not chunk:
+                    return b''.join(parts)
+                parts.append(chunk)
+        head = fh.read(HEAD_TAIL)
+        parts = middle(fh, head[-OVERLAP:], size - HEAD_TAIL + OVERLAP, t0, budget)
+        fh.seek(size - HEAD_TAIL)
+        return b'\n'.join([head] + parts + [fh.read(HEAD_TAIL)])
+
+HOOK_PADDED = '%s is over 3 MB, which no real hook is: padding hides what it runs'
+HOOK_EXEC = {'HIGH': '%s runs downloaded or inline code', 'WARN': '%s runs inline code'}
+AIKIDO = [(re.compile(r'minimumPackageAgeExclusions|minimum_package_age_exclusions'), "exempts packages from Safe Chain's package age gate"),
+          (re.compile(r'minimumPackageAgeHours|minimum_package_age(?!_exclusions)'), "lowers Safe Chain's package age gate"),
+          (re.compile(r'malwareListBaseUrl|malware_list_base_url'), "points Safe Chain's malware list at another server")]
+
+def weigh_artifacts(findings):
+    """Loader artifact names are warnings until the repo has two of the spreader's .bat names or another HIGH finding."""
+    names = set(); other = False; at = []
+    for k, (sev, p, w) in enumerate(findings):
+        if sev == 'WARN' and w == ARTIFACT_WHAT:
+            names.add(os.path.basename(p)); at.append(k)
+        elif sev == 'WARN' and w.startswith(HIDES_WHAT + ': '):
+            names.update(w[len(HIDES_WHAT) + 2:].split(', ')); at.append(k)
+        elif sev == 'HIGH':
+            other = True
+    if other or len(names & SPREADER) > 1:
+        for k in at:
+            findings[k] = ('HIGH',) + findings[k][1:]
+
+DROP_WARN = 'names a public blockchain host the PolinRider loader reads its next stage from (line length %d): check it is meant to'
+
+def scan(top, files, t0, budget, findings, sweep=False, allowed=lambda real: True):
+    """Appends (severity, path, what) for each indicator in FILES (relative to TOP); False when the time ran out.
+    A sweep's findings end up in a stored result, so they never quote file content (a script can hold a token).
+    A symlink is read where it leads inside TOP, under its own name, as npm, VS Code and git follow it and its name
+    picks the rules. ALLOWED(physical path) is False for a file or folder never to read or list."""
+    def add(sev, path, what):
+        findings.append((sev, path, what))
+    root = os.path.realpath(top).rstrip('/') + '/'
+    todo = collections.deque((rel, None) for rel in files); seen = set()
+    def follow(rel, path):
+        """The physical file symlink REL leads to inside TOP, else None. A folder it leads to queues, under REL's name,
+        the files whose path there picks other rules, and the symlinks in it; each folder once, so a loop ends. A link
+        out of TOP, to nothing or into a loop is never read: a WARN when the rules read its name."""
+        try:
+            os.stat(path)
+        except OSError as e:
+            real, why = None, 'into a loop' if e.errno == errno.ELOOP else 'nowhere'
+        else:
+            real = os.path.realpath(path)
+            why = None if (real + '/').startswith(root) else 'out of the repo'
+        if why:
+            if wanted(rel) or os.path.basename(rel) in LINK_DIRS:
+                add('WARN', rel, LINK_WARN % why)
+            return None
+        if not allowed(real):
+            return None
+        if not os.path.isdir(real):
+            return real
+        if real in seen:
+            return None
+        seen.add(real)
+        for d, subdirs, fnames in os.walk(real):  # never into a symlinked folder: each is queued, then followed
+            if time.time() - t0 > budget:
+                break
+            links = [s for s in subdirs if os.path.islink(os.path.join(d, s))]
+            subdirs[:] = [s for s in subdirs if s not in links and s != '.git' and allowed(os.path.join(d, s))]
+            for n in fnames + links:
+                p = os.path.join(d, n); v = os.path.join(rel, os.path.relpath(p, real))
+                if os.path.islink(p):
+                    todo.append((v, None))
+                elif path_rules(v) != path_rules(os.path.relpath(p, root)) and allowed(p):
+                    todo.append((v, p))
+        return None
+    while todo:
+        if time.time() - t0 > budget:
+            return False
+        rel, path = todo.popleft()
+        if path is None:
+            path = os.path.join(top, rel)
+            if os.path.islink(path):
+                path = follow(rel, path)
+                if path is None:
+                    continue
+        base = os.path.basename(rel)
+        low = base.lower()
+        ext = os.path.splitext(low)[1]
+        if not os.path.isfile(path):
+            continue
+        if base in ARTIFACTS or ext == '.llf':
+            add('WARN' if base in ARTIFACTS else 'HIGH', rel, ARTIFACT_WHAT)
+        agent_at = None
+        if is_agent(rel):
+            agent_at = len(findings)
+            add('WARN', rel, AGENT_WARN)
+        hookfile = is_hookfile(rel)
+        is_code = ext in CODE_EXT or base in CFG
+        try:
+            size = os.path.getsize(path)
+            raw = read(path, size, LOCK_MAXSIZE if base in LOCKFILES else MAXSIZE, t0, budget)
+            # A real font is still searched for markers below: a loader can be appended to one.
+            if ext in FONT_MAGIC and raw and not placeholder(size, raw[:512]) and fake_font(ext, size, raw[:512]):
+                add('HIGH', rel, 'font file is not a real font (fake-font loader)')
+            # Binary files too: a NUL is no proof (/*\0*/ is valid JavaScript), and markers are cheap to look for.
+            text = raw.decode('utf-8', 'replace')
+        except OutOfTime:
+            return False
+        except OSError:
+            add('ERROR', rel, 'could not read it')
+            continue
+        if agent_at is not None:
+            doc = None if rel.endswith('.toml') else jsonc(text)
+            cmds = agent_commands(rel, text, doc)
+            if any(d.get('disableAllHooks') is True for d in dicts(doc)) if doc is not None else HOOKS_OFF.search(text):
+                findings[agent_at] = ('HIGH', rel, 'agent config sets disableAllHooks, which switches off your own agent hooks: review before opening this repo in an agent')
+            elif AGENT_SETUP.search(text) or any(AGENT_SETUP.search(c) for c in cmds):
+                findings[agent_at] = ('HIGH', rel, 'agent config starts a setup script or pipes code into bun, as the Nov 2026 agent-repo loaders do')
+            elif any(AGENT_EXEC.search(c) for c in cmds) or any(AGENT_CMD.search(l) and AGENT_EXEC.search(l) for l in text.splitlines()):
+                findings[agent_at] = ('HIGH', rel, 'agent config runs downloaded or inline code in a hook or server command')
+        elif (base in INSTRUCTION_FILES or ext == '.mdc') and AGENT_SETUP.search(text):
+            add('WARN', rel, 'agent instructions tell the agent to start a setup script or pipe code into bun: read it before opening this repo in an agent')
+        if hookfile and size > MAXSIZE:
+            add('HIGH', rel, HOOK_PADDED % 'git hook')
+        if hookfile:
+            v = exec_line_verdict(text)
+            if v:
+                add(v[0], rel, '%s: %s' % (HOOK_EXEC[v[0]] % 'git hook', v[1]))
+            else:
+                add('INFO', rel, 'git hook definition arrived or changed: review before your next commit')
+        if base == '.gitignore':
+            hidden = sorted({l.strip() for l in text.splitlines() if GITIGNORE_RE.match(l.strip())})
+            if hidden:
+                add('WARN', rel, '%s: %s' % (HIDES_WHAT, ', '.join(hidden)))
+        if is_tasks(rel):
+            if TASK_ID in text:
+                add('HIGH', rel, 'tasks.json carries the PolinRider task ID')
+            elif 'folderOpen' in text:
+                add('HIGH' if exec_rules(text) or TASK_EXEC.search(text) else 'WARN', rel, 'task runs automatically when the folder is opened')
+        if base in REGISTRY_FILES:
+            for line in text.splitlines():
+                if line.lstrip().startswith(('#', ';')):
+                    continue
+                m = REGISTRY_RE.search(line)
+                host = m and re.sub(r'^https?://', '', m.group(2)).split('/')[0].split('@')[-1].lower()
+                if host and host not in REGISTRY_HOSTS and not host.startswith(('localhost', '127.')):
+                    add('WARN', rel, 'package registry set to %s, not a public one: make sure it is yours' % host)
+                    break
+            if base == '.aikido':
+                for key, what in AIKIDO:
+                    if key.search(text):
+                        add('HIGH', rel, '.aikido file %s for this repo' % what)
+        if base == 'package.json':
+            for m in re.finditer(r'"(preinstall|install|postinstall|prepare|prepublish|prepublishOnly)"\s*:\s*"((?:\\.|[^"\\])*)"', text):
+                script = m.group(2)
+                v = exec_verdict(script)
+                if v:
+                    what = '%s: %s' % ('looks like a loader' if v[0] == 'HIGH' else 'runs inline code',
+                                       '%s (%d chars)' % (v[1], len(script)) if sweep else script[:60])
+                    add(v[0], rel, 'lifecycle script %s %s' % (m.group(1), what))
+            try:
+                pkg = json.loads(text)
+            except (ValueError, RecursionError):
+                pkg = None
+            if isinstance(pkg, dict):
+                bad = sorted({d for f in DEP_FIELDS if isinstance(pkg.get(f), dict) for d in pkg[f] if d in DENY})
+                if bad:
+                    add('HIGH', rel, 'depends on known-malicious package(s): %s' % ', '.join(bad[:3]))
+                if '_bz' in pkg:
+                    add('HIGH', rel, 'package.json has a top-level _bz field, as the Nov 2026 hijacked npm packages do')
+        if base in LOCKFILES and any(d in text for d in DENY):
+            bad = sorted({m.group(1) for m in DENY_RE.finditer(text)})
+            if bad:
+                add('HIGH', rel, 'lockfile pulls known-malicious package(s): %s' % ', '.join(bad[:3]))
+        markers = ext not in NO_MARKER_EXT and not low.endswith('.min.js') and may_hit(text)
+        drops = markers and any(a in text for a in DEAD_DROP_ANCHORS)
+        wallet = drops and bool(C2_WALLET.search(text))
+        gaps = is_code and bool(GAP.search(text))
+        c2 = False
+        if is_code:
+            lowered = text.lower()
+            c2 = any(a in lowered for a in C2_ANCHORS)
+        if not (markers or gaps or c2):
+            continue
+        lines = text.splitlines()
+        hits = marker_hits(lines, HI) if markers else {}
+        for i, line in enumerate(lines, 1):
+            if i % 10000 == 0 and time.time() - t0 > budget:  # a lockfile can have a million lines
+                return False
+            ids = hits.get(i, [])
+            drop = drops and not ids and dead_drop(line, wallet)
+            if ids or drop == 'HIGH':
+                add('HIGH', '%s:%d' % (rel, i), 'payload markers: %s (line length %d)' % (','.join(ids[:3] or ['dead-drop']), len(line)))
+            elif drop:
+                add('WARN', '%s:%d' % (rel, i), DROP_WARN % len(line))
+            elif gaps and GAP.search(line):
+                if base in CFG or len(line) >= 400:
+                    add('HIGH', '%s:%d' % (rel, i), 'code hidden after a long run of spaces (line length %d)' % len(line))
+                else:
+                    add('INFO', '%s:%d' % (rel, i), 'padded gap, short line (%d chars), probably formatting' % len(line))
+            elif c2 and C2.search(line):
+                add('HIGH', '%s:%d' % (rel, i), 'references a known PolinRider C2 host, wallet or IP (line length %d)' % len(line))
+            if len(findings) > 40:
+                break
+    return time.time() - t0 <= budget  # a large last file can run out the time part way through
+
+def sweep_git(repo, *a, ok=(0,)):
+    # Nothing from the repo may run (SAFE_GIT), and no replace objects or GIT_* from our environment change what it reads.
+    # The ceiling keeps git from looking for a repo above REPO when its own .git isn't one.
+    env = dict({k: v for k, v in os.environ.items() if not k.startswith('GIT_')}, **NO_FETCH,
+               GIT_CEILING_DIRECTORIES=os.path.dirname(os.path.realpath(repo)))
+    left = 30 if DEADLINE is None else min(30, DEADLINE - time.time())
+    if left <= 0:
+        raise OutOfTime()
+    try:
+        r = subprocess.run(['git', '--no-replace-objects', *SAFE_GIT, '-C', repo, *a],
+                           capture_output=True, text=True, errors='surrogateescape', timeout=left, env=env)
+    except subprocess.TimeoutExpired:
+        if left < 30:
+            raise OutOfTime()
+        raise
+    if r.returncode not in ok:
+        raise RuntimeError('git %s failed in %s' % (a[0], repo))
+    return r.stdout
+
+def field(s):  # one tab-separated field: control characters (tabs, newlines, terminal escapes) can't break the line or the terminal
+    s = s.encode('utf-8', 'surrogateescape').decode('utf-8', 'replace')
+    return ''.join('?' if ord(c) < 32 or 127 <= ord(c) < 160 else c for c in s)
+
+BIDI = re.compile('[‎‏‪-‮⁦-⁩]')
+FALSE_OR_TRUE = {'', '0', '1', 'false', 'true', 'no', 'yes', 'off', 'on'}
+
+def repo_history(repo, findings):
+    """Commits whose author name hides text-direction characters, or whose committer date is more than an hour before
+    the author date: both forge what a log shows. False when the time ran out."""
+    try:
+        out = sweep_git(repo, 'log', '--all', '--no-show-signature', '--max-count=50000', '--no-color', '--format=%an%x1f%cn%x1f%at%x1f%ct')
+    except OutOfTime:
+        return False
+    except Exception:
+        findings.append(('ERROR', '(history)', 'could not read the commit history'))
+        return True
+    bidi = ante = 0
+    for line in out.splitlines():
+        p = line.split('\x1f')
+        if len(p) != 4:
+            continue
+        bidi += bool(BIDI.search(p[0]) or BIDI.search(p[1]))
+        try:
+            ante += int(p[3]) < int(p[2]) - 3600
+        except ValueError:
+            pass
+    if bidi:
+        findings.append(('HIGH', '(history)', '%d commit(s) with an author or committer name that hides text-direction characters' % bidi))
+    if ante:
+        findings.append(('HIGH', '(history)', '%d commit(s) committed more than an hour before they were authored (forged dates)' % ante))
+    return True
+
+def repo_hooks(repo, findings, allowed, t0, budget):
+    """The hooks git would run in this repo: every file in its hooks folder (core.hooksPath from any config git reads,
+    includes too, and .git/hooks) that fetches or runs inline code, and the hooks and fsmonitor program its own config
+    sets. Reads them; runs nothing. A hooks folder the repo's own config points outside the repo and its git folder is
+    a warning, never listed. False when the time ran out."""
+    def add(sev, where, what):
+        findings.append((sev, where, what))
+    try:
+        hooks_dir = os.path.realpath(os.path.join(repo, sweep_git(repo, 'rev-parse', '--git-path', 'hooks').rstrip('\n')))
+        common = os.path.realpath(os.path.join(repo, sweep_git(repo, 'rev-parse', '--git-common-dir').rstrip('\n')))
+        cfg = sweep_git(repo, 'config', '-z', '--show-scope', '--get-regexp', r'^(hook\..*\.(command|event)|core\.fsmonitor|core\.hookspath)$', ok=(0, 1))
+    except OutOfTime:
+        return False
+    except Exception:
+        add('ERROR', '(git hooks)', 'could not find the hooks git runs')
+        return True
+    # -z: SCOPE NUL KEY NEWLINE VALUE NUL. Only the repo's own config: yours (global) sets the scan hook.
+    parts = cfg.split('\0')
+    entries = [(scope,) + kv.partition('\n')[::2] for scope, kv in zip(parts[0::2], parts[1::2])]
+    path_scope = [scope for scope, key, _ in entries if key == 'core.hookspath'][-1:]
+    dirs = {os.path.join(common, 'hooks'), hooks_dir}
+    if path_scope and path_scope[0] in ('local', 'worktree') and not any(
+            fold(hooks_dir + '/').startswith(fold(os.path.realpath(r) + '/')) for r in (repo, common)):
+        add('WARN', '(git config core.hooksPath)', 'repo config points git hooks outside the repo, so they were not read: check where it points')
+        dirs.discard(hooks_dir)
+    for d in sorted(dirs):
+        if not os.path.isdir(d) or not allowed(d):
+            continue
+        try:
+            hooks = sorted(os.listdir(d))
+        except OSError:
+            add('ERROR', '(git hooks)', 'could not list the hooks folder')
+            continue
+        for h in hooks:
+            if time.time() - t0 > budget:
+                return False
+            p = os.path.join(d, h)
+            if h.endswith('.sample') or not os.path.isfile(p) or not allowed(os.path.realpath(p)):
+                continue
+            try:
+                with open(p, 'rb') as fh:
+                    v = exec_line_verdict(fh.read(MAXSIZE).decode('utf-8', 'replace'))
+                if os.path.getsize(p) > MAXSIZE:
+                    add('HIGH', '(git hook %s)' % h, HOOK_PADDED % 'installed git hook')
+            except OSError:
+                add('ERROR', '(git hook %s)' % h, 'could not read it')
+                continue
+            if v:
+                add(v[0], '(git hook %s)' % h, '%s: %s' % (HOOK_EXEC[v[0]] % 'installed git hook', v[1]))
+    commands = {}; events = {}
+    for scope, key, value in entries:
+        if key == 'core.hookspath':
+            continue
+        if key.startswith('hook.') and key.endswith('.event'):
+            events.setdefault(key[5:-6], []).append(value)
+        elif scope not in ('local', 'worktree'):
+            continue
+        elif key.startswith('hook.'):
+            commands[key[5:-8]] = value
+        elif value.lower() not in FALSE_OR_TRUE:  # core.fsmonitor: true is git's own daemon, anything else a program
+            v = exec_verdict(value)
+            if v and v[0] == 'HIGH':
+                add('HIGH', '(git config core.fsmonitor)', 'repo config runs downloaded or inline code on every git status: %s' % v[1])
+            else:
+                add('WARN', '(git config core.fsmonitor)', 'repo config runs a program on every git status: review it')
+    for name, cmd in sorted(commands.items()):
+        on = ', '.join(events.get(name, [])) or 'no event yet'
+        v = exec_verdict(cmd)
+        if v and v[0] == 'HIGH':
+            add('HIGH', '(git config hook.%s)' % name, 'repo config runs a git hook on %s that runs downloaded or inline code: %s' % (on, v[1]))
+        else:
+            add('WARN', '(git config hook.%s)' % name, 'repo config runs a git hook on %s: review it before your next commit' % on)
+    return True
+
+BINARY_EXT = set(('.png .jpg .jpeg .gif .bmp .ico .icns .webp .avif .tif .tiff .psd .heic .mp3 .mp4 .m4a .mov .avi .mkv .webm .wav '
+                  '.flac .ogg .zip .gz .tgz .bz2 .xz .7z .rar .tar .zst .br .jar .class .so .dylib .dll .exe .o .a .node .wasm .bin .dat '
+                  '.db .sqlite .pyc .pdf .vsix .asar .eot .woff .woff2 .ttf .otf .ttc').split())
+
+# Commercial extensions (Pylance among them) ship obfuscator.io bundles, so the rotator alone means nothing there.
+TREE_HI = [h for h in HI if h[0] != 'obfuscator-rotator']
+
+def tree_scan(root, t0, budget, findings, allowed):
+    """Payload markers in every text file under ROOT (an editor's extensions folder), without following symlinks."""
+    for d, subdirs, files in os.walk(root):
+        subdirs[:] = [s for s in subdirs if allowed(os.path.realpath(os.path.join(d, s)))]
+        for f in files:
+            if time.time() - t0 > budget:
+                return False
+            path = os.path.join(d, f)
+            if os.path.splitext(f.lower())[1] in BINARY_EXT or os.path.islink(path) or not allowed(os.path.realpath(path)):
+                continue
+            try:
+                raw = read(path, os.path.getsize(path), MAXSIZE, t0, budget)
+            except OutOfTime:
+                return False
+            except OSError:
+                findings.append(('ERROR', os.path.relpath(path, root), 'could not read it'))
+                continue
+            text = raw.decode('utf-8', 'replace')
+            drops = any(a in text for a in DEAD_DROP_ANCHORS)
+            if not drops and not any(a in text for _, _, anchors in TREE_HI for a in anchors):
+                continue
+            wallet = drops and bool(C2_WALLET.search(text))
+            lines = text.splitlines()
+            hits = marker_hits(lines, TREE_HI)
+            for i, line in enumerate(lines, 1):
+                ids = hits.get(i, [])
+                drop = drops and not ids and dead_drop(line, wallet)
+                where = '%s:%d' % (os.path.relpath(path, root), i)
+                if ids or drop == 'HIGH':
+                    findings.append(('HIGH', where, 'payload markers: %s (line length %d)' % (','.join(ids[:3] or ['dead-drop']), len(line))))
+                    break
+                if drop:
+                    findings.append(('WARN', where, DROP_WARN % len(line)))
+                    break
+    return time.time() - t0 <= budget  # a large last file can run out the time part way through
+
+NPM_CLI_MAX = 4096  # npm's own lib/cli.js is a few hundred bytes; the loader appends itself to it
+
+def npm_cli_scan(path, findings):
+    size = os.path.getsize(path)
+    if size > NPM_CLI_MAX:
+        findings.append(('HIGH', 'lib/cli.js', "npm's cli.js is %d bytes, more than a real one (%d at most): reinstall npm" % (size, NPM_CLI_MAX)))
+        return
+    with open(path, 'rb') as fh:
+        text = fh.read().decode('utf-8', 'replace')
+    ids = weigh([n for n, r, _ in HI if r.search(text)] + (['dead-drop'] if DEAD_DROP.search(text) else []))
+    if ids:
+        findings.append(('HIGH', 'lib/cli.js', "npm's cli.js carries payload markers: %s" % ','.join(ids[:3])))
+
+def fold(path):  # as APFS compares names: NFC, upper case, lower case, NFC again (as the guards' lib.sh fold does)
+    return unicodedata.normalize('NFC', unicodedata.normalize('NFC', path).upper().lower())
+
+def untracked(repo, tracked, t0, budget, allowed):
+    """The files under REPO that git doesn't track, ignored ones too: a download's payload needn't be committed. Not in
+    .git, node_modules (installed copies) or a repo nested in it (a target of its own); symlinks are listed, not
+    followed. None when the time ran out."""
+    have = {unicodedata.normalize('NFC', f) for f in tracked}; out = []  # git may list a name composed, the disk not
+    for d, subdirs, files in os.walk(repo):
+        if time.time() - t0 > budget:
+            return None
+        keep = []
+        for n in subdirs:
+            p = os.path.join(d, n)
+            if os.path.islink(p):
+                files.append(n)
+            elif n not in ('.git', 'node_modules') and not os.path.lexists(os.path.join(p, '.git')) and allowed(os.path.realpath(p)):
+                keep.append(n)
+        subdirs[:] = keep
+        for n in files:
+            rel = os.path.relpath(os.path.join(d, n), repo)
+            if unicodedata.normalize('NFC', rel) not in have and rel != '.git':
+                out.append(rel)
+    return out
+
+def sweep(argv):
+    """--sweep --budget SECONDS [--private DIR]... [--untracked] TARGET...: every tracked file of each repo TARGET, read
+    from the working tree (with --untracked, its untracked and ignored files too), plus its installed git hooks and commit
+    history; a TARGET of --tree DIR is every text file under DIR (payload markers only, for editor extensions), and
+    --npm-cli FILE is npm's lib/cli.js. For at most SECONDS, except the files in or under a private DIR (pass each by its
+    literal and physical spelling; letter case doesn't count, as on APFS).
+    Prints SEVERITY<TAB>TARGET<TAB>PATH<TAB>WHAT per HIGH or WARN finding (UNREAD when a target can't be listed,
+    ERROR when a repo's hooks or history can't be read, INFO for a repo only partly scanned), PRIVATE<TAB>COUNT when private files were left out, then DONE<TAB>SWEPT<TAB>TOTAL.
+    Each line goes out as soon as it is known, a HIGH before the rest of its repo is read, so a sweep stopped part way
+    still shows it. Writes no log and shows no notification."""
+    global DEADLINE
+    try:
+        budget = float(argv[1]) if argv[0] == '--budget' else None
+    except (IndexError, ValueError):
+        budget = None
+    argv = argv[2:]
+    private = []
+    while budget is not None and argv and argv[0] == '--private':
+        if len(argv) < 2 or not argv[1].startswith('/'):
+            budget = None
+            break
+        private.append(fold(argv[1]).rstrip('/'))
+        argv = argv[2:]
+    others = budget is not None and argv[:1] == ['--untracked']
+    argv = argv[others:]
+    targets = []
+    while budget is not None and argv:
+        if argv[0] in ('--tree', '--npm-cli'):
+            if len(argv) < 2:
+                budget = None
+                break
+            targets.append((argv[0], argv[1])); argv = argv[2:]
+        else:
+            targets.append(('repo', argv[0])); argv = argv[1:]
+    if budget is None:
+        sys.stderr.write('usage: git-scan-new-files --sweep --budget SECONDS [--private DIR]... [--untracked] {REPO | --tree DIR | --npm-cli FILE}...\n')
+        return 2
+    def is_private(path):
+        path = fold(path)
+        return any(path == d or path.startswith(d + '/') for d in private)
+    t0 = time.time(); swept = 0; left_out = 0; DEADLINE = t0 + budget
+    def out(*fields):
+        print('\t'.join(map(field, fields)), flush=True)
+    def readable(real):  # what scan may read or list in a repo; the rest counts as left out
+        nonlocal left_out
+        if is_private(real):
+            left_out += 1
+            return False
+        return True
+    def emit(target, findings, sent=None, highs=False):
+        """Prints FINDINGS not in SENT (their indexes, which it adds to), only the HIGH ones when HIGHS: a HIGH never
+        changes, a WARN still can (weigh_artifacts)."""
+        for k, (sev, p, w) in enumerate(findings):
+            if sent is not None and (k in sent or highs and sev != 'HIGH'):
+                continue
+            if sent is not None:
+                sent.add(k)
+            # A config file that is merely present isn't news in a sweep; its HIGH form (disableAllHooks) still counts.
+            if sev in ('HIGH', 'WARN', 'ERROR') and w != AGENT_WARN or p == '(scan)':
+                out(sev, target, p, w)
+    for kind, repo in targets:
+        if time.time() - t0 > budget:
+            break
+        findings = []
+        if kind != 'repo':
+            if is_private(repo) or is_private(os.path.realpath(repo)):
+                left_out += 1; swept += 1
+                continue
+            if kind == '--npm-cli':
+                try:
+                    npm_cli_scan(repo, findings)
+                except OSError:
+                    out('UNREAD', repo, '', 'could not read it')
+                    continue
+                done = True
+            else:
+                root = os.path.realpath(repo).rstrip('/') + '/'
+                def allowed(real, root=root):
+                    nonlocal left_out
+                    if is_private(real):
+                        left_out += 1
+                        return False
+                    return real.startswith(root)
+                done = tree_scan(repo, t0, budget, findings, allowed)
+            emit(repo, findings)
+            if not done:
+                break
+            swept += 1
+            continue
+        try:
+            # Git reads the repo's own folder only (the ceiling): a .git it can't read as a repo, or a core.worktree
+            # set elsewhere, would have it list and read another one.
+            top = sweep_git(repo, 'rev-parse', '--show-toplevel').rstrip('\n')
+            if not os.path.samefile(top, repo):  # the same folder, however its letter case is spelled
+                out('UNREAD', repo, '', 'git does not read it as a repo of its own')
+                continue
+            files = names(sweep_git(repo, 'ls-files', '-z'))
+        except OutOfTime:
+            break
+        except Exception:
+            out('UNREAD', repo, '', 'could not list its tracked files')
+            continue
+        if others:
+            more = untracked(repo, files, t0, budget, readable)
+            if more is None:
+                break
+            files += more
+        kept = [f for f in files if not is_private(os.path.join(repo, f))]
+        left_out += len(files) - len(kept); files = kept
+        if len(files) > SWEEP_MAXFILES:
+            files = config_files(files, SWEEP_MAXFILES)
+            findings.append(('INFO', '(scan)', 'large repo, only config/hook/agent files were scanned'))
+        # A folder in the working tree swapped for a symlink would lead the read elsewhere: each file's physical path
+        # must stay inside the repo's, and outside every private folder. A tracked symlink in the repo stays, so scan
+        # can warn when it leads out.
+        root = os.path.realpath(repo).rstrip('/') + '/'
+        inside = []
+        for f in files:
+            p = os.path.join(repo, f)
+            real = os.path.realpath(p)
+            if is_private(real):
+                left_out += 1
+            elif real.startswith(root) or os.path.islink(p) and (os.path.realpath(os.path.dirname(p)) + '/').startswith(root):
+                inside.append(f)
+        files = inside
+        sent = set()
+        done = scan(repo, files, t0, budget, findings, sweep=True, allowed=readable)
+        emit(repo, findings, sent, highs=True)
+        done = done and repo_hooks(repo, findings, lambda real: not is_private(real), t0, budget)
+        emit(repo, findings, sent, highs=True)
+        done = done and repo_history(repo, findings)
+        weigh_artifacts(findings)
+        emit(repo, findings, sent)
+        if not done:
+            break
+        swept += 1
+    if left_out:
+        print('PRIVATE\t%d' % left_out, flush=True)
+    print('DONE\t%d\t%d' % (swept, len(targets)), flush=True)
+    return 0
+
+if hook == '--sweep':
+    sys.exit(sweep(args))
+
+top = git('rev-parse', '--show-toplevel').strip()
+if not top:
+    sys.exit(0)
+files = []
+try:
+    if hook == 'post-checkout' and len(args) >= 3:
+        old, new, branch = args[:3]
+        if branch != '1':           # git checkout <ref> -- <path>: files from another ref came into the working tree
+            files = names(git('diff', '--name-only', '-z', '--diff-filter=ACMR', 'HEAD'))
+        elif set(old) == {'0'}:     # a clone
+            files = names(git('ls-files', '-z'))
+        elif old != new:
+            files = changed(old, new)
+    elif hook == 'post-merge':
+        if args[:1] == ['1']:       # a squash merge: staged, not committed
+            files = names(git('diff', '--cached', '--name-only', '-z', '--diff-filter=ACMR', 'HEAD'))
+        else:
+            files = changed('ORIG_HEAD', 'HEAD') or changed('HEAD@{1}', 'HEAD')
+    elif hook == 'post-rewrite' and args[:1] != ['amend']:  # an amend rewrites your own commit; nothing came in
+        pairs = [l.split() for l in sys.stdin.read().splitlines()[:20]]
+        # A rebase: everything between where HEAD was and where it is now, upstream changes included.
+        files = changed('ORIG_HEAD', 'HEAD')
+        if not files:
+            seen = set()
+            for p in pairs:
+                if len(p) >= 2:
+                    seen.update(changed(p[0], p[1]))
+            files = sorted(seen)
+except SystemExit:
+    raise
+except Exception:
+    sys.exit(0)
+files += links_to(top, files)
+
+findings = []
+def add(sev, path, what):
+    findings.append((sev, path, what))
+
+toomany = len(files) > MAXFILES
+if toomany:
+    files = config_files(files, MAXFILES)
+
+if not scan(top, files, T0, BUDGET, findings):
+    add('WARN', '(scan)', 'time budget reached, remaining files not scanned')
+weigh_artifacts(findings)
+
+if toomany:
+    add('WARN', '(scan)', 'large change, only config/hook/agent files were scanned')
+highs = [f for f in findings if f[0] == 'HIGH']
+warns = [f for f in findings if f[0] == 'WARN']
+if findings and (highs or warns):
+    repo = os.path.basename(top)
+    out = ['git-scan [%s] in %s: %d high, %d warn' % (hook, repo, len(highs), len(warns))]
+    for sev, p, w in (highs + warns)[:12]:
+        out.append('  %s %s  %s' % (sev, p, w))
+    if highs:
+        out.append('  Do NOT run npm/pnpm/yarn, a dev server or a build here. Inspect with git show / grep only.')
+    out = [field(l) for l in out]  # file names and scripts can carry terminal escapes
+    sys.stderr.write('\n'.join(out) + '\n')
+    try:
+        log = os.path.expanduser('~/.local/var/log/git-scan.log')
+        os.makedirs(os.path.dirname(log), exist_ok=True)
+        with open(log, 'a') as fh:
+            fh.write(datetime.datetime.now().isoformat(timespec='seconds') + ' ' + top + '\n' + '\n'.join(out) + '\n')
+    except Exception:
+        pass
+    if highs and not os.environ.get('GIT_SCAN_NO_NOTIFY'):
+        try:
+            msg = '%s: %d suspicious file(s) after %s. Do not run it.' % (field(repo), len(highs), hook)
+            subprocess.run(['osascript', '-e', 'display notification "%s" with title "git-scan"' % msg.replace('"', "'")], timeout=3, capture_output=True)
+        except Exception:
+            pass
+sys.exit(0)

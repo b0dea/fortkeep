@@ -1,0 +1,105 @@
+name: CI
+
+# The steps of `make ci`, split by what they need: lint, the controls check and the scans run anywhere, so they run
+# on Linux; the tests read macOS tools (plutil, BSD stat, sed -i ''), so they run on the oldest supported macOS
+# runner and the newest one.
+#
+# `ci-ok` is the one required status check, so adding or renaming a job never changes branch protection.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Nothing here publishes, comments, or writes back to the repository. The default grants nothing; each job that
+# checks out code asks for contents: read and no more.
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  # A newer push supersedes the run in progress: its commit contains everything the older one tested.
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  lint:
+    name: lint, controls and scans
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      # Actions are pinned to a full-length commit SHA, never a tag: a tag is mutable and resolves to wherever its
+      # owner last moved it. The trailing comment says which release the SHA is.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          # gitleaks (make scan) reads every commit, not only the tip.
+          fetch-depth: 0
+      # With mise.lock present the action installs with --locked, which checks each download's checksum. yamllint
+      # is locked by version only and refuses --locked, so it is installed on its own below.
+      - uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
+        with:
+          install_args: bats shellcheck uv gitleaks lefthook yq
+      - run: mise install yamllint
+      - run: make lint
+      - run: make controls-check
+      - run: make scan
+
+  test:
+    name: ${{ matrix.suite }} (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    strategy:
+      # One runner's failure must not hide the other's: a difference between macOS versions is what this finds.
+      fail-fast: false
+      matrix:
+        os: [macos-15, macos-26]
+        # Two jobs per runner image, side by side: the tests under Homebrew bash, and under macOS stock tools.
+        suite: [test, test-stock]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # `make test` runs bats under Homebrew's bash, as on a maintainer's Mac; `make test-stock` puts macOS's own
+      # bash 3.2 and tools first, as on a person's Mac. The runner image has only the stock bash.
+      - name: Homebrew bash for make test
+        if: matrix.suite == 'test'
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: "1"
+        run: brew install bash
+      - uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
+        with:
+          install_args: bats shellcheck uv gitleaks lefthook yq
+      # `mise exec` in the Makefile would otherwise install it, unannounced, in the middle of the tests.
+      - run: mise install yamllint
+      # The OpenCode plugin's tests skip without Node 22 or later.
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+      # The Makefile runs the test files side by side, as many at once as the runner has cores, up to JOBS.
+      - env:
+          SUITE: ${{ matrix.suite }}
+        run: make "$SUITE"
+
+  # The single required status check. `always()` keeps it running when a need failed, and a failed or cancelled
+  # need must never read as green.
+  ci-ok:
+    name: ci-ok
+    if: always()
+    needs: [lint, test]
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    permissions: {}
+    steps:
+      - env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: |
+          set -euo pipefail
+          printf '%s' "$NEEDS" | jq -r 'to_entries[] | "\(.key): \(.value.result)"'
+          printf '%s' "$NEEDS" | jq -e 'all(.[]; .result == "success")' >/dev/null \
+            || { echo "::error::a required job failed or was cancelled"; exit 1; }

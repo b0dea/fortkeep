@@ -1,0 +1,4 @@
+# gitleaks: the default rules. No allowlist: tests stub gitleaks instead of committing fake secrets.
+# A verified false positive already in history goes in .gitleaksignore, by its exact fingerprint.
+[extend]
+useDefault = true

@@ -1,0 +1,4 @@
+#!/bin/bash
+# The weekly LaunchAgent runs this file: macOS names a background item after the program it starts,
+# so Login Items shows "devward-weekly" instead of "bash".
+exec /bin/bash "$(dirname "$0")/weekly.sh" "$@"

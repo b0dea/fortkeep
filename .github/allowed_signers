@@ -1,0 +1,3 @@
+# The maintainers who can release (see "Verifying a release" in SECURITY.md): one SSH signing key per line, as
+#   <GitHub handle> namespaces="git" <key type> <public key>
+b0dea namespaces="git" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHxBuQnN3xZeTcnOfuGVPtMfefF8m33KgeQBBOE4QnB/

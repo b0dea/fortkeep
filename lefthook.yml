@@ -1,0 +1,12 @@
+# Git hooks for developing this repo; `make hooks` (part of `make install`) installs them.
+# The global gitleaks hook from BL-SE-06 keeps running alongside these.
+pre-commit:
+  commands:
+    no-commit-to-main:
+      run: ci/no-commit-to-main.sh
+    leak-scans:
+      run: ci/pre-commit.sh
+pre-push:
+  commands:
+    push-check:
+      run: make push-check

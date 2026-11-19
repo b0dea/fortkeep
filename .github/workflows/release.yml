@@ -1,0 +1,114 @@
+name: Release
+
+# A maintainer signs a release tag on their own Mac (`make release`) and pushes it. This workflow checks the tag the
+# way copies will, runs `make ci` on it, and publishes a GitHub release whose notes start with the installer pins
+# (ci/release-pins.sh). It signs nothing and holds no secrets.
+#
+# It catches mistakes; it is not what keeps an unsigned release off people's Macs. The tagged commit supplies this
+# workflow, so a tag pushed without a signature could carry a copy that skips the check. checks/update.sh, on each
+# Mac, is the check that counts.
+on:
+  push:
+    tags: ['v*']
+
+permissions: {}
+
+# Never cancel a release half way.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  verify:
+    name: signed by a listed maintainer
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          # Every release tag and main, to find the previous release and check this one is on main.
+          fetch-depth: 0
+      - env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          fail() { echo "::error::$1"; exit 1; }
+          [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || fail "$TAG is not a release tag (v1.2.3)"
+          # The tag object itself, signature included, whatever checkout left under refs/tags.
+          git fetch --quiet --no-tags --force origin "refs/tags/$TAG:refs/tags/$TAG"
+          # The same check copies run: an SSH signature by a key in the signers file, on a tag whose message names
+          # this repo and this tag.
+          . checks/lib/common.sh
+          . checks/lib/repo.sh
+          devward_release_signed "$PWD" "$TAG" "$PWD/.github/allowed_signers" \
+            || fail "$TAG is not signed by a key in its own .github/allowed_signers, so a new install would refuse it"
+          # A copy on the previous release checks this one against that release's signers.
+          prev="$(devward_releases "$PWD" | awk -v t="$TAG" 'found { print; exit } $0 == t { found = 1 }' || true)"
+          if [ -n "$prev" ]; then
+            git show "refs/tags/$prev:.github/allowed_signers" > "$RUNNER_TEMP/previous-signers"
+            devward_release_signed "$PWD" "$TAG" "$RUNNER_TEMP/previous-signers" \
+              || fail "$TAG is not signed by a key in $prev's .github/allowed_signers, so copies on $prev would refuse it"
+          fi
+          git merge-base --is-ancestor "refs/tags/$TAG^{commit}" origin/main || fail "$TAG is not on main"
+          echo "$TAG is signed by a listed maintainer${prev:+, also as $prev lists them}, and is on main"
+
+  ci:
+    name: make ci
+    needs: verify
+    runs-on: macos-15
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          # gitleaks (make scan) reads every commit, not only the tip.
+          fetch-depth: 0
+      - name: Homebrew bash for make test
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: "1"
+        run: brew install bash
+      # No cache: a release must not restore state a pull request could have written.
+      - uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
+        with:
+          install_args: bats shellcheck uv gitleaks lefthook yq
+          cache: false
+      - run: mise install yamllint
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - run: make ci
+
+  publish:
+    name: GitHub release
+    needs: [verify, ci]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write  # the GitHub release
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0  # release-pins.sh clones this checkout and checks the previous release's signers
+      # The pins a new install trusts (the tag's commit and the tarball's SHA-256) head the notes, generated notes below.
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          git fetch --quiet --no-tags --force origin "refs/tags/$TAG:refs/tags/$TAG"
+          pins="$(ci/release-pins.sh "$TAG")"
+          verify="https://github.com/$REPO/blob/main/SECURITY.md#verifying-a-release"
+          notes="$(printf 'What a new install of this release pins ([how to verify a release](%s)):\n\n```\n%s\n```\n' "$verify" "$pins")"
+          gh release create "$TAG" --repo "$REPO" --verify-tag --title "$TAG" --generate-notes --notes "$notes"

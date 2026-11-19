@@ -1,0 +1,8 @@
+# Codex exec policy for this repo, loaded once the folder is trusted. The hooks do the real checking; these
+# rules refuse sudo and ask before any fix script runs, even if the hooks were skipped.
+prefix_rule(pattern=["sudo"], decision="forbidden", justification="This repo never runs sudo: give the person the exact command to type in the Terminal app.")
+prefix_rule(pattern=["fixes/macos/BL-AU-02.sh"], decision="prompt", justification="A fix changes this Mac: run it only right after the person answers Apply or Undo for it.")
+prefix_rule(pattern=["fixes/macos/BL-RC-01.sh"], decision="prompt", justification="A fix changes this Mac: run it only right after the person answers Apply or Undo for it.")
+prefix_rule(pattern=["fixes/macos/BL-RC-02.sh"], decision="prompt", justification="A fix changes this Mac: run it only right after the person answers Apply or Undo for it.")
+prefix_rule(pattern=["fixes/macos/BL-SC-02.sh"], decision="prompt", justification="A fix changes this Mac: run it only right after the person answers Apply or Undo for it.")
+prefix_rule(pattern=["fixes/macos/BL-SE-06.sh"], decision="prompt", justification="A fix changes this Mac: run it only right after the person answers Apply or Undo for it.")

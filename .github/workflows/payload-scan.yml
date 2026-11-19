@@ -1,0 +1,46 @@
+name: payload-scan
+
+# devward scanning itself. Fails any push or pull request that carries a whole malware marker (ci/marker-scan.sh)
+# or what devward's own repo scanner flags: the PolinRider / BeaverTail loader, a poisoned config or task file, a
+# git hook that fetches code, or commits with forged dates or names. It is a checkout and two read-only scans, never
+# an install or a build, so a poisoned branch has no build step to run its payload through.
+#
+# Both scanners come from the checkout being scanned: a change that also edits them shows in the same diff. The job
+# holds no secrets and only read access, so a poisoned copy can do no more than misreport its own result.
+on:
+  push:
+  pull_request:
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  payload-scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          # The repo scanner also reads the commit history for forged dates and names.
+          fetch-depth: 0
+      - name: no whole malware marker in a tracked file
+        run: ci/marker-scan.sh
+      - name: devward's repo scanner finds nothing
+        shell: bash
+        run: |
+          set -euo pipefail
+          # The sweep the weekly repo check (GD-RC-01) runs, over this checkout only. It always exits 0 and prints
+          # one line per finding, then DONE<TAB>swept<TAB>total; anything but a clean, complete sweep fails.
+          out="$(python3 -I fixes/files/git-scan-new-files --sweep --budget 300 "$GITHUB_WORKSPACE")"
+          printf '%s\n' "$out"
+          if [ "$out" != "$(printf 'DONE\t1\t1')" ]; then
+            echo "::error::The repo scanner flagged this ref or could not finish. Do not pull, build, install or lint it."
+            exit 1
+          fi
+          echo clean

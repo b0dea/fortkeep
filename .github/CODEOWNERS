@@ -1,0 +1,5 @@
+# Review routing, not a permission boundary: what is enforced lives in branch protection and CI.
+# One rule because there is one maintainer; per-path rules naming the same person would read as a
+# division of responsibility that does not exist. Split it when there is a second name.
+
+*   @b0dea

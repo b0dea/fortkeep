@@ -1,0 +1,18 @@
+# devward
+
+> devward is a security checkup for developer Macs that a coding agent runs with a person, in Claude Code, Codex or OpenCode. Read-only checks, written in bash for macOS's stock tools, compare the Mac with a practical baseline aimed at how developer Macs get compromised today: malicious packages, poisoned repos, agents running bad commands, and leaked secrets. The agent explains each result in plain language and fixes gaps only after the person approves that one change, with a backup and an undo. Guard hooks limit what the agent may do in a person's session. People's Macs run maintainer-signed releases. Not an antivirus, not device management, not a sandbox. Pre-1.0, macOS only.
+
+## Use devward
+
+- [README](https://raw.githubusercontent.com/b0dea/devward/main/README.md): what devward checks, how to scan a repo before opening it, how to start it in each agent, what it can change, and your data
+- [Agents](https://raw.githubusercontent.com/b0dea/devward/main/docs/agents.md): how Claude Code, Codex and OpenCode load the skills and guards, and how approvals are given in each
+- [Threat model](https://raw.githubusercontent.com/b0dea/devward/main/docs/threat-model.md): what the guards, the approval and the signed releases stop, and what they don't
+
+## Reference
+
+- [Baseline](https://raw.githubusercontent.com/b0dea/devward/main/controls/baseline-source.md): the baseline every control comes from, with its reasoning
+
+## Contributing
+
+- [CONTRIBUTING.md](https://raw.githubusercontent.com/b0dea/devward/main/CONTRIBUTING.md): setup, the checks to run, and how to add a control
+- [AGENTS.md](https://raw.githubusercontent.com/b0dea/devward/main/AGENTS.md): the instructions the agent follows when it guides a person through a checkup

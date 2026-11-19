@@ -1,0 +1,32 @@
+name: Feature request
+description: Something devward should check, explain or fix, and does not.
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Describe the risk, not only the feature. A new indicator needs a public source link.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What goes wrong today
+      description: The attack or mistake it would catch, concretely, and what you do instead.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What you have in mind
+      description: Optional. The control, its level, how a check would read the Mac's state, and whether a fix is safe to automate.
+  - type: textarea
+    id: source
+    attributes:
+      label: Sources
+      description: Public write-ups of the attack or indicator.
+  - type: textarea
+    id: check
+    attributes:
+      label: How we would know it works
+      description: A state of the Mac that should PASS, and one that should FAIL.
+    validations:
+      required: true

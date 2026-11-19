@@ -1,0 +1,30 @@
+{
+  "findings": [
+    {
+      "formula": "examplelib",
+      "version": "1.2.3",
+      "tag": "v1.2.3",
+      "repo_url": "https://example.invalid/examplelib",
+      "vulnerabilities": [
+        {"id": "OSV-0000-0001", "severity": "HIGH", "summary": "Heap overflow in the parser", "aliases": [], "fixed_versions": ["1.2.4"]}
+      ],
+      "patched": []
+    },
+    {
+      "formula": "sampletool",
+      "version": "0.9.0",
+      "tag": "v0.9.0",
+      "repo_url": "https://example.invalid/sampletool",
+      "vulnerabilities": [
+        {"id": "OSV-0000-0002", "severity": "MEDIUM", "summary": "Path traversal in archive extraction", "aliases": [], "fixed_versions": ["0.9.1"]},
+        {"id": "OSV-0000-0003", "severity": "UNKNOWN", "summary": "Out-of-bounds read", "aliases": [], "fixed_versions": ["0.9.1"]}
+      ],
+      "patched": []
+    }
+  ],
+  "skipped_formulae": ["lame", "libtool"],
+  "checked": 225,
+  "complete": false,
+  "outdated_without_sbom": [],
+  "unscanned_formulae": {}
+}
