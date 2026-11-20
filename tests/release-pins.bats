@@ -18,7 +18,7 @@ pins() { run "$O/ci/release-pins.sh" "$@"; }
 
 @test "prints the tag's commit, the tarball's SHA-256, and the lines to paste into install.sh, the formula and the README" {
   pins v0.1.0
-  [ "$status" -eq 0 ]
+  [ "$status" -eq 0 ]; [[ "$output" != *"warning:"* ]]
   [ "$(cat "$BATS_TEST_TMPDIR/url")" = https://github.com/b0dea/fortkeep/archive/refs/tags/v0.1.0.tar.gz ]
   [[ "$output" == *"PIN_TAG=\"v0.1.0\""* ]]; [[ "$output" == *"PIN_COMMIT=\"$C\""* ]]
   [[ "$output" == *"url \"https://github.com/b0dea/fortkeep/archive/refs/tags/v0.1.0.tar.gz\""* ]]

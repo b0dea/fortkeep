@@ -11,11 +11,16 @@ fortkeep_is_version "$v" || { echo "usage: ci/release-pins.sh v1.2.3" >&2; exit 
 c="$(fortkeep_git "$FORTKEEP_REPO" rev-parse -q --verify "refs/tags/$v^{commit}")" || stop "no tag $v here: git fetch --tags first"
 tmp="$(mktemp -d)" || stop "could not make a temporary folder"
 trap 'rm -rf "$tmp"' EXIT
-# The same check a new install makes, on a clone made the way install.sh makes it: the tag is the commit, signed by a
-# key in that commit's own signers list, and nothing fortkeep would count as a local change.
+# The same check a new install makes, on a copy made the way install.sh makes it (an empty repo, a fetch, a checkout of
+# the commit): the tag is the commit, signed by a key in that commit's own signers list, and nothing fortkeep would
+# count as a local change.
 mkdir "$tmp/template" || stop "could not make a temporary folder in $tmp"
-git -c core.hooksPath=/dev/null -c advice.detachedHead=false clone --quiet --no-local --template="$tmp/template" \
-  --branch "$v" -- "$FORTKEEP_REPO" "$tmp/clone" || stop "could not clone $v from $FORTKEEP_REPO (git's message is above)"
+g() { git --no-replace-objects -C "$tmp/clone" -c core.fsmonitor= -c core.hooksPath=/dev/null "$@"; }
+git -c init.defaultBranch=main init --quiet --template="$tmp/template" "$tmp/clone" || stop "could not make a git repository in $tmp"
+g remote add origin "$FORTKEEP_REPO" || stop "could not set $FORTKEEP_REPO as where to fetch from"
+g -c remote.origin.uploadpack=git-upload-pack fetch --quiet --tags origin \
+  || stop "could not fetch $v from $FORTKEEP_REPO (git's message is above)"
+g -c advice.detachedHead=false checkout --quiet --detach "$c" || stop "could not check out $c (git's message is above)"
 fortkeep_verify_clone "$tmp/clone" "$v" "$c" || stop "$FORTKEEP_CLONE_PROBLEM, so a new install would refuse it"
 
 url="https://github.com/$FORTKEEP_RELEASE_NAME/archive/refs/tags/$v.tar.gz"
