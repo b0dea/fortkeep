@@ -13,7 +13,9 @@ looks at. In short:
 - **Installed apps and running programs:** names and versions of security tools (`/Applications`,
   `~/Applications`), the system extensions list, and the running processes' names, terminals, ages and working
   folders. GD-RT-03 also lists your own network connections, and reads the process list's command lines only to
-  recognise a hidden node or python loader, never reporting them. Of the open apps' environment, only `PATH` is read.
+  recognise a hidden node or python loader or a reverse SSH tunnel, never reporting them. It reads the start-up files
+  of VS Code, Cursor, Antigravity, GitHub Desktop and Discord that malware patches, and your global git hooks.
+  Of the open apps' environment, only `PATH` is read.
 - **Your start-up and tool configuration:** shell start-up files (`~/.zshrc`, `~/.zprofile`, `~/.zshenv`,
   `~/.zlogin`, `~/.bashrc`, `~/.bash_profile`, `~/.profile`), `~/.gitconfig` and its hooks, the npm, Yarn, pnpm,
   Bun, pip and uv config files, Safe Chain's files in `~/.safe-chain` (and its older `~/.aikido/config.json`),
