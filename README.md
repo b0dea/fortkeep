@@ -164,7 +164,7 @@ context. [controls/baseline-source.md](controls/baseline-source.md) is the full 
 |---|---|
 | macOS | FileVault, firewall with stealth mode, Gatekeeper, automatic updates, sharing off, immediate screen lock, Touch ID for `sudo` |
 | Malicious packages | [Safe Chain](https://github.com/AikidoSec/safe-chain) first on PATH in every shell, apps and the agent's own shell; a minimum package age; pnpm and bun blocking install scripts |
-| Repos and git | editor automatic tasks off; a git hook that scans what a clone or pull brings in; a sweep of the repos and editor extensions already on the Mac |
+| Repos and git | editor automatic tasks off; a git hook that scans what a clone or pull brings in and refuses a push that carries malware; a sweep of the repos and editor extensions already on the Mac |
 | AI coding agents | a guard before every agent command; the agent unable to edit its own controls; a root-owned copy of them; MCP servers pinned |
 | Secrets | SSH keys with a passphrase in a protected agent; no plaintext keys lying around; fine-grained tokens; short-lived cloud sessions; gitleaks before every commit |
 | Runtime | BlockBlock, KnockKnock, an outbound firewall, endpoint protection; new autostart items or listeners since your baseline |
