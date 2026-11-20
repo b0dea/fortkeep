@@ -224,6 +224,20 @@ def marker_hits(lines, patterns):
         return {i: ids for i, ids in hits.items() if set(ids) - set(WEAK_HI)}
     return {i: [n for n in ids if n in keep] for i, ids in hits.items() if keep.intersection(ids)}
 
+LIST_WARN = 'lists payload markers as a search pattern, like a malware scanner (line length %d): check it is one'
+
+def marker_list(line, ids, patterns):
+    """True when two or more different markers on LINE each sit beside a '|', as alternatives in a search pattern (a
+    payload-scan workflow's grep), not as code. Such a line is a WARN to look at, so a payload can't hide this way."""
+    if len(set(ids)) < 2:
+        return False
+    anchors = {n: a for n, _, a in patterns}
+    for n in set(ids):
+        spots = [(m.start(), m.end()) for a in anchors.get(n, []) for m in re.finditer(re.escape(a), line)]
+        if not spots or not all((s and line[s - 1] == '|') or line[e:e + 1] == '|' for s, e in spots):
+            return False
+    return True
+
 def suspicious(text):
     """2 when a part of a large file holds a payload marker, weighed as a file is (so a bundle's _$_ names don't count);
     1 when it names a dead-drop or C2 host, which only code or a wallet beside it makes HIGH; else 0."""
@@ -638,12 +652,15 @@ def scan(top, files, t0, budget, findings, sweep=False, allowed=lambda real: Tru
             continue
         lines = text.splitlines()
         hits = marker_hits(lines, HI) if markers else {}
+        before = len(findings)  # the cap is this file's: findings other files raised never cut its check short
         for i, line in enumerate(lines, 1):
             if i % 10000 == 0 and time.time() - t0 > budget:  # a lockfile can have a million lines
                 return False
             ids = hits.get(i, [])
             drop = drops and not ids and dead_drop(line, wallet)
-            if ids or drop == 'HIGH':
+            if ids and marker_list(line, ids, HI):
+                add('WARN', '%s:%d' % (rel, i), LIST_WARN % len(line))
+            elif ids or drop == 'HIGH':
                 add('HIGH', '%s:%d' % (rel, i), 'payload markers: %s (line length %d)' % (','.join(ids[:3] or ['dead-drop']), len(line)))
             elif drop:
                 add('WARN', '%s:%d' % (rel, i), DROP_WARN % len(line))
@@ -654,7 +671,7 @@ def scan(top, files, t0, budget, findings, sweep=False, allowed=lambda real: Tru
                     add('INFO', '%s:%d' % (rel, i), 'padded gap, short line (%d chars), probably formatting' % len(line))
             elif c2 and C2.search(line):
                 add('HIGH', '%s:%d' % (rel, i), 'references a known PolinRider C2 host, wallet or IP (line length %d)' % len(line))
-            if len(findings) > 40:
+            if len(findings) - before > 40:
                 break
     return time.time() - t0 <= budget  # a large last file can run out the time part way through
 
@@ -819,7 +836,9 @@ def tree_scan(root, t0, budget, findings, allowed):
                 ids = hits.get(i, [])
                 drop = drops and not ids and dead_drop(line, wallet)
                 where = '%s:%d' % (os.path.relpath(path, root), i)
-                if ids or drop == 'HIGH':
+                if ids and marker_list(line, ids, TREE_HI):
+                    findings.append(('WARN', where, LIST_WARN % len(line)))
+                elif ids or drop == 'HIGH':
                     findings.append(('HIGH', where, 'payload markers: %s (line length %d)' % (','.join(ids[:3] or ['dead-drop']), len(line))))
                     break
                 if drop:
