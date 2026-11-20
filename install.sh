@@ -14,8 +14,8 @@
 # Usage: bash install.sh [--tag vX.Y.Z --commit SHA] [--no-link]   Exit: 0 installed, 1 refused, 2 usage.
 
 # Filled in when a release is published: ci/release-pins.sh prints both.
-PIN_TAG="v0.1.2"
-PIN_COMMIT="e05b647162e33c0b8b58b77fb85ad5358205250a"
+PIN_TAG="v0.1.3"
+PIN_COMMIT="52ad983e503f55c03d33aa83f66e0e86b2e22590"
 
 # Where to clone from. Another place (a mirror, the tests) changes nothing about trust: the pinned commit decides.
 URL="${FORTKEEP_INSTALL_URL:-https://github.com/b0dea/fortkeep.git}"

@@ -3,7 +3,7 @@
 What changed in each release, for someone deciding whether to update. Each
 [GitHub release](https://github.com/b0dea/fortkeep/releases) also lists the merged pull requests.
 
-## Unreleased: 0.1.3
+## 0.1.3
 
 - **Your git hook now checks pushes.** The optional BL-RC-02 hook (installed by its fix) scans what you clone, pull,
   check out or rebase, and now also refuses a push that carries malware. `git push --no-verify` still skips it for
