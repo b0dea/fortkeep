@@ -26,6 +26,33 @@ approve() { date +%s > "$FORTKEEP_REPORTS/.approvals/BL-RC-01.$1"; }
   [ ! -e "$FORTKEEP_REPORTS/.approvals/BL-RC-01.apply" ]
   [ "$(jq -r '."task.allowAutomaticTasks" // "unset"' "$U/settings.json")" = unset ]
 }
+@test "a token that vanishes while it is being checked refuses, and never lets the caller's next command run" {
+  # A second run consuming the same token can remove it between the existence test and the mtime read; the DEBUG trap
+  # does that deterministically. bash 3.2 abandons a whole top-level command on an arithmetic error, || exit 4 included.
+  D="$BATS_TEST_TMPDIR/approvals"; mkdir -p "$D"; touch -t 202001010000 "$D/BL-XX-01.apply"
+  cat > "$BATS_TEST_TMPDIR/harness.sh" <<EOF
+. "$REPO/checks/lib/approval.sh"
+req() { fortkeep_take_approval "$D" BL-XX-01 apply || exit 4; }
+set -T; trap '[[ \$BASH_COMMAND == *stat* ]] && /bin/rm -f "$D"/BL-XX-01.apply*' DEBUG
+req
+trap - DEBUG
+echo RAN
+EOF
+  run /usr/bin/env -i /bin/bash -p "$BATS_TEST_TMPDIR/harness.sh"
+  [ "$status" -eq 4 ]; [[ "$output" != *RAN* ]]
+}
+@test "two runs never both pass one fresh token" {
+  D="$BATS_TEST_TMPDIR/approvals"; mkdir -p "$D"; date +%s > "$D/BL-XX-01.apply"
+  cat > "$BATS_TEST_TMPDIR/harness.sh" <<EOF
+. "$REPO/checks/lib/approval.sh"
+# The second consumer runs in full just before the first removes the token.
+set -T; trap '[[ \$BASH_COMMAND == */bin/rm* ]] && [ -z "\$second" ] && { second=1; fortkeep_take_approval "$D" BL-XX-01 apply && echo SECOND; }' DEBUG
+fortkeep_take_approval "$D" BL-XX-01 apply && echo FIRST
+EOF
+  run /usr/bin/env -i /bin/bash -p "$BATS_TEST_TMPDIR/harness.sh"
+  [ "$(grep -c -e FIRST -e SECOND <<<"$output")" -eq 1 ]
+  [ -z "$(ls -A "$D")" ]
+}
 @test "checks the approval before loading any other helper" {
   printf 'touch "%s"\n' "$BATS_TEST_TMPDIR/sourced" > "$T/checks/lib/editors.sh"
   fix apply
