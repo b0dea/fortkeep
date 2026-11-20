@@ -52,6 +52,15 @@ edit() { jq -cn --arg p "$1" --arg w "${2:-$R}" '{tool_name:"Edit", cwd:$w, tool
   run bash -c "jq -cn '{tool_name:\"Edit\",tool_input:{}}' | '$W'"; [ "$status" -eq 0 ]
   run bash -c "printf 'not json' | '$W'"; [ "$status" -eq 2 ]
 }
+@test "a call naming both a file and a notebook is refused; outside a development session so is one naming no file" {
+  run bash -c "jq -cn --arg p '$R/docs/n.ipynb' --arg q '$HOME/n.ipynb' '{tool_name:\"NotebookEdit\",tool_input:{file_path:\$p,notebook_path:\$q}}' | '$W'"
+  [ "$status" -eq 2 ]; [[ "$output" == *"one file"* ]]
+  run bash -c "jq -cn --arg p '$R/docs/n.ipynb' '{tool_name:\"NotebookEdit\",tool_input:{notebook_path:\$p}}' | '$W'"; [ "$status" -eq 0 ]
+  unset FORTKEEP_DEV
+  for i in '{}' '{"file_path":""}' '{"command":""}' '{"content":"x"}'; do
+    run bash -c "jq -cn --argjson i '$i' '{tool_name:\"Edit\",tool_input:\$i}' | '$W'"; [ "$status" -eq 2 ]
+  done
+}
 patch() {  # an apply_patch call (Codex sends it this way; the OpenCode plugin passes patchText the same way)
   jq -cn --arg p "$1" --arg w "${2:-$R}" '{tool_name:"apply_patch", cwd:$w, tool_input:{command:$p}}' | "$W"
 }

@@ -36,7 +36,8 @@ never reach a hook; `.codex/config.toml` turns the web search off.
 - Writes (`write-guard.sh`): only this project's scratch folder and the plan folder, never memory, whose notes later
   sessions load as instructions. Nothing in the repo,
   `reports/` included: `checks/configure.sh` saves settings and `checks/run.sh` writes results. A patch is read the way
-  Codex and OpenCode read it (headers trimmed of any Unicode space); a header it doesn't know is refused.
+  Codex and OpenCode read it (headers trimmed of any Unicode space); a header it doesn't know is refused. A call that
+  names no file it writes, or names both a file and a notebook, is refused.
 - Any other tool is refused, except the ones that touch no file and run no command: the question tool, the todo
   tools, `skill`, plan mode, Claude Code's `ToolSearch`, and Codex's plan and input tools. Web fetch and search are
   refused too: a URL or query could carry what the agent read off this Mac. The

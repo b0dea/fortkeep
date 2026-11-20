@@ -333,6 +333,13 @@ EOF
   allowed call Bash '{"command":"ls"}'
   refused call Bash '{"cmd":"sudo id","command":"ls"}'
 }
+@test "a write names one file: both a file and a notebook, or no file at all, is refused" {
+  refused call NotebookEdit "$(jq -cn --arg a "$SCR/a.ipynb" --arg b "$HOME/b.ipynb" '{file_path:$a, notebook_path:$b, new_source:"x"}')"
+  refused call Edit '{"old_string":"a","new_string":"b"}'
+  refused call Write '{"file_path":"","content":"x"}'
+  refused call apply_patch '{"command":""}'
+  allowed call NotebookEdit "$(jq -cn --arg a "$SCR/a.ipynb" '{notebook_path:$a, new_source:"x"}')"
+}
 @test "the guard fails closed on unreadable input" {
   run bash -c "printf 'not json' | '$G'"; [ "$status" -eq 2 ]
   run bash -c "printf '' | '$G'"; [ "$status" -eq 2 ]
