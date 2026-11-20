@@ -102,9 +102,11 @@ fortkeep_realpath() {  # PATH... — each one's physical path, symlinks resolved
 fortkeep_timeout() {  # SECONDS CMD... — CMD's exit code; 142 if CMD overruns, 128+N if signal N stopped it
   # KILL, as an interactive zsh ignores TERM; also after a normal exit, so a background job can't hold the output.
   # 142 is only ever our own timeout: a CMD that an outside ALRM stopped gives 255.
-  perl -e '
+  # A new session, not just a new group: run from a terminal, an interactive zsh in a background group of it is
+  # stopped when it takes the terminal for job control. With no terminal at all, it runs as it does from launchd.
+  perl -MPOSIX -e '
     my $t = shift; my $pid = fork; die "fork failed\n" unless defined $pid;
-    if ($pid == 0) { setpgrp(0, 0); exec @ARGV or exit 127 }
+    if ($pid == 0) { POSIX::setsid(); exec @ARGV or exit 127 }
     # STOP first: a group KILL reaches members one by one, and a shell whose child died first could run on.
     local $SIG{ALRM} = sub { kill "STOP", -$pid; kill "KILL", $pid, -$pid; exit 142 };
     alarm $t; waitpid($pid, 0); my $st = $?; alarm 0; kill "STOP", -$pid; kill "KILL", -$pid;
