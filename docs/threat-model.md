@@ -39,7 +39,8 @@ commands on one line, and characters beyond ASCII (except letters inside quotes 
 **Read tools** work only inside the fortkeep folder and the agent's own folders for this project (its scratch folder
 and Claude Code's project folder, with memory and saved tool output). They never read `private-paths`,
 `reports/.approvals`, `.git`, a file named as a secret (`.env`, `.env.*`, `*.pem`, `*.key`, `id_*`, but not `*.example`)
-or a file's named fork (`FILE/..namedfork/...`), and a search may not start at a folder that holds any of them.
+or a file's named fork (`FILE/..namedfork/...`), and a search may not start at a folder that holds any of them. A
+search pattern with braces (`{a,b}`) is refused, since an alternative could name a folder outside the one checked.
 Private folders are outside the fortkeep folder, so read tools can't reach them at all: there is no name comparison
 left to fool. The Artifact tool may publish only files the read tools may read.
 A guard that stops with any status but 0 or 2 (a crash, or a library that stops it) blocks the call: the agents go

@@ -130,6 +130,11 @@ shell() {
   block "in a person's session the agent runs only fortkeep's own scripts, one per command, from this repo's folder and spelled as the skills write them (the list is .claude/hooks/allow-list)"
 }
 
+no_braces() {  # TEXT — the check cuts a pattern at its first glob character, so a brace alternative ({/elsewhere,x})
+  # would go unchecked
+  case "$1" in *[{}]*) block "a pattern or folder with braces ({a,b}) is refused in a person's session: search each one on its own" ;; esac
+}
+
 search() {  # Grep and Glob: the folder they search
   local p base pat
   case "$tool" in
@@ -137,10 +142,12 @@ search() {  # Grep and Glob: the folder they search
       p="$(jq -r '.tool_input.path // empty' <<<"$input")"
       [ -n "$p" ] || p="${cwd:-$REPO}"
       ascii "$p" || block "non-ASCII characters are refused in a person's session"
+      no_braces "$(jq -r '.tool_input.glob // empty | tostring' <<<"$input")"
       if [ -f "$(printf '%s\n' "$p" | CWD="${cwd:-$REPO}" perl "$HOOKS/resolve-paths.pl" exact)" ]; then read_ok "$p" file; else read_ok "$p" root; fi ;;
     Glob)
       pat="$(jq -r '.tool_input.pattern // ""' <<<"$input")"; p="$(jq -r '.tool_input.path // empty' <<<"$input")"
       ascii "$pat$p" || block "non-ASCII characters are refused in a person's session"
+      no_braces "$pat$p"
       case "$pat" in *..*) block "a pattern may not climb out of its folder" ;; esac
       base="$(printf '%s\n' "${p:-${cwd:-$REPO}}" | CWD="${cwd:-$REPO}" perl "$HOOKS/resolve-paths.pl" exact)"
       read_ok "$(printf '%s\n' "$pat" | CWD="$base" perl "$HOOKS/resolve-paths.pl" lines)" root ;;

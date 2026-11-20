@@ -27,7 +27,8 @@ never reach a hook; `.codex/config.toml` turns the web search off.
   other.
 - Read, Grep and Glob: physical paths inside this checkout, never `private-paths`, `reports/.approvals` or `.git`, plus
   this project's own scratch folder and Claude Code project folder (memory, saved tool output). A search may not start
-  at a folder that holds any of those. Codex has no read tool, so `checks/show.sh <path>` prints a file under the
+  at a folder that holds any of those, and a Glob pattern or folder, or a Grep file filter, may not hold braces
+  (`{a,b}`): each alternative would need its own check. Codex has no read tool, so `checks/show.sh <path>` prints a file under the
   same rule. The Artifact tool may publish only files these rules let it read.
 - Writes (`write-guard.sh`): only this project's scratch folder and the plan folder, never memory, whose notes later
   sessions load as instructions. Nothing in the repo,

@@ -221,6 +221,17 @@ refused() { run "$@"; [ "$status" -eq 2 ] || { echo "allowed: $*"; return 1; }; 
   refused call Glob '{"pattern":"/Users/*"}'
   refused call Grep '{"pattern":"x","path":"teach"}' "$HOME"
 }
+@test "a Glob pattern or folder with braces is refused: its alternatives would each need their own check" {
+  P="$BATS_TEST_TMPDIR/fk-private"; mkdir -p "$P"; printf '%s\n' "$P" > "$FORTKEEP_PRIVATE_PATHS"
+  refused call Glob "$(jq -cn --arg p "$BATS_TEST_TMPDIR" '{pattern:"{\($p),zz}/*", path:"teach"}')"
+  refused call Glob "$(jq -cn --arg p "$BATS_TEST_TMPDIR/fk-pri" '{pattern:"{\($p),zz}vate/*", path:"teach"}')"
+  refused call Glob '{"pattern":"*.{md,txt}","path":"teach"}'
+  refused call Glob '{"pattern":"}*.md","path":"teach"}'
+  refused call Glob '{"pattern":"*.md","path":"te{ach,st}"}'
+  refused call Grep "$(jq -cn --arg p "$BATS_TEST_TMPDIR" '{pattern:"x", path:"teach", glob:"{\($p),zz}/*"}')"
+  allowed call Grep '{"pattern":"x","path":"teach","glob":"*.md"}'
+  allowed call Glob '{"pattern":"**/*.md","path":"teach"}'
+}
 @test "the shell runs one fortkeep script per command: no other program, operator, expansion or quoting trick" {
   for c in 'ls' 'cat controls/controls.json' 'git status' 'jq -r .teach reports/config.json' 'id -F' \
     'checks/run.sh; ls' 'checks/run.sh && ls' 'checks/run.sh | cat' 'checks/run.sh > reports/x' 'checks/run.sh 2>&1' \
