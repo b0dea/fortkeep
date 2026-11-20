@@ -56,6 +56,8 @@ read_ok() {  # PATH file|root — refuses unless a person's session may read PAT
   ascii "$1" || block "non-ASCII characters are refused in a person's session"
   repo="$(real "$REPO")" || block "guard could not find this repo"
   t="$(real "$1")" || block "guard could not resolve $1"
+  # macOS serves a file's forks at FILE/..namedfork/data and /rsrc: a name that no rule below sees as the file's own.
+  case "$t/" in */..namedfork/*) block "a file's named fork (..namedfork) is never read: read the file itself" ;; esac
   under "$t" "$(agent_dirs read)" && return 0
   case "$t/" in "$repo/"*) ;; *) block "in a person's session the agent reads only this repo's files and its own folders" ;; esac
   rel="${t#"$repo"}"; rel="${rel#/}"
@@ -70,6 +72,22 @@ read_ok() {  # PATH file|root — refuses unless a person's session may read PAT
       case "$f/" in "$rel/"*) block "that folder holds private-paths, the approval tokens or .git: search a folder inside it" ;; esac
     fi
   done
+  # A search reads every file below its root, so the root may not hold one of those secret names at any depth either.
+  if [ "$2" = root ] && [ -d "$t" ]; then
+    f="$(find "$t" \( -iname .git -o -iname node_modules \) -prune -o ! -type d \( -iname .env -o -iname '.env.*' \
+      -o -iname '*.pem' -o -iname '*.key' -o -iname 'id_*' \) ! -iname '*.example' -print -quit 2>/dev/null)" \
+      || block "guard could not look through $1 for files that may hold a secret"
+    [ -z "$f" ] || block "that folder holds a file that may hold a secret (.env, a key), which is never read in a person's session: search a folder without them"
+  fi
+}
+
+fail_closed() {  # a guard that stops with any status but 0 or 2 blocks the call: the agents go ahead on any other
+  # status, so a guard that crashed, or a library that stopped it (common.sh's status 4), would let the call through
+  trap closed_exit EXIT
+}
+closed_exit() {
+  local rc=$?
+  case "$rc" in 0|2) ;; *) echo "Blocked by fortkeep: the guard stopped unexpectedly (status $rc), so the call is refused" >&2; exit 2 ;; esac
 }
 
 under() {  # PATH FOLDERS — true when the physical PATH is inside one of FOLDERS (lines ending in /)

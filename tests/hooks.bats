@@ -70,6 +70,19 @@ read_call() { jq -cn --arg p "$1" '{tool_name:"Read", tool_input:{file_path:$p}}
   run bash -c "printf 'not json' | '$H/bash-guard.sh'"; [ "$status" -eq 2 ]
   run bash -c "printf 'not json' | '$H/private-guard.sh'"; [ "$status" -eq 2 ]
 }
+@test "a guard that stops on an unexpected status blocks the call: agents go ahead on any status but 2" {
+  # Codex's read-only sandbox: no here-document can be written, so common.sh stops with status 4.
+  printf '%s' '{"tool_name":"Read","tool_input":{"file_path":"README.md"}}' > "$BATS_TEST_TMPDIR/in.json"
+  run sandbox-exec -p '(version 1)(allow default)(deny file-write*)(allow file-write* (literal "/dev/null"))' \
+    "$H/private-guard.sh" < "$BATS_TEST_TMPDIR/in.json"
+  [ "$status" -eq 2 ]; [[ "$output" == *"Blocked by fortkeep"* ]]
+  # guard.sh passes a sub-guard's status on: a 4 from it must block too.
+  T="$BATS_TEST_TMPDIR/t"; mkdir -p "$T/.claude/hooks" "$T/checks/lib"
+  cp "$H/guard.sh" "$H/lib.sh" "$H/resolve-paths.pl" "$T/.claude/hooks/"; cp "$REPO/checks/lib/mode.sh" "$T/checks/lib/"
+  printf '#!/bin/bash\nexit 4\n' > "$T/.claude/hooks/private-guard.sh"; chmod +x "$T/.claude/hooks/private-guard.sh"
+  run "$T/.claude/hooks/guard.sh" < "$BATS_TEST_TMPDIR/in.json"
+  [ "$status" -eq 2 ]; [[ "$output" == *"Blocked by fortkeep"* ]]
+}
 @test "bash-guard blocks touching approval tokens or private-paths" {
   run bash_call "touch reports/.approvals/BL-RC-01.apply"; [ "$status" -eq 2 ]
   run bash_call "cat private-paths"; [ "$status" -eq 2 ]

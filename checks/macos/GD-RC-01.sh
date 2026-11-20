@@ -105,7 +105,7 @@ while IFS= read -r -d '' r; do
 done < <(printf '%s\0' ${repos[@]+"${repos[@]}"} | sort -zu)
 while IFS= read -r p; do
   [ -n "$p" ] || continue
-  priv+=(--private "$p"); r="$(cd "$p" 2>/dev/null && pwd -P)" && [ "$r" != "$p" ] && priv+=(--private "$r")
+  priv+=(--private "$p"); r="$(fortkeep_physical "$p")" && [ "$r" != "$p" ] && priv+=(--private "$r")
 done <<EOF
 $(fortkeep_private_list)
 EOF

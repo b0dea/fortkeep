@@ -8,6 +8,7 @@
 set -o pipefail
 # shellcheck source=.claude/hooks/lib.sh
 . "$(dirname "$0")/lib.sh"
+fail_closed
 input="$(cat)"
 [ -n "$input" ] || block "guard could not read the request"
 tool="$(jq -r '.tool_name // "" | strings' <<<"$input")" || block "guard could not read the request"

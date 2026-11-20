@@ -185,6 +185,28 @@ refused() { run "$@"; [ "$status" -eq 2 ] || { echo "allowed: $*"; return 1; }; 
   run "$REPO/checks/show.sh" .env; [ "$status" -eq 2 ]; [[ "$output" == *"Blocked by fortkeep"* ]]
   allowed read_ accepted.example.json
 }
+@test "a file's named fork (..namedfork, which macOS serves its data and resource fork at) is never read" {
+  for p in .env/..namedfork/data .ENV/..NamedFork/data controls/controls.json/..namedfork/data teach/..NAMEDFORK/rsrc; do
+    refused read_ "$p"
+  done
+  refused call Grep '{"pattern":"TOKEN","path":".env/..namedfork/data"}'
+}
+@test "a search rooted at a folder holding a file that may hold a secret (.env, a key) is refused, at any depth" {
+  P="$BATS_TEST_TMPDIR/proj"; mkdir -p "$P/docs/a/b" "$P/clean/.git" "$P/clean/node_modules/m" "$P/samples/.env"
+  ln -s "$REPO/checks" "$P/checks"; export CLAUDE_PROJECT_DIR="$P"
+  : > "$P/clean/a.md"; : > "$P/clean/.env.example"; : > "$P/clean/.git/id_rsa"; : > "$P/clean/node_modules/m/k.pem"
+  : > "$P/samples/.env/notes.md"  # a folder named .env (a Python virtualenv) is no secret file
+  for f in .env .ENV.local tls.PEM server.key id_ed25519; do
+    : > "$P/docs/a/b/$f"
+    run call Grep '{"pattern":"x","path":"docs"}' "$P"
+    [ "$status" -eq 2 ] && [[ "$output" == *"search a folder without them"* ]] || { echo "allowed with $f: $output"; return 1; }
+    refused call Glob '{"pattern":"**/*.md","path":"docs"}' "$P"
+    rm "$P/docs/a/b/$f"
+  done
+  allowed call Grep '{"pattern":"x","path":"docs"}' "$P"
+  allowed call Grep '{"pattern":"x","path":"clean"}' "$P"
+  allowed call Grep '{"pattern":"x","path":"samples"}' "$P"
+}
 @test "a search may not reach private-paths, approvals or .git: the checkout and reports/ are not search roots" {
   allowed call Grep '{"pattern":"x","path":"controls"}'
   allowed call Grep '{"pattern":"x","path":"teach/BL-RC-01.md"}'
