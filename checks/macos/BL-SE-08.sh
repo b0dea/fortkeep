@@ -3,7 +3,13 @@
 . "$(dirname "$0")/../lib/agents.sh"
 ID=BL-SE-08
 case "$(tmutil destinationinfo 2>&1)" in *"No destinations configured"*|'') fortkeep_result "$ID" NA "Time Machine is not set up"; exit 0 ;; esac
-targets="$(fortkeep_claude_dirs | sed 's#$#/projects#')"$'\n'"$HOME/.codex/sessions"$'\n'"$HOME/.local/share/opencode"
+targets="$(fortkeep_claude_dirs | sed 's#$#/projects#')"
+# fortkeep_claude_dirs already leaves private folders out; Time Machine is never asked about a private one either.
+skipped=""; fortkeep_claude_private_skipped && skipped=1
+for t in "$HOME/.codex/sessions" "$HOME/.local/share/opencode"; do
+  if fortkeep_is_private "$t"; then skipped=1; else targets="$targets"$'\n'"$t"; fi
+done
+note() { local n="$1"; [ -z "$skipped" ] || n="$n (a private folder was excluded)"; printf '%s' "${n# }"; }
 total=0; inc=""; err=""
 while IFS= read -r t; do
   [ -n "$t" ] && [ -d "$t" ] || continue
@@ -20,8 +26,8 @@ while IFS= read -r t; do
 done <<EOT
 $targets
 EOT
-if [ "$total" -eq 0 ] && fortkeep_claude_private_skipped; then fortkeep_claude_excluded_error "$ID"
+if [ "$total" -eq 0 ] && [ -n "$skipped" ]; then fortkeep_result "$ID" ERROR "Could not check every agent transcript folder" "a private folder was excluded"
 elif [ "$total" -eq 0 ]; then fortkeep_result "$ID" NA "No AI-agent transcript folders"
-elif [ -n "$inc" ]; then fortkeep_result "$ID" FAIL "Agent transcripts are backed up by Time Machine" "$(fortkeep_claude_note "Included:$inc")"
-elif [ -n "$err" ]; then fortkeep_result "$ID" ERROR "Could not ask Time Machine about:$err" "$(fortkeep_claude_note "tmutil isexcluded failed")"
-else fortkeep_result "$ID" PASS "All $total agent transcript folders are excluded from Time Machine" "$(fortkeep_claude_note "")"; fi
+elif [ -n "$inc" ]; then fortkeep_result "$ID" FAIL "Agent transcripts are backed up by Time Machine" "$(note "Included:$inc")"
+elif [ -n "$err" ]; then fortkeep_result "$ID" ERROR "Could not ask Time Machine about:$err" "$(note "tmutil isexcluded failed")"
+else fortkeep_result "$ID" PASS "All $total agent transcript folders are excluded from Time Machine" "$(note "")"; fi

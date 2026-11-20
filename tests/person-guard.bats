@@ -149,16 +149,30 @@ refused() { run "$@"; [ "$status" -eq 2 ] || { echo "allowed: $*"; return 1; }; 
   refused sh_ "fixes/macos/BL-RC-01.sh 'apply|undo'"
   refused sh_ "checks/overlays.sh 'new|list'"
 }
-@test "the Artifact tool publishes only a file the read tools may read; plan mode can be left" {
-  allowed call Artifact '{"file_path":"reports/latest/posture-summary.html","icon":"shield"}'
-  allowed call Artifact '{"action":"list"}'
-  refused call Artifact "$(jq -cn --arg p "$HOME/.ssh/id_ed25519" '{file_path:$p}')"
-  refused call Artifact '{"file_path":"private-paths"}'
-  refused call Artifact '{"file_paths":["reports/x.png","/etc/hosts"],"asset":true,"url":"https://claude.ai/artifact/x"}'
-  refused call Artifact '{"file_path":"reports/a.html","files":{"x.css":"/etc/hosts"}}'
-  refused call Artifact '{"file_path":"reports/a.html","files":{"x.css":{"from":"../x"}}}'
-  refused call Artifact '{"file_path":"a.html","files":{"x.css":"b.css"},"root":"/Users"}'
-  refused call Artifact '{"action":"read","url":"https://claude.ai/artifact/x","path":"a","out_dir":"checks"}'
+@test "the Artifact tool only publishes the summary page, as a new page; plan mode can be left" {
+  S=reports/latest/posture-summary.html
+  allowed call Artifact "$(jq -cn --arg p "$S" '{file_path:$p, title:"Posture Summary (self-reported)", icon:"shield", description:"x"}')"
+  allowed call Artifact "$(jq -cn --arg p "$REPO/$S" '{action:"publish", file_path:$p}')"
+  allowed write_ "$SCR/p.html"
+  U=https://claude.ai/artifact/x
+  for i in '{"action":"list"}' "{\"action\":\"read\",\"url\":\"$U\"}" "{\"action\":\"open\",\"url\":\"$U\"}" \
+    "{\"action\":\"delete\",\"url\":\"$U\"}" '{"action":"quickstart","intent":"other"}' '{}' \
+    "{\"action\":\"pin\",\"file_path\":\"$S\"}" '{"file_path":"reports/latest/results.json"}' \
+    '{"file_path":"reports/latest/posture-summary.md"}' "$(jq -cn --arg p "$SCR/p.html" '{file_path:$p}')" \
+    "{\"file_path\":\"$S\",\"url\":\"$U\"}" "{\"file_path\":\"$S\",\"capabilities\":{}}" \
+    "{\"file_path\":\"$S\",\"files\":{\"x.json\":\"reports/latest/results.json\"}}" \
+    "{\"file_paths\":[\"$S\"],\"asset\":true,\"url\":\"$U\"}" "{\"file_path\":\"$S\",\"from_url\":\"$U\",\"asset_ids\":[\"0\"]}" \
+    "{\"file_path\":\"$S\",\"type_url\":\"$U\"}" "{\"file_path\":\"$S\",\"title\":{\"x\":1}}" \
+    "$(jq -cn --arg p "$HOME/.ssh/id_ed25519" '{file_path:$p}')" '{"file_path":"private-paths"}' \
+    '{"file_path":"a.html","files":{"x.css":"b.css"},"root":"/Users"}' \
+    "{\"action\":\"read\",\"url\":\"$U\",\"path\":\"a\",\"out_dir\":\"checks\"}"; do
+    refused call Artifact "$i"
+  done
+  # Compared physically: the run folder reports/latest points to is the same page; an older run's isn't.
+  P="$BATS_TEST_TMPDIR/proj"; mkdir -p "$P/reports/20260102T000000Z" "$P/reports/20260101T000000Z"
+  ln -s 20260102T000000Z "$P/reports/latest"; ln -s "$REPO/checks" "$P/checks"; export CLAUDE_PROJECT_DIR="$P"
+  allowed call Artifact '{"file_path":"reports/20260102T000000Z/posture-summary.html"}' "$P"
+  refused call Artifact '{"file_path":"reports/20260101T000000Z/posture-summary.html"}' "$P"
   allowed call ExitPlanMode '{}'
   allowed call EnterPlanMode '{}'
 }
@@ -220,6 +234,17 @@ refused() { run "$@"; [ "$status" -eq 2 ] || { echo "allowed: $*"; return 1; }; 
   refused call Glob '{"pattern":"{..,x}/*","path":"teach"}'
   refused call Glob '{"pattern":"/Users/*"}'
   refused call Grep '{"pattern":"x","path":"teach"}' "$HOME"
+}
+@test "a Glob pattern or folder with braces is refused: its alternatives would each need their own check" {
+  P="$BATS_TEST_TMPDIR/fk-private"; mkdir -p "$P"; printf '%s\n' "$P" > "$FORTKEEP_PRIVATE_PATHS"
+  refused call Glob "$(jq -cn --arg p "$BATS_TEST_TMPDIR" '{pattern:"{\($p),zz}/*", path:"teach"}')"
+  refused call Glob "$(jq -cn --arg p "$BATS_TEST_TMPDIR/fk-pri" '{pattern:"{\($p),zz}vate/*", path:"teach"}')"
+  refused call Glob '{"pattern":"*.{md,txt}","path":"teach"}'
+  refused call Glob '{"pattern":"}*.md","path":"teach"}'
+  refused call Glob '{"pattern":"*.md","path":"te{ach,st}"}'
+  refused call Grep "$(jq -cn --arg p "$BATS_TEST_TMPDIR" '{pattern:"x", path:"teach", glob:"{\($p),zz}/*"}')"
+  allowed call Grep '{"pattern":"x","path":"teach","glob":"*.md"}'
+  allowed call Glob '{"pattern":"**/*.md","path":"teach"}'
 }
 @test "the shell runs one fortkeep script per command: no other program, operator, expansion or quoting trick" {
   for c in 'ls' 'cat controls/controls.json' 'git status' 'jq -r .teach reports/config.json' 'id -F' \
@@ -285,6 +310,35 @@ EOF
   refused call Bash '{"command":["bash","-lc","ls"]}'
   refused call Bash '{"command":["bash","reports/s.sh"]}'
   refused call Bash '{"command":["checks/run.sh","--only","$(x)"]}'
+}
+@test "a question that arrives with its answers already filled in is refused, in either session: only the person answers" {
+  q='{"question":"Accept BL-RC-01?","header":"Accept","multiSelect":false,"options":[{"label":"Accept BL-RC-01","description":"a"},{"label":"Keep it as a FAIL","description":"b"}]}'
+  allowed call AskUserQuestion "$(jq -cn --argjson q "$q" '{questions:[$q]}')"
+  for m in default bypassPermissions auto; do
+    refused call AskUserQuestion "$(jq -cn --argjson q "$q" '{questions:[$q], answers:{($q.question):"Accept BL-RC-01"}}')" "$REPO" "$m"
+  done
+  refused call AskUserQuestion "$(jq -cn --argjson q "$q" '{questions:[$q], answers:{}}')"
+  refused call AskUserQuestion '"not an object"'
+  export FORTKEEP_DEV=1
+  allowed call AskUserQuestion "$(jq -cn --argjson q "$q" '{questions:[$q]}')"
+  refused call AskUserQuestion "$(jq -cn --argjson q "$q" '{questions:[$q], answers:{($q.question):"Accept BL-RC-01"}}')"
+}
+@test "a shell call that names its command twice, as command and cmd, is refused in either session" {
+  allowed call Bash '{"cmd":"checks/run.sh"}'
+  refused call Bash '{"cmd":"touch /tmp/fk-canary","command":"checks/run.sh"}'
+  refused call Bash '{"cmd":"checks/run.sh","command":"checks/run.sh"}'
+  refused call Bash '{"cmd":["bash","-lc","ls"],"command":["checks/run.sh"]}'
+  refused call Bash '{"cmd":"ls","command":null}'
+  export FORTKEEP_DEV=1
+  allowed call Bash '{"command":"ls"}'
+  refused call Bash '{"cmd":"sudo id","command":"ls"}'
+}
+@test "a write names one file: both a file and a notebook, or no file at all, is refused" {
+  refused call NotebookEdit "$(jq -cn --arg a "$SCR/a.ipynb" --arg b "$HOME/b.ipynb" '{file_path:$a, notebook_path:$b, new_source:"x"}')"
+  refused call Edit '{"old_string":"a","new_string":"b"}'
+  refused call Write '{"file_path":"","content":"x"}'
+  refused call apply_patch '{"command":""}'
+  allowed call NotebookEdit "$(jq -cn --arg a "$SCR/a.ipynb" '{notebook_path:$a, new_source:"x"}')"
 }
 @test "the guard fails closed on unreadable input" {
   run bash -c "printf 'not json' | '$G'"; [ "$status" -eq 2 ]

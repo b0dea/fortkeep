@@ -5,7 +5,9 @@
 . "$(dirname "$0")/lib.sh"
 input="$(cat)"
 [ -n "$input" ] || block "guard could not read the request"
-cmd="$(printf '%s' "$input" | jq -r '.tool_input.command // ""')" || block "guard could not read the request"
+# Codex may name it cmd, or send a list of words: those are checked joined.
+cmd="$(printf '%s' "$input" | jq -r '.tool_input.command // .tool_input.cmd // "" | if type == "array" then join(" ") else . end')" \
+  || block "guard could not read the request"
 # APFS opens a look-alike letter (U+017F long s, the Kelvin sign) as the letter it folds to, so a command with
 # non-ASCII text is also checked folded as APFS compares names; either form can refuse it.
 if ! printf '%s' "$cmd" | LC_ALL=C perl -0777 -ne 'exit(/[^\x00-\x7f]/ ? 1 : 0)'; then

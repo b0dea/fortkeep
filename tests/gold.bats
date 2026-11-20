@@ -618,3 +618,9 @@ sweep() { FORTKEEP_WEEKLY_RUN=1 chk GD-RC-01; }  # the weekly run: always sweeps
   FORTKEEP_USER_PATH="$BATS_TEST_TMPDIR/user-bin:/usr/bin:/bin" sweep
   [ "$(field status)" = FAIL ]; [[ "$(field note)" == *"/pkg/npm/lib/cli.js:lib/cli.js (npm's cli.js is 5000 bytes"* ]]
 }
+@test "GD-GT-01 never looks for a signing key inside a private folder, and says one was excluded" {
+  printf 'export PATH="%s:/usr/bin:/bin:/usr/sbin:/sbin"\n' "$BATS_TEST_TMPDIR/bin" > "$HOME/.zlogin"
+  mkdir -p "$HOME/keys"; echo "$HOME/keys" > "$FORTKEEP_PRIVATE_PATHS"
+  git config --global gpg.format ssh; git config --global user.signingkey "~/keys/absent.pub"; git config --global commit.gpgsign true
+  chk GD-GT-01; [ "$(field status)" = PASS ]; [[ "$(field note)" == *"a private folder was excluded"* ]]; [[ "$output" != *keys* ]]
+}

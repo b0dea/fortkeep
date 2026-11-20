@@ -220,13 +220,22 @@ said_private() { mkdir -p "$T/reports/.approvals"; printf '%s\n' "$1" > "$T/repo
   [ "$output" = "1 private path(s) configured" ]
 }
 
-@test "private.sh remove takes an entry off without printing it" {
+@test "private.sh remove takes an entry off without printing it, and only for the person in a terminal app" {
   said_private "$HOME/One"; "$T/checks/private.sh" add "$HOME/One" >/dev/null
   said_private "$HOME/Two"; "$T/checks/private.sh" add "~/Two/" >/dev/null
-  run "$T/checks/private.sh" remove "~/One/"
+  run "$T/checks/private.sh" remove "~/One/"; [ "$status" -eq 4 ]; [[ "$output" == *"run this yourself"* ]]
+  [ "$(grep -c . "$FORTKEEP_PRIVATE_PATHS")" -eq 2 ]
+  # The real script hard-codes /bin/ps; this test copy asks the fake one (a Terminal above this shell), on a pseudo-terminal.
+  fake_ps
+  sed -i '' "s#fortkeep_require_person /bin/ps#fortkeep_require_person $BATS_TEST_TMPDIR/bin/fakeps#" "$T/checks/private.sh"
+  grep -q fakeps "$T/checks/private.sh"
+  remove() { run script -q /dev/null "$T/checks/private.sh" remove "$1" </dev/null; }
+  FAKE_COMM=claude remove "~/One/"; [ "$status" -eq 4 ]
+  [ "$(grep -c . "$FORTKEEP_PRIVATE_PATHS")" -eq 2 ]
+  remove "~/One/"
   [ "$status" -eq 0 ]; [[ "$output" == *"removed 1 private path(s) (1 total)"* ]]; [[ "$output" != *One* ]]
-  run "$T/checks/private.sh" remove "$HOME/Two"; [ "$status" -eq 0 ]
-  run "$T/checks/private.sh" remove "$HOME/Three"; [ "$status" -eq 1 ]; [[ "$output" != *Three* ]]
+  remove "$HOME/Two"; [ "$status" -eq 0 ]
+  remove "$HOME/Three"; [ "$status" -eq 1 ]; [[ "$output" != *Three* ]]
   [ "$(stat -f %Lp "$FORTKEEP_PRIVATE_PATHS")" = 600 ]
 }
 

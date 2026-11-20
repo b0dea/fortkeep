@@ -22,15 +22,22 @@ never reach a hook; `.codex/config.toml` turns the web search off.
   spelling the skills use. The list is `.claude/hooks/allow-list`. Any other program, a pipe, redirection, variable,
   substitution, glob, newline or backslash is refused, and so is a character beyond ASCII, except letters and
   punctuation inside quotes in a name or reason. A fix is also refused while the agent is in bypass, auto or
-  accept-edits mode, where it would run without the person's prompt.
+  accept-edits mode, where it would run without the person's prompt. A call that names its command twice, as
+  `command` and Codex's `cmd`, is refused in either session: the guards would check one and the agent might run the
+  other.
 - Read, Grep and Glob: physical paths inside this checkout, never `private-paths`, `reports/.approvals` or `.git`, plus
   this project's own scratch folder and Claude Code project folder (memory, saved tool output). A search may not start
-  at a folder that holds any of those. Codex has no read tool, so `checks/show.sh <path>` prints a file under the
-  same rule. The Artifact tool may publish only files these rules let it read.
+  at a folder that holds any of those, and a Glob pattern or folder, or a Grep file filter, may not hold braces
+  (`{a,b}`): each alternative would need its own check. Codex has no read tool, so `checks/show.sh <path>` prints a file under the
+  same rule.
+- Artifact: only `/summary` publishing `reports/latest/posture-summary.html` (compared as a physical path) as a new
+  page, with at most a title, description and icon. Any other file or action, an existing page's `url`, extra files,
+  assets or capabilities are refused: a page could carry what the agent read off this Mac.
 - Writes (`write-guard.sh`): only this project's scratch folder and the plan folder, never memory, whose notes later
   sessions load as instructions. Nothing in the repo,
   `reports/` included: `checks/configure.sh` saves settings and `checks/run.sh` writes results. A patch is read the way
-  Codex and OpenCode read it (headers trimmed of any Unicode space); a header it doesn't know is refused.
+  Codex and OpenCode read it (headers trimmed of any Unicode space); a header it doesn't know is refused. A call that
+  names no file it writes, or names both a file and a notebook, is refused.
 - Any other tool is refused, except the ones that touch no file and run no command: the question tool, the todo
   tools, `skill`, plan mode, Claude Code's `ToolSearch`, and Codex's plan and input tools. Web fetch and search are
   refused too: a URL or query could carry what the agent read off this Mac. The
@@ -58,7 +65,8 @@ The others:
 - `approval-recorder.sh`: turns the person's `Apply <ID>`, `Undo <ID>`, `Accept <ID>` or `Add private folder` into a
   one-use token under `reports/.approvals`, only when it is the answer to exactly the question `checks/ask.sh` prints
   for it, and never when another agent started this one (`codex exec`, `claude -p` or `opencode run` inside a
-  session). A fix script, `checks/accept.sh` or `checks/private.sh add` refuses to run without a fresh token; a
+  session). `guard.sh` refuses, in either session, a question that arrives with its answers already filled in: only
+  the model could have written them. A fix script, `checks/accept.sh` or `checks/private.sh add` refuses to run without a fresh token; a
   private-folder token holds the folder its question named, and adds only that one; an accept token holds the reason
 its question named, and `checks/accept.sh` records only that reason. The
   token is a guard against mistakes, not a wall: it is a file the person's own account can write. What stops an

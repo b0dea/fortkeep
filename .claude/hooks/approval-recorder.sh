@@ -71,4 +71,24 @@ jq -r --arg re "$RE" --arg typed "$TYPED" "$ANSWERS" 2>/dev/null <<<"$input" | w
   elif [ "$act" = accept ]; then printf '%s\n' "$reason" > "$REPO/reports/.approvals/$id.$act"
   else date +%s > "$REPO/reports/.approvals/$id.$act"; fi
 done
+# A no to the canonical question for an action withdraws any token still waiting for it: the person changed their mind.
+# One line per such answer: the index of its question, its header (the control's ID, or Private), then the answer.
+NO='(.tool_response.answers // {}) as $a
+  | (.tool_input.questions // []) | to_entries[]
+  | .key as $i | (.value.header // "") as $h | ($a[.value.question // ""] // empty)
+  | select(type == "string" and IN("Skip", "Stop fixing", "Keep it", "Don'\''t accept", "Don'\''t add"))
+  | "\($i)\t\($h)\t\(.)"'
+jq -r "$NO" 2>/dev/null <<<"$input" | while IFS="$(printf '\t')" read -r idx id answer; do
+  q="$(jq -c --argjson i "$idx" '.tool_input.questions[$i]' <<<"$input")"
+  case "$answer" in
+    "Don't add") [ "$id" = Private ] || continue; ask=(private add "$(folder_of <<<"$q")") ;;
+    "Don't accept") ask=("$id" accept "$(reason_of <<<"$q")") ;;
+    "Keep it") ask=("$id" undo) ;;
+    *) ask=("$id" apply) ;;
+  esac
+  [ "${ask[0]}" = private ] || printf '%s' "$id" | grep -Eq '^(BL|GD|OV)-[A-Z]{2,4}-[0-9]{2}$' || continue
+  c="$("$HERE/../../checks/ask.sh" "${ask[@]}" 2>/dev/null)" || continue
+  jq -e --argjson c "$c" --argjson i "$idx" "$SAME" >/dev/null 2>&1 <<<"$input" || continue
+  rm -f "$REPO/reports/.approvals/${ask[0]}.${ask[1]}"
+done
 exit 0

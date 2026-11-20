@@ -8,6 +8,9 @@ set -o pipefail
 . "$(dirname "$0")/lib.sh"
 input="$(cat)"
 [ -n "$input" ] || block "guard could not read the request"
+# One file per call: with both names, this would check one while the tool might write the other.
+printf '%s' "$input" | jq -e '.tool_input | has("file_path") and has("notebook_path") | not' >/dev/null \
+  || block "an edit names one file, as file_path or notebook_path, not both"
 f="$(printf '%s' "$input" | jq -r '.tool_input.file_path // .tool_input.notebook_path // ""')" || block "guard could not read the request"
 patch="$(printf '%s' "$input" | jq -r '.tool_input.command // "" | strings')" || block "guard could not read the request"
 if [ -n "$patch" ]; then
@@ -24,12 +27,13 @@ if [ -n "$patch" ]; then
     print STDERR "unknown header\n"; exit 1')" || block "guard could not read the patch"
   [ -n "$f" ] || block "guard could not read the patch"
 fi
-[ -n "$f" ] || exit 0
-cwd="$(printf '%s' "$input" | jq -r '.cwd // empty')" || block "guard could not read the request"
-repo="$(real "$REPO")" || block "guard could not find this repo"
 # The repo's own guards, checks and fixes run later without a prompt, so they change only in a development session:
 # a maintainer starts the agent with FORTKEEP_DEV=1 and the marker ~/.config/fortkeep/dev (fortkeep_dev_session).
 dev=""; fortkeep_dev_session && dev=1
+# A person's session refuses what it can't check; a development session leaves a call naming no file to the tool.
+if [ -z "$f" ]; then [ -n "$dev" ] && exit 0; block "guard could not read which file this call writes"; fi
+cwd="$(printf '%s' "$input" | jq -r '.cwd // empty')" || block "guard could not read the request"
+repo="$(real "$REPO")" || block "guard could not find this repo"
 if [ -n "$dev" ]; then allowed="$repo/"$'\n'"$(agent_dirs dev)"; else allowed="$(agent_dirs write)"; fi
 while IFS= read -r one; do
   [ -n "$dev" ] || ascii "$one" || block "non-ASCII characters are refused in a person's session"

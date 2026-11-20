@@ -15,6 +15,19 @@ tool="$(jq -r '.tool_name // "" | strings' <<<"$input")" || block "guard could n
 [ -n "$tool" ] || block "guard could not read the request"
 also() { local s; for s in "$@"; do "$HOOKS/$s.sh" <<<"$input" || exit "$?"; done; }  # SCRIPT... — run these guards too
 
+# In either session: before the question is shown, only the model can have written its answers, and the approval
+# recorder mints a token from the answers it gets back.
+if [ "$tool" = AskUserQuestion ]; then
+  jq -e '.tool_input | has("answers") | not' >/dev/null <<<"$input" \
+    || block "a question is asked without answers filled in: only the person answers it"
+fi
+# A shell call names its command once: with both command (Claude Code) and cmd (Codex's own name), the guards would
+# check one while the agent might run the other.
+if [ "$tool" = Bash ]; then
+  jq -e '.tool_input | has("command") and has("cmd") | not' >/dev/null <<<"$input" \
+    || block "a shell call names its command once, as command or cmd, not both"
+fi
+
 if fortkeep_dev_session; then
   case "$tool" in
     Bash) also bash-guard private-guard ;;
@@ -117,6 +130,11 @@ shell() {
   block "in a person's session the agent runs only fortkeep's own scripts, one per command, from this repo's folder and spelled as the skills write them (the list is .claude/hooks/allow-list)"
 }
 
+no_braces() {  # TEXT — the check cuts a pattern at its first glob character, so a brace alternative ({/elsewhere,x})
+  # would go unchecked
+  case "$1" in *[{}]*) block "a pattern or folder with braces ({a,b}) is refused in a person's session: search each one on its own" ;; esac
+}
+
 search() {  # Grep and Glob: the folder they search
   local p base pat
   case "$tool" in
@@ -124,27 +142,30 @@ search() {  # Grep and Glob: the folder they search
       p="$(jq -r '.tool_input.path // empty' <<<"$input")"
       [ -n "$p" ] || p="${cwd:-$REPO}"
       ascii "$p" || block "non-ASCII characters are refused in a person's session"
+      no_braces "$(jq -r '.tool_input.glob // empty | tostring' <<<"$input")"
       if [ -f "$(printf '%s\n' "$p" | CWD="${cwd:-$REPO}" perl "$HOOKS/resolve-paths.pl" exact)" ]; then read_ok "$p" file; else read_ok "$p" root; fi ;;
     Glob)
       pat="$(jq -r '.tool_input.pattern // ""' <<<"$input")"; p="$(jq -r '.tool_input.path // empty' <<<"$input")"
       ascii "$pat$p" || block "non-ASCII characters are refused in a person's session"
+      no_braces "$pat$p"
       case "$pat" in *..*) block "a pattern may not climb out of its folder" ;; esac
       base="$(printf '%s\n' "${p:-${cwd:-$REPO}}" | CWD="${cwd:-$REPO}" perl "$HOOKS/resolve-paths.pl" exact)"
       read_ok "$(printf '%s\n' "$pat" | CWD="$base" perl "$HOOKS/resolve-paths.pl" lines)" root ;;
   esac
 }
 
-artifact() {  # the Artifact tool uploads local files: each one it names must be one the read tools may read
-  local p
-  jq -e '(.tool_input.root // .tool_input.out_dir // null) == null' >/dev/null <<<"$input" \
-    || block "the Artifact tool takes no root or out_dir in a person's session"
-  while IFS= read -r p; do
-    [ -z "$p" ] || read_ok "$p" file
-  done <<EOF
-$(jq -r '.tool_input | [.file_path, (.file_paths // [])[],
-  ((.files // {}) | if type == "array" then .[].path elif type == "object" then (.[] | if type == "string" then .
-    elif type == "object" then .from else empty end) else empty end)] | .[] | strings' <<<"$input")
-EOF
+artifact() {  # its one use here is /summary publishing the summary page as a new page, private until the person
+  # shares it: no other file, no existing page (url) to publish into or read from, no extra files or capabilities
+  local p want
+  jq -e '.tool_input | (keys - ["action", "file_path", "title", "description", "icon"]) == []
+    and (.action // "publish") == "publish" and (.file_path | type == "string")
+    and all(.title, .description, .icon; . == null or type == "string")' >/dev/null <<<"$input" \
+    || block "in a person's session the Artifact tool only publishes the summary page (/summary), with a file_path and at most a title, description and icon"
+  p="$(jq -r '.tool_input.file_path' <<<"$input")"
+  read_ok "$p" file
+  want="$(real "$REPO/reports/latest/posture-summary.html")" || block "guard could not find the summary page"
+  [ "$(real "$p")" = "$want" ] \
+    || block "in a person's session the Artifact tool only publishes reports/latest/posture-summary.html, the page summary/build.sh writes"
 }
 
 case "$tool" in

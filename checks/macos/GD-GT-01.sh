@@ -17,12 +17,15 @@ sign="$(cfg commit.gpgsign)"; r3=$?
 if [ "$r1" -gt 1 ] || [ "$r2" -gt 1 ] || [ "$r3" -gt 1 ]; then
   fortkeep_result "$ID" ERROR "Could not read the global git config" "git config failed; the file may be damaged"; exit 0
 fi
-bad=""
+bad=""; ex=""
 [ "$fmt" = ssh ] || bad="$bad gpg.format is ${fmt:-not set} (should be ssh)."
 [ -n "$key" ] || bad="$bad No user.signingkey."
 [ "$sign" = true ] || bad="$bad commit.gpgsign is ${sign:-not set} (should be true)."
 case "$key" in
-  '~'/*|/*) k="$key"; case "$k" in '~'/*) k="$HOME/${k#\~/}" ;; esac; [ -f "$k" ] || bad="$bad The signing key file is missing." ;;
+  '~'/*|/*) k="$key"; case "$k" in '~'/*) k="$HOME/${k#\~/}" ;; esac
+    # A key file inside a private folder isn't looked for.
+    if fortkeep_is_private "$k"; then ex=" (a private folder was excluded)"
+    elif [ ! -f "$k" ]; then bad="$bad The signing key file is missing."; fi ;;
 esac
-if [ -z "$bad" ]; then fortkeep_result "$ID" PASS "Commits are signed with an SSH key" "Also turn on vigilant mode on GitHub"
-else fortkeep_result "$ID" FAIL "Commits aren't signed with an SSH key" "${bad# }"; fi
+if [ -z "$bad" ]; then fortkeep_result "$ID" PASS "Commits are signed with an SSH key" "Also turn on vigilant mode on GitHub$ex"
+else fortkeep_result "$ID" FAIL "Commits aren't signed with an SSH key" "${bad# }$ex"; fi

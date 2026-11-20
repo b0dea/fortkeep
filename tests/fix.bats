@@ -26,6 +26,33 @@ approve() { date +%s > "$FORTKEEP_REPORTS/.approvals/BL-RC-01.$1"; }
   [ ! -e "$FORTKEEP_REPORTS/.approvals/BL-RC-01.apply" ]
   [ "$(jq -r '."task.allowAutomaticTasks" // "unset"' "$U/settings.json")" = unset ]
 }
+@test "a token that vanishes while it is being checked refuses, and never lets the caller's next command run" {
+  # A second run consuming the same token can remove it between the existence test and the mtime read; the DEBUG trap
+  # does that deterministically. bash 3.2 abandons a whole top-level command on an arithmetic error, || exit 4 included.
+  D="$BATS_TEST_TMPDIR/approvals"; mkdir -p "$D"; touch -t 202001010000 "$D/BL-XX-01.apply"
+  cat > "$BATS_TEST_TMPDIR/harness.sh" <<EOF
+. "$REPO/checks/lib/approval.sh"
+req() { fortkeep_take_approval "$D" BL-XX-01 apply || exit 4; }
+set -T; trap '[[ \$BASH_COMMAND == *stat* ]] && /bin/rm -f "$D"/BL-XX-01.apply*' DEBUG
+req
+trap - DEBUG
+echo RAN
+EOF
+  run /usr/bin/env -i /bin/bash -p "$BATS_TEST_TMPDIR/harness.sh"
+  [ "$status" -eq 4 ]; [[ "$output" != *RAN* ]]
+}
+@test "two runs never both pass one fresh token" {
+  D="$BATS_TEST_TMPDIR/approvals"; mkdir -p "$D"; date +%s > "$D/BL-XX-01.apply"
+  cat > "$BATS_TEST_TMPDIR/harness.sh" <<EOF
+. "$REPO/checks/lib/approval.sh"
+# The second consumer runs in full just before the first removes the token.
+set -T; trap '[[ \$BASH_COMMAND == */bin/rm* ]] && [ -z "\$second" ] && { second=1; fortkeep_take_approval "$D" BL-XX-01 apply && echo SECOND; }' DEBUG
+fortkeep_take_approval "$D" BL-XX-01 apply && echo FIRST
+EOF
+  run /usr/bin/env -i /bin/bash -p "$BATS_TEST_TMPDIR/harness.sh"
+  [ "$(grep -c -e FIRST -e SECOND <<<"$output")" -eq 1 ]
+  [ -z "$(ls -A "$D")" ]
+}
 @test "checks the approval before loading any other helper" {
   printf 'touch "%s"\n' "$BATS_TEST_TMPDIR/sourced" > "$T/checks/lib/editors.sh"
   fix apply
@@ -159,6 +186,34 @@ approve() { date +%s > "$FORTKEEP_REPORTS/.approvals/BL-RC-01.$1"; }
   [ "$(cat "$U/settings.json")" = "$edited" ]
   [ "$(jq -r '."task.allowAutomaticTasks"' "$U/profiles/p1/settings.json")" = off ]
   run grep -q '| undo |' "$FORTKEEP_REPORTS/change-log.md"; [ "$status" -ne 0 ]
+}
+@test "backups are only the person's to read, whatever the umask, and undo puts each file's own mode back" {
+  # The copies leave the person's 0700 ~/Library for a folder other accounts may be able to reach.
+  chmod 700 "$HOME/Library"; chmod 644 "$U/settings.json"; chmod 640 "$U/profiles/p1/settings.json"
+  umask 022
+  approve apply; fix apply; [ "$status" -eq 0 ]
+  B="$(ls -d "$FORTKEEP_BACKUPS"/BL-RC-01/*/)"; B="${B%/}"
+  for d in "$HOME/.local/state/fortkeep" "$FORTKEEP_BACKUPS" "$FORTKEEP_BACKUPS/BL-RC-01" "$B"; do
+    [ "$(stat -f %Lp "$d")" = 700 ] || { echo "$d: $(stat -f %Lp "$d")"; false; }
+  done
+  for f in "$B"/file-0 "$B"/file-1 "$B/manifest.tsv" "$B/sealed.tsv"; do
+    [ "$(stat -f %Lp "$f")" = 600 ] || { echo "$f: $(stat -f %Lp "$f")"; false; }
+  done
+  approve undo; fix undo; [ "$status" -eq 0 ]
+  [ "$(stat -f %Lp "$U/settings.json")" = 644 ]; [ "$(stat -f %Lp "$U/profiles/p1/settings.json")" = 640 ]
+  [ "$(cat "$U/settings.json")" = '{"editor.fontSize":14}' ]
+}
+@test "an existing backups folder other accounts could read is made private on the next apply" {
+  mkdir -p "$FORTKEEP_BACKUPS"; chmod 755 "$FORTKEEP_BACKUPS"
+  approve apply; fix apply; [ "$status" -eq 0 ]
+  [ "$(stat -f %Lp "$FORTKEEP_BACKUPS")" = 700 ]
+}
+@test "a backup from before modes were recorded still restores" {
+  approve apply; fix apply; [ "$status" -eq 0 ]
+  B="$(ls -d "$FORTKEEP_BACKUPS"/BL-RC-01/*/)"
+  awk -F'\t' -v OFS='\t' '{ print $1, $2 }' "$B/manifest.tsv" > "$B/m"; mv "$B/m" "$B/manifest.tsv"
+  approve undo; fix undo; [ "$status" -eq 0 ]
+  [ "$(cat "$U/settings.json")" = '{"editor.fontSize":14}' ]
 }
 @test "a backup made before sealing existed restores as before" {
   approve apply; fix apply; [ "$status" -eq 0 ]

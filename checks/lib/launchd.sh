@@ -1,12 +1,14 @@
 #!/bin/bash
 # The person's own LaunchAgents (~/Library/LaunchAgents): labels, schedules, scripts, loaded state.
-fortkeep_user_agents() {  # label<TAB>plist, for each agent with a Label
+fortkeep_user_agents() {  # label<TAB>plist, for each agent with a Label; status 1, listing nothing, when the folder is private
   local p l
+  ! fortkeep_is_private "$HOME/Library/LaunchAgents" || return 1
   for p in "$HOME/Library/LaunchAgents"/*.plist; do
     [ -f "$p" ] || continue
     l="$(plutil -extract Label raw "$p" 2>/dev/null)" || continue
     printf '%s\t%s\n' "$l" "$p"
   done
+  return 0
 }
 
 fortkeep_agent_loaded() { launchctl print "gui/$(id -u)/$1" >/dev/null 2>&1; }

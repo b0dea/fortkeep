@@ -39,9 +39,11 @@ commands on one line, and characters beyond ASCII (except letters inside quotes 
 **Read tools** work only inside the fortkeep folder and the agent's own folders for this project (its scratch folder
 and Claude Code's project folder, with memory and saved tool output). They never read `private-paths`,
 `reports/.approvals`, `.git`, a file named as a secret (`.env`, `.env.*`, `*.pem`, `*.key`, `id_*`, but not `*.example`)
-or a file's named fork (`FILE/..namedfork/...`), and a search may not start at a folder that holds any of them.
+or a file's named fork (`FILE/..namedfork/...`), and a search may not start at a folder that holds any of them. A
+search pattern with braces (`{a,b}`) is refused, since an alternative could name a folder outside the one checked.
 Private folders are outside the fortkeep folder, so read tools can't reach them at all: there is no name comparison
-left to fool. The Artifact tool may publish only files the read tools may read.
+left to fool. The Artifact tool only publishes the summary page, `reports/latest/posture-summary.html`, as a new page
+that stays private until the person shares it; any other file, action or destination is refused.
 A guard that stops with any status but 0 or 2 (a crash, or a library that stops it) blocks the call: the agents go
 ahead on any other status.
 
@@ -78,7 +80,8 @@ A fix runs only after the person answers `Apply <ID>` or `Undo <ID>`. Accepting 
 - **What it is.** A hook records the person's own answer: an option they picked in the agent's question tool, in
   exactly the question `checks/ask.sh` prints for that action, or, in Codex, a message that is exactly that answer.
   It writes a one-use token under `reports/.approvals`, which the script that acts on it consumes. A token expires
-  after five minutes. The model can't write the person's messages, a subagent's prompt records nothing, and in a
+  after five minutes. The model can't write the person's messages, `guard.sh` refuses a question that arrives with
+  its answers already filled in (only the model could have written them), a subagent's prompt records nothing, and in a
   person's session the model can't reach `reports/.approvals` by any tool. The hook records nothing when another agent
   started this one (`codex exec`, `claude -p` or `opencode run` inside a session). `checks/accept.sh` and
   `checks/private.sh add` need no token when the person types them in a terminal app.

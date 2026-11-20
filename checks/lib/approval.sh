@@ -5,12 +5,23 @@
 FORTKEEP_APPROVAL_TTL=300  # seconds an answer stays good for; set here, never by the caller
 
 fortkeep_take_approval() {  # DIR ID ACTION [SUBJECT] — consumes a fresh token from DIR, made for SUBJECT when given, or
-  # prints why not (never SUBJECT, which can be a private folder) and returns 1
-  local tok="$1/$2.$3" age held="" what=folder
-  if [ ! -f "$tok" ]; then echo "REFUSED: no approval for $2 $3. Ask the person first." >&2; return 1; fi
-  age=$(( $(/bin/date +%s) - $(/usr/bin/stat -f %m "$tok") ))
-  [ $# -lt 4 ] || held="$(/bin/cat "$tok")"
-  /bin/rm -f "$tok"
+  # prints why not (never SUBJECT, which can be a private folder) and returns 1. Every failure returns 1: an unchecked
+  # expansion error would make bash abandon the caller's whole command, its `|| exit 4` included.
+  local tok="$1/$2.$3" claimed="$1/$2.$3.$$" mtime="" now="" age held="" what=folder
+  # Claim it by renaming: when two runs take one token at once, only one rename succeeds.
+  if ! /bin/mv "$tok" "$claimed" 2>/dev/null; then
+    echo "REFUSED: no approval for $2 $3. Ask the person first." >&2; return 1
+  fi
+  if [ -f "$claimed" ]; then
+    mtime="$(/usr/bin/stat -f %m "$claimed" 2>/dev/null)" || mtime=""
+    now="$(/bin/date +%s)" || now=""
+    if [ $# -ge 4 ]; then held="$(/bin/cat "$claimed" 2>/dev/null)" || held=""; fi
+  fi
+  /bin/rm -f "$claimed"
+  case "${mtime:-x}${now:-x}" in *[!0-9]*)
+    echo "REFUSED: could not read the approval for $2 $3. Ask again." >&2; return 1 ;;
+  esac
+  age=$(( now - mtime ))
   if [ "$age" -lt 0 ] || [ "$age" -gt "$FORTKEEP_APPROVAL_TTL" ]; then
     echo "REFUSED: approval for $2 $3 expired (${age}s old). Ask again." >&2; return 1
   fi

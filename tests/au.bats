@@ -149,6 +149,13 @@ refused() {  # the run stopped before the review: no report, no Homebrew step, n
   echo 'not json' > "$W/controls.json"
   run "$W/checks/fortkeep-weekly"; [ "$status" -eq 1 ]
 }
+@test "the fortkeep-weekly launcher runs no BASH_ENV or ENV file, and passes neither on" {
+  weekly_tree; export FORTKEEP_NO_NOTIFY=1; cp "$REPO/checks/fortkeep-weekly" "$W/checks/"
+  printf 'touch "%s/sourced"\n' "$BATS_TEST_TMPDIR" > "$BATS_TEST_TMPDIR/benv.sh"
+  run env BASH_ENV="$BATS_TEST_TMPDIR/benv.sh" ENV="$BATS_TEST_TMPDIR/benv.sh" "$W/checks/fortkeep-weekly"
+  [ "$status" -eq 0 ]; [ -e "$FORTKEEP_REPORTS/weekly-last" ]
+  [ ! -e "$BATS_TEST_TMPDIR/sourced" ]
+}
 @test "weekly.sh touches weekly-last when the review ran, and not when it couldn't" {
   weekly_tree; export FORTKEEP_NO_NOTIFY=1
   [ ! -e "$FORTKEEP_REPORTS/weekly-last" ]
@@ -266,4 +273,12 @@ refused() {  # the run stopped before the review: no report, no Homebrew step, n
   LOADED=upd chk BL-AU-01; [ "$(field status)" = FAIL ]
   agent upd $'if brew update; then\n  /opt/homebrew/bin/brew upgrade --greedy\nfi' 1
   LOADED=upd chk BL-AU-01; [ "$(field status)" = PASS ]
+}
+@test "BL-AU-01 a private ~/Library/LaunchAgents is never listed: ERROR saying only that a private folder was excluded" {
+  agent upd 'brew update && brew upgrade' 1
+  echo "$L" > "$FORTKEEP_PRIVATE_PATHS"
+  stub plutil 'echo "$@" >> "$BATS_TEST_TMPDIR/access.log"; exec /usr/bin/plutil "$@"'
+  LOADED=upd chk BL-AU-01
+  [ "$(field status)" = ERROR ]; [ "$(field note)" = "a private folder was excluded" ]; [[ "$output" != *upd* ]]
+  [ ! -e "$BATS_TEST_TMPDIR/access.log" ]
 }

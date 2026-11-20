@@ -12,7 +12,9 @@ input="$(cat)"
 [ -n "$input" ] || fail
 hay="$(printf '%s' "$input" | jq -r '[.tool_input | .. | strings] | join("\n")')" || fail
 # Names are compared folded, as APFS compares them (lib.sh fold): a look-alike letter opens the same file.
-fields="$(printf '%s' "$input" | jq -r '[.tool_input.file_path, .tool_input.path, .tool_input.notebook_path, .tool_input.command, (if .tool_name == "Glob" then .tool_input.pattern else empty end)] | map(strings) | join("\n")' | fold)" || fail
+# A shell command may come as cmd (Codex's name for it) or as a list of words: both are checked joined.
+SH='def sh: .tool_input.command // .tool_input.cmd | if type == "array" then join(" ") else . end; '
+fields="$(printf '%s' "$input" | jq -r "$SH"'[.tool_input.file_path, .tool_input.path, .tool_input.notebook_path, sh, (if .tool_name == "Glob" then .tool_input.pattern else empty end)] | map(strings) | join("\n")' | fold)" || fail
 list_re="$(basename "$FORTKEEP_PRIVATE_PATHS" | fold | sed 's/[.]/\\./g')"
 if grep -Eiq "(^|[^A-Za-z0-9_.-])${list_re}([^A-Za-z0-9_.-]|\$)" <<<"$fields"; then blocked; fi
 cwd="$(printf '%s' "$input" | jq -r '.cwd // empty')" || fail
@@ -30,7 +32,7 @@ roots="$( {
     | (.file_path, .path, (if $t == "Glob" then .pattern else empty end),
        (if $t == "Grep" and ((.path // "") == "") then $cwd else empty end)) | strings | select(length > 0)' \
     | CWD="$cwd" perl "$P" lines
-  printf '%s' "$input" | jq -r 'select(.tool_name == "Bash") | .tool_input.command // empty' | CWD="$cwd" perl "$P" search-roots
+  printf '%s' "$input" | jq -r "$SH"'select(.tool_name == "Bash") | sh // empty' | CWD="$cwd" perl "$P" search-roots
 } | perl -pe 's#/*$#/#' | lower)" || fail
 while IFS= read -r p; do
   [ -n "$p" ] || continue

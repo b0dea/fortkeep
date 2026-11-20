@@ -29,6 +29,8 @@ case "${1:-}" in
     chmod 600 "$FORTKEEP_PRIVATE_PATHS"
     echo "added 1 private path ($(count) total)" ;;
   remove)
+    # Removing one lets every check read that folder again: only the person, typing in a terminal app, never an agent.
+    fortkeep_require_person /bin/ps
     [ -n "${2:-}" ] || { echo "usage: $0 remove PATH" >&2; exit 2; }
     p="$2"
     case "$p" in '~'/*) p="$HOME/${p#\~/}" ;; esac

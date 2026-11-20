@@ -171,6 +171,7 @@ if ct="$(crontab -l 2>/dev/null)"; then
   for n in $(printf '%s\n' "$ct" | sed 's/^[[:space:]]*#.*//' | sus); do hit "your crontab line $n runs inline code or a staged loader"; done
 fi
 for d in "$HOME/Library/LaunchAgents" "$(fortkeep_path /Library/LaunchAgents)" "$(fortkeep_path /Library/LaunchDaemons)"; do
+  pub "$d" || continue
   for p in "$d"/*.plist; do
     [ -f "$p" ] || continue
     c="$(plutil -extract Program raw -o - "$p" 2>/dev/null) $(plutil -extract ProgramArguments json -o - "$p" 2>/dev/null | jq -r 'join(" ")' 2>/dev/null)"

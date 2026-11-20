@@ -312,3 +312,13 @@ setup() { setup_env; . "$REPO/checks/lib/common.sh"; }
   out="$(printf 'file\t%s\nfile\t%s\n' "$A" "$Z" | fortkeep_control_hashes)"; chmod 644 "$A" "$Z"
   [ "$out" = "$(printf '%s\tfile\tunreadable\n%s\tfile\tunreadable' "$A" "$Z")" ]
 }
+
+@test "fortkeep_timeout keeps the command off the person's terminal: an interactive zsh run from one finishes" {
+  # fortkeep check typed in Terminal: an interactive zsh in a background process group of that terminal is stopped
+  # when it takes the terminal for job control, so every interactive-zsh probe timed out. script gives a terminal.
+  printf '. "%s/checks/lib/common.sh"; fortkeep_timeout 8 /bin/zsh -ic "print -r ok" </dev/null 2>/dev/null; echo "rc=$?"\n' "$REPO" > "$BATS_TEST_TMPDIR/probe.sh"
+  start=$(date +%s)
+  run script -q /dev/null /bin/bash "$BATS_TEST_TMPDIR/probe.sh"
+  [[ "$output" == *ok*rc=0* ]]
+  [ $(( $(date +%s) - start )) -lt 6 ]
+}
