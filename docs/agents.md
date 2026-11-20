@@ -29,7 +29,10 @@ never reach a hook; `.codex/config.toml` turns the web search off.
   this project's own scratch folder and Claude Code project folder (memory, saved tool output). A search may not start
   at a folder that holds any of those, and a Glob pattern or folder, or a Grep file filter, may not hold braces
   (`{a,b}`): each alternative would need its own check. Codex has no read tool, so `checks/show.sh <path>` prints a file under the
-  same rule. The Artifact tool may publish only files these rules let it read.
+  same rule.
+- Artifact: only `/summary` publishing `reports/latest/posture-summary.html` (compared as a physical path) as a new
+  page, with at most a title, description and icon. Any other file or action, an existing page's `url`, extra files,
+  assets or capabilities are refused: a page could carry what the agent read off this Mac.
 - Writes (`write-guard.sh`): only this project's scratch folder and the plan folder, never memory, whose notes later
   sessions load as instructions. Nothing in the repo,
   `reports/` included: `checks/configure.sh` saves settings and `checks/run.sh` writes results. A patch is read the way

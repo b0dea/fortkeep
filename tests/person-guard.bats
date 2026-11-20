@@ -149,16 +149,30 @@ refused() { run "$@"; [ "$status" -eq 2 ] || { echo "allowed: $*"; return 1; }; 
   refused sh_ "fixes/macos/BL-RC-01.sh 'apply|undo'"
   refused sh_ "checks/overlays.sh 'new|list'"
 }
-@test "the Artifact tool publishes only a file the read tools may read; plan mode can be left" {
-  allowed call Artifact '{"file_path":"reports/latest/posture-summary.html","icon":"shield"}'
-  allowed call Artifact '{"action":"list"}'
-  refused call Artifact "$(jq -cn --arg p "$HOME/.ssh/id_ed25519" '{file_path:$p}')"
-  refused call Artifact '{"file_path":"private-paths"}'
-  refused call Artifact '{"file_paths":["reports/x.png","/etc/hosts"],"asset":true,"url":"https://claude.ai/artifact/x"}'
-  refused call Artifact '{"file_path":"reports/a.html","files":{"x.css":"/etc/hosts"}}'
-  refused call Artifact '{"file_path":"reports/a.html","files":{"x.css":{"from":"../x"}}}'
-  refused call Artifact '{"file_path":"a.html","files":{"x.css":"b.css"},"root":"/Users"}'
-  refused call Artifact '{"action":"read","url":"https://claude.ai/artifact/x","path":"a","out_dir":"checks"}'
+@test "the Artifact tool only publishes the summary page, as a new page; plan mode can be left" {
+  S=reports/latest/posture-summary.html
+  allowed call Artifact "$(jq -cn --arg p "$S" '{file_path:$p, title:"Posture Summary (self-reported)", icon:"shield", description:"x"}')"
+  allowed call Artifact "$(jq -cn --arg p "$REPO/$S" '{action:"publish", file_path:$p}')"
+  allowed write_ "$SCR/p.html"
+  U=https://claude.ai/artifact/x
+  for i in '{"action":"list"}' "{\"action\":\"read\",\"url\":\"$U\"}" "{\"action\":\"open\",\"url\":\"$U\"}" \
+    "{\"action\":\"delete\",\"url\":\"$U\"}" '{"action":"quickstart","intent":"other"}' '{}' \
+    "{\"action\":\"pin\",\"file_path\":\"$S\"}" '{"file_path":"reports/latest/results.json"}' \
+    '{"file_path":"reports/latest/posture-summary.md"}' "$(jq -cn --arg p "$SCR/p.html" '{file_path:$p}')" \
+    "{\"file_path\":\"$S\",\"url\":\"$U\"}" "{\"file_path\":\"$S\",\"capabilities\":{}}" \
+    "{\"file_path\":\"$S\",\"files\":{\"x.json\":\"reports/latest/results.json\"}}" \
+    "{\"file_paths\":[\"$S\"],\"asset\":true,\"url\":\"$U\"}" "{\"file_path\":\"$S\",\"from_url\":\"$U\",\"asset_ids\":[\"0\"]}" \
+    "{\"file_path\":\"$S\",\"type_url\":\"$U\"}" "{\"file_path\":\"$S\",\"title\":{\"x\":1}}" \
+    "$(jq -cn --arg p "$HOME/.ssh/id_ed25519" '{file_path:$p}')" '{"file_path":"private-paths"}' \
+    '{"file_path":"a.html","files":{"x.css":"b.css"},"root":"/Users"}' \
+    "{\"action\":\"read\",\"url\":\"$U\",\"path\":\"a\",\"out_dir\":\"checks\"}"; do
+    refused call Artifact "$i"
+  done
+  # Compared physically: the run folder reports/latest points to is the same page; an older run's isn't.
+  P="$BATS_TEST_TMPDIR/proj"; mkdir -p "$P/reports/20260102T000000Z" "$P/reports/20260101T000000Z"
+  ln -s 20260102T000000Z "$P/reports/latest"; ln -s "$REPO/checks" "$P/checks"; export CLAUDE_PROJECT_DIR="$P"
+  allowed call Artifact '{"file_path":"reports/20260102T000000Z/posture-summary.html"}' "$P"
+  refused call Artifact '{"file_path":"reports/20260101T000000Z/posture-summary.html"}' "$P"
   allowed call ExitPlanMode '{}'
   allowed call EnterPlanMode '{}'
 }

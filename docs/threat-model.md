@@ -42,7 +42,8 @@ and Claude Code's project folder, with memory and saved tool output). They never
 or a file's named fork (`FILE/..namedfork/...`), and a search may not start at a folder that holds any of them. A
 search pattern with braces (`{a,b}`) is refused, since an alternative could name a folder outside the one checked.
 Private folders are outside the fortkeep folder, so read tools can't reach them at all: there is no name comparison
-left to fool. The Artifact tool may publish only files the read tools may read.
+left to fool. The Artifact tool only publishes the summary page, `reports/latest/posture-summary.html`, as a new page
+that stays private until the person shares it; any other file, action or destination is refused.
 A guard that stops with any status but 0 or 2 (a crash, or a library that stops it) blocks the call: the agents go
 ahead on any other status.
 

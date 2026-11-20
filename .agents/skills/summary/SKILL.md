@@ -24,10 +24,12 @@ proof.
      tamper-evident. The reader is trusting the person, not the file;
    - the reasons are free text: read them before sharing.
 5. Ask whether they want it as a private web page they can share.
-   - Claude Code with the Artifact tool: publish `posture-summary.html` as it is: title "Posture Summary
-     (self-reported)", icon `shield`, description "Self-reported pass/fail summary of a Mac's security checks
-     against fortkeep's baseline.". Never edit or redesign the file; the design lives in
-     `templates/posture-summary.html`. Tell them it stays private until they share it from the page's Share menu.
+   - Claude Code with the Artifact tool: publish `reports/latest/posture-summary.html` as it is, as a new page,
+     passing only its file path, title "Posture Summary (self-reported)", icon `shield` and description
+     "Self-reported pass/fail summary of a Mac's security checks against fortkeep's baseline.". The guards refuse
+     any other Artifact call (another file, an existing page's link, extra files). Never edit or redesign the file;
+     the design lives in `templates/posture-summary.html`. Tell them it stays private until they share it from the
+     page's Share menu.
    - Codex, OpenCode, or no Artifact tool: there is no page to publish. Give them the full path of
      `posture-summary.html` (in the folder step 3 printed) and tell them to open it in their browser: in
      Finder, go to that folder and double-click the file. They can send the file itself, or `posture-summary.md`.

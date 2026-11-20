@@ -154,17 +154,18 @@ search() {  # Grep and Glob: the folder they search
   esac
 }
 
-artifact() {  # the Artifact tool uploads local files: each one it names must be one the read tools may read
-  local p
-  jq -e '(.tool_input.root // .tool_input.out_dir // null) == null' >/dev/null <<<"$input" \
-    || block "the Artifact tool takes no root or out_dir in a person's session"
-  while IFS= read -r p; do
-    [ -z "$p" ] || read_ok "$p" file
-  done <<EOF
-$(jq -r '.tool_input | [.file_path, (.file_paths // [])[],
-  ((.files // {}) | if type == "array" then .[].path elif type == "object" then (.[] | if type == "string" then .
-    elif type == "object" then .from else empty end) else empty end)] | .[] | strings' <<<"$input")
-EOF
+artifact() {  # its one use here is /summary publishing the summary page as a new page, private until the person
+  # shares it: no other file, no existing page (url) to publish into or read from, no extra files or capabilities
+  local p want
+  jq -e '.tool_input | (keys - ["action", "file_path", "title", "description", "icon"]) == []
+    and (.action // "publish") == "publish" and (.file_path | type == "string")
+    and all(.title, .description, .icon; . == null or type == "string")' >/dev/null <<<"$input" \
+    || block "in a person's session the Artifact tool only publishes the summary page (/summary), with a file_path and at most a title, description and icon"
+  p="$(jq -r '.tool_input.file_path' <<<"$input")"
+  read_ok "$p" file
+  want="$(real "$REPO/reports/latest/posture-summary.html")" || block "guard could not find the summary page"
+  [ "$(real "$p")" = "$want" ] \
+    || block "in a person's session the Artifact tool only publishes reports/latest/posture-summary.html, the page summary/build.sh writes"
 }
 
 case "$tool" in
