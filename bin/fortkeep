@@ -26,7 +26,7 @@ help() {
 fortkeep: a security checkup for this Mac, run with your coding agent.
 
 Commands
-  fortkeep                                   this help, with the last check and what to do next
+  fortkeep                                   a menu in a terminal; otherwise this help, the last check and what to do next
   fortkeep check [--only ID]... [--json]     check this Mac (read-only); exit 1 when something fails
   fortkeep explain ID                        the short lesson for one control
   fortkeep scan FOLDER                       is this repo safe to open? scans it, or the repos in it (read-only)
