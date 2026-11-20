@@ -276,5 +276,20 @@ Report a vulnerability privately, as [SECURITY.md](SECURITY.md) says; never in a
 [MIT](LICENSE). fortkeep's malware indicators are built from public research; the
 [credits](controls/baseline-source.md#credits) name the sources.
 
+fortkeep checks for, and recommends, these free and open tools. The baseline says why each one matters
+([`controls/baseline-source.md`](controls/baseline-source.md)):
+
+- [Safe Chain](https://github.com/AikidoSec/safe-chain): blocks malicious packages and very new versions at install.
+- [Objective-See](https://objective-see.org/tools.html): [BlockBlock](https://objective-see.org/products/blockblock.html),
+  KnockKnock, [LuLu](https://objective-see.org/products/lulu.html) and
+  [OverSight](https://objective-see.org/products/oversight.html).
+- [tirith](https://github.com/sheeki03/tirith): a terminal guard against pasted look-alike commands and `curl | bash`.
+- [gitleaks](https://github.com/gitleaks/gitleaks): secrets in commits and history.
+- [osv-scanner](https://github.com/google/osv-scanner): known vulnerabilities in a project's pinned dependencies.
+- [nuclei](https://github.com/projectdiscovery/nuclei): scans your own exposed services.
+- [Secretive](https://github.com/maxgoedjen/secretive): SSH keys kept in the Secure Enclave.
+- [Little Snitch](https://obdev.at/products/littlesnitch/) and [Micro Snitch](https://obdev.at/products/microsnitch/)
+  (paid), as alternatives to LuLu and OverSight.
+
 fortkeep is not affiliated with Apple, Anthropic, OpenAI, Aikido Security, 1Password, Objective-See, or any other
 vendor or project named here.
