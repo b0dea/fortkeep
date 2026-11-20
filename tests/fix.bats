@@ -187,6 +187,34 @@ EOF
   [ "$(jq -r '."task.allowAutomaticTasks"' "$U/profiles/p1/settings.json")" = off ]
   run grep -q '| undo |' "$FORTKEEP_REPORTS/change-log.md"; [ "$status" -ne 0 ]
 }
+@test "backups are only the person's to read, whatever the umask, and undo puts each file's own mode back" {
+  # The copies leave the person's 0700 ~/Library for a folder other accounts may be able to reach.
+  chmod 700 "$HOME/Library"; chmod 644 "$U/settings.json"; chmod 640 "$U/profiles/p1/settings.json"
+  umask 022
+  approve apply; fix apply; [ "$status" -eq 0 ]
+  B="$(ls -d "$FORTKEEP_BACKUPS"/BL-RC-01/*/)"; B="${B%/}"
+  for d in "$HOME/.local/state/fortkeep" "$FORTKEEP_BACKUPS" "$FORTKEEP_BACKUPS/BL-RC-01" "$B"; do
+    [ "$(stat -f %Lp "$d")" = 700 ] || { echo "$d: $(stat -f %Lp "$d")"; false; }
+  done
+  for f in "$B"/file-0 "$B"/file-1 "$B/manifest.tsv" "$B/sealed.tsv"; do
+    [ "$(stat -f %Lp "$f")" = 600 ] || { echo "$f: $(stat -f %Lp "$f")"; false; }
+  done
+  approve undo; fix undo; [ "$status" -eq 0 ]
+  [ "$(stat -f %Lp "$U/settings.json")" = 644 ]; [ "$(stat -f %Lp "$U/profiles/p1/settings.json")" = 640 ]
+  [ "$(cat "$U/settings.json")" = '{"editor.fontSize":14}' ]
+}
+@test "an existing backups folder other accounts could read is made private on the next apply" {
+  mkdir -p "$FORTKEEP_BACKUPS"; chmod 755 "$FORTKEEP_BACKUPS"
+  approve apply; fix apply; [ "$status" -eq 0 ]
+  [ "$(stat -f %Lp "$FORTKEEP_BACKUPS")" = 700 ]
+}
+@test "a backup from before modes were recorded still restores" {
+  approve apply; fix apply; [ "$status" -eq 0 ]
+  B="$(ls -d "$FORTKEEP_BACKUPS"/BL-RC-01/*/)"
+  awk -F'\t' -v OFS='\t' '{ print $1, $2 }' "$B/manifest.tsv" > "$B/m"; mv "$B/m" "$B/manifest.tsv"
+  approve undo; fix undo; [ "$status" -eq 0 ]
+  [ "$(cat "$U/settings.json")" = '{"editor.fontSize":14}' ]
+}
 @test "a backup made before sealing existed restores as before" {
   approve apply; fix apply; [ "$status" -eq 0 ]
   rm "$FORTKEEP_BACKUPS"/BL-RC-01/*/sealed.tsv

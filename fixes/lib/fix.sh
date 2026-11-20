@@ -25,16 +25,23 @@ fx_require_approval() {  # ID ACTION — consume a fresh token or refuse
 }
 
 fx_backup() {  # ID FILE — non-zero if the backup fails; a dangling symlink is refused
-  local dir="$FORTKEEP_BACKUPS/$1/$FX_STAMP" n
-  mkdir -p "$dir" || return 1
+  # The copies can hold keys, often from inside the person's private ~/Library: folders 700 and files 600, whatever
+  # umask the caller set. The manifest keeps each file's own mode for undo.
+  local dir="$FORTKEEP_BACKUPS/$1/$FX_STAMP" n mode
+  { (umask 077 && mkdir -p "$dir") && chmod 700 "$FORTKEEP_BACKUPS" "$dir"; } || return 1
   if [ -L "$2" ] && [ ! -e "$2" ]; then return 1; fi
   if [ -f "$2" ]; then
     n="$(find "$dir" -name 'file-*' | grep -c .)"
-    cp -p "$2" "$dir/file-$n" || return 1
-    printf '%s\tfile-%s\n' "$2" "$n" >> "$dir/manifest.tsv" || return 1
+    mode="$(stat -L -f %Lp "$2")" || return 1
+    { cp -p "$2" "$dir/file-$n" && chmod 600 "$dir/file-$n"; } || return 1
+    (umask 077 && printf '%s\tfile-%s\t%s\n' "$2" "$n" "$mode" >> "$dir/manifest.tsv") || return 1
   else
-    printf '%s\tABSENT\n' "$2" >> "$dir/manifest.tsv" || return 1
+    (umask 077 && printf '%s\tABSENT\n' "$2" >> "$dir/manifest.tsv") || return 1
   fi
+}
+
+fx_copy_back() {  # BACKUP_DIR COPY MODE FILE — put a backed-up copy back with the file's own mode (none in older backups)
+  cp -p "$1/$2" "$4" && { [ -z "$3" ] || chmod "$3" "$4"; }
 }
 
 fx_latest_backup() {  # ID — the newest backup folder not yet undone; status 1 if none
@@ -55,9 +62,10 @@ fx_seal() {  # ID — record each backed-up file's state right after the change,
 fx_seal_dir() {  # BACKUP_DIR — write its sealed.tsv from the files' current states
   local f b
   [ -f "$1/manifest.tsv" ] || return 0
-  while IFS="$(printf '\t')" read -r f b; do
-    printf '%s\t%s\n' "$f" "$(fx_state "$f")"
-  done < "$1/manifest.tsv" > "$1/sealed.tsv"
+  (umask 077
+    while IFS="$(printf '\t')" read -r f b; do
+      printf '%s\t%s\n' "$f" "$(fx_state "$f")"
+    done < "$1/manifest.tsv" > "$1/sealed.tsv")
 }
 
 fx_check_seal() {  # BACKUP_DIR — exit 6, changing nothing, if a file differs from its sealed state
@@ -81,10 +89,10 @@ fx_unchanged() {  # BACKUP_DIR FILE — true if FILE is as the fix left it, or n
 }
 
 fx_restore_file() {  # BACKUP_DIR FILE — put one backed-up FILE back as it was before the fix
-  local f b
-  while IFS="$(printf '\t')" read -r f b; do
+  local f b m
+  while IFS="$(printf '\t')" read -r f b m; do
     [ "$f" = "$2" ] || continue
-    if [ "$b" = ABSENT ]; then rm -f "$f"; else cp -p "$1/$b" "$f"; fi
+    if [ "$b" = ABSENT ]; then rm -f "$f"; else fx_copy_back "$1" "$b" "$m" "$f"; fi
     return
   done < "$1/manifest.tsv"
   return 1
@@ -106,12 +114,12 @@ fx_drop_blank_created() {  # BACKUP_DIR FILE... — remove each FILE the fix cre
 }
 
 fx_restore() {  # ID — undo the most recent apply that hasn't been undone
-  local dir f b bad=0
+  local dir f b m bad=0
   dir="$(fx_latest_backup "$1")" || { echo "nothing to undo for $1" >&2; exit 5; }
   fx_check_seal "$dir"
-  while IFS="$(printf '\t')" read -r f b; do
+  while IFS="$(printf '\t')" read -r f b m; do
     if [ "$b" = ABSENT ]; then rm -f "$f" || { echo "could not remove $(fortkeep_tilde "$f")" >&2; bad=1; }
-    else cp -p "$dir/$b" "$f" || { echo "could not restore $(fortkeep_tilde "$f")" >&2; bad=1; }; fi
+    else fx_copy_back "$dir" "$b" "$m" "$f" || { echo "could not restore $(fortkeep_tilde "$f")" >&2; bad=1; }; fi
   done < "$dir/manifest.tsv"
   if [ "$bad" -ne 0 ]; then
     [ -f "$dir/sealed.tsv" ] && fx_seal_dir "$dir"  # a retry must not mistake this partial undo for the person's edits
