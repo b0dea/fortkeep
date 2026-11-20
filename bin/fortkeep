@@ -15,6 +15,7 @@ SELF="$(cd "${self%/*}/.." && pwd -P)" || { echo "fortkeep: could not find its o
 . "$SELF/checks/lib/common.sh"
 fortkeep_clean_start "$SELF/bin/fortkeep" "$@"
 . "$SELF/checks/lib/repo.sh"
+. "$SELF/checks/lib/ui.sh"
 CONTROLS="${FORTKEEP_CONTROLS:-$SELF/controls/controls.json}"
 LATEST="$FORTKEEP_REPORTS/latest/results.json"
 
@@ -46,41 +47,77 @@ when() {  # RUN_ID (20261119T140200Z) — "2026-11-19 14:02 UTC"
   printf '%s\n' "$1" | sed -E 's/^([0-9]{4})([0-9]{2})([0-9]{2})T([0-9]{2})([0-9]{2}).*/\1-\2-\3 \4:\5 UTC/'
 }
 
-# jq with checks/lib/results.jq loaded (the urgent rule, the order, the tally) and $ctl, the controls by id.
+# jq with checks/lib/results.jq loaded (the urgent rule, the order, the tally), ui.jq (the Terminal look) and $ctl,
+# the controls by id.
 rjq() {  # FILTER [jq arguments...] — raw output
   local f="$1"; shift
-  jq -r -L "$FORTKEEP_LIB_DIR" --slurpfile c "$CONTROLS" "include \"results\"; (\$c[0] | controls_by_id) as \$ctl | $f" "$@"
+  jq -r -L "$FORTKEEP_LIB_DIR" --slurpfile c "$CONTROLS" \
+    "include \"results\"; include \"ui\"; (\$c[0] | controls_by_id) as \$ctl | $f" "$@"
 }
 # The results of the controls given as jq's positional arguments (--args), or all of them when none is given.
 PICK='$ARGS.positional as $only | [.results[] | select(($only | length) == 0 or (.id as $i | $only | index($i)))]'
 
-status() {
-  local copy signed="" last="none yet" next old facts urgent="" failing="" run tally
+# This copy's status: sets COPY, SIGNED, RUN (the last check's, or empty), LAST and NEXT.
+status_facts() {
+  local old facts urgent="" failing="" tally
+  SIGNED="" RUN="" LAST="none yet"
   if fortkeep_verify_release "$SELF"; then
-    signed=1; copy="$FORTKEEP_RELEASE_TAG, a signed release"
-    if old="$(fortkeep_downgrade_from "$FORTKEEP_RELEASE_TAG")"; then copy="$copy, older than $old, which this Mac ran before"; fi
+    SIGNED=1; COPY="$FORTKEEP_RELEASE_TAG, a signed release"
+    if old="$(fortkeep_downgrade_from "$FORTKEEP_RELEASE_TAG")"; then COPY="$COPY, older than $old, which this Mac ran before"; fi
   else
-    copy="not a signed release: $FORTKEEP_RELEASE_PROBLEM"
+    COPY="not a signed release: $FORTKEEP_RELEASE_PROBLEM"
   fi
   if [ -f "$LATEST" ]; then
     facts="$(rjq '[any(.results[]; urgent($ctl)), any(.results[]; .status == "FAIL" or .status == "ERROR"), .run,
       (.results | tally_text)] | @tsv' "$LATEST")" || die "could not read the last results, $LATEST"
-    IFS=$'\t' read -r urgent failing run tally <<<"$facts"
-    last="$(when "$run"): $tally"
+    IFS=$'\t' read -r urgent failing RUN tally <<<"$facts"
+    LAST="$(when "$RUN"): $tally"
   fi
   # Signs of live malware come before anything about this copy.
   if [ "$urgent" = true ]; then
-    next="first read docs/if-red.md in $SELF, or type /if-red in your agent: a check found signs of live malware"
-  elif [ -z "$signed" ]; then
-    next="don't run fixes from this copy: reinstall a signed release unless you changed it yourself"
+    NEXT="first read docs/if-red.md in $SELF, or type /if-red in your agent: a check found signs of live malware"
+  elif [ -z "$SIGNED" ]; then
+    NEXT="don't run fixes from this copy: reinstall a signed release unless you changed it yourself"
   elif [ ! -f "$LATEST" ]; then
-    next="fortkeep agent, then type /posture (in Codex, \$posture); or fortkeep check on its own"
+    NEXT="fortkeep agent, then type /posture (in Codex, \$posture); or fortkeep check on its own"
   elif [ "$failing" = true ]; then
-    next="fortkeep agent, then type /fix (in Codex, \$fix)"
+    NEXT="fortkeep agent, then type /fix (in Codex, \$fix)"
   else
-    next="nothing to fix; check again now and then with fortkeep check"
+    NEXT="nothing to fix; check again now and then with fortkeep check"
   fi
-  printf 'This copy    %s\nLast check   %s\nNext         %s\n' "$copy" "$last" "$next"
+}
+
+status() {
+  status_facts
+  printf 'This copy    %s\nLast check   %s\nNext         %s\n' "$COPY" "$LAST" "$NEXT"
+}
+
+# Bare fortkeep at a terminal: the status, with the last check's score, above a menu of what to do.
+menu() {
+  local last folder choice=0
+  status_facts
+  last="$LAST"
+  if [ -n "$RUN" ]; then
+    last="$(when "$RUN")  $(rjq '.results | score($ctl; 10; 200)' "$LATEST")" || die "could not read the last results, $LATEST"
+  fi
+  ui_status "$SIGNED" "$COPY" "$last" "$NEXT"
+  ui_traps
+  ui_menu "Check this Mac|every check, read-only" "Scan a repo|is a folder safe to open?" \
+    "Fix with your coding agent|start claude, codex or opencode here" "Make a summary|one you can share" \
+    "Update|move to the newest signed release" "Quit|" || choice=$?
+  case "$choice" in
+    1) check ;;
+    2) # A folder dragged in from Finder comes with a trailing space and its spaces escaped: read undoes the escapes.
+      # shellcheck disable=SC2162 # without -r on purpose, for those escapes
+      IFS= read -e -p "Folder to scan: " folder || folder=""
+      folder="${folder%"${folder##*[![:space:]]}"}"
+      [ -n "$folder" ] || die "no folder given: nothing was scanned"
+      scan "$folder" ;;
+    3) agent ;;
+    4) summary ;;
+    5) exec "$SELF/checks/update.sh" ;;
+    *) exit 0 ;;
+  esac
 }
 
 # The order checks/lib/results.jq sets, one heading per group. PASS rows leave out their evidence (--json has it).
@@ -110,15 +147,30 @@ check() {
   done
   for id in ${ids[@]+"${ids[@]}"}; do set -- "$@" --only "$id"; done
   # run.sh's own summary would mix with the table or the JSON: all of its output goes to stderr, with its progress.
+  # At a terminal, its progress becomes one updating line and its summary is left out: the table says it all.
   # It starts with the person's PATH, as the agent's /posture does: the checks inspect that PATH (which pip3 or
   # python3 comes first), and run.sh puts the system folders first for its own commands.
-  PATH="$FORTKEEP_USER_PATH" "$SELF/checks/run.sh" "$@" >&2 || die "the check did not finish (its message is above)"
+  if ui_on 2; then
+    ui_traps; ui_hide_cursor 2
+    { ui_ticker & t=$!
+      PATH="$FORTKEEP_USER_PATH" "$SELF/checks/run.sh" "$@" 2>&1 >/dev/null; r=$?
+      kill "$t"; wait "$t" 2>/dev/null; exit "$r"; } | ui_progress
+    [ "${PIPESTATUS[0]}" -eq 0 ] || die "the check did not finish (its message is above)"
+    ui_restore
+  else
+    PATH="$FORTKEEP_USER_PATH" "$SELF/checks/run.sh" "$@" >&2 || die "the check did not finish (its message is above)"
+  fi
   [ -f "$LATEST" ] || die "the check wrote no results"
   facts="$(rjq "$PICK"' as $p | [any($p[]; .status == "FAIL" or .status == "ERROR"), any($p[]; urgent($ctl)), .run, .macos,
     (.results | tally_text)] | @tsv' --args ${ids[@]+"${ids[@]}"} < "$LATEST")" || die "could not read the results"
   IFS=$'\t' read -r failing urgent run macos tally <<<"$facts"
   [ "$failing" = false ] || rc=1
   if [ -n "$json" ]; then cat "$LATEST"; exit "$rc"; fi
+  if ui_on 1; then
+    rjq "$PICK"' as $p | check_view($ctl; $p; $w; $when; $self)' --argjson w "$(ui_cols)" --arg when "$(when "$run")" \
+      --arg self "$SELF" --args ${ids[@]+"${ids[@]}"} < "$LATEST" || die "could not read the results"
+    exit "$rc"
+  fi
   out="$(table "$LATEST" ${ids[@]+"${ids[@]}"})" || die "could not read the results"
   printf 'fortkeep check: %s, macOS %s\n\n%s\n\n%s\n' "$(when "$run")" "$macos" "$out" "$tally"
   if [ "$urgent" = true ]; then
@@ -127,6 +179,13 @@ check() {
     echo "Next: fortkeep agent, then type /fix (in Codex, \$fix). Why one matters: fortkeep explain ID."
   fi
   exit "$rc"
+}
+
+scan() {
+  # A folder named from where the person stands; checks/scan.sh takes absolute ones.
+  # shellcheck disable=SC2088 # a literal ~/: checks/scan.sh expands it itself
+  [ $# -ne 1 ] || case "$1" in /*|'~/'*) ;; .) set -- "$PWD" ;; *) set -- "$PWD/${1%/}" ;; esac
+  exec "$SELF/checks/scan.sh" "$@"
 }
 
 explain() {
@@ -253,17 +312,13 @@ EOF
 }
 
 case "${1:-}" in
-  '') help; echo; status ;;
+  '') if ui_on 1 && [ -t 0 ]; then menu; else help; echo; status; fi ;;
   -h|--help|help) help ;;
   check) shift; check "$@" ;;
   explain) shift; explain "$@" ;;
   agent) shift; agent "$@" ;;
   summary) shift; summary "$@" ;;
-  scan) shift
-    # A folder named from where the person stands; checks/scan.sh takes absolute ones.
-    # shellcheck disable=SC2088 # a literal ~/: checks/scan.sh expands it itself
-    [ $# -ne 1 ] || case "$1" in /*|'~/'*) ;; .) set -- "$PWD" ;; *) set -- "$PWD/${1%/}" ;; esac
-    exec "$SELF/checks/scan.sh" "$@" ;;
+  scan) shift; scan "$@" ;;
   update) shift; exec "$SELF/checks/update.sh" "$@" ;;
   version) shift; version "$@" ;;
   accept) shift; exec "$SELF/checks/accept.sh" "$@" ;;
