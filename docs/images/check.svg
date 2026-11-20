@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="796" height="729" viewBox="0 0 796 729" role="img" aria-label="fortkeep check in a terminal">
+<style>text{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,'Liberation Mono',monospace;font-size:14px;white-space:pre}.b{font-weight:700}.c0{fill:#e6edf3}.c31{fill:#ff7b72}.c32{fill:#3fb950}.c33{fill:#d29922}.c35{fill:#d2a8ff}.c36{fill:#39c5cf}.c90{fill:#8b949e}</style>
+<rect width="796" height="729" rx="10" fill="#0d1117" stroke="#30363d"/>
+<circle cx="22" cy="18" r="6" fill="#ff5f57"/><circle cx="42" cy="18" r="6" fill="#febc2e"/><circle cx="62" cy="18" r="6" fill="#28c840"/>
+<text x="20.0" y="48" class="c90" textLength="8.4" lengthAdjust="spacingAndGlyphs">$</text>
+<text x="28.4" y="48" class="c0" textLength="126.0" lengthAdjust="spacingAndGlyphs"> fortkeep check</text>
+<text x="20.0" y="86" class="c0 b" textLength="117.6" lengthAdjust="spacingAndGlyphs">fortkeep check</text>
+<text x="137.6" y="86" class="c90" textLength="184.8" lengthAdjust="spacingAndGlyphs">  2026-11-20 07:48 UTC</text>
+<text x="330.8" y="86" class="c90" textLength="8.4" lengthAdjust="spacingAndGlyphs">·</text>
+<text x="339.2" y="86" class="c90" textLength="109.2" lengthAdjust="spacingAndGlyphs"> macOS 15.7.2</text>
+<rect x="36.8" y="112" width="8.4" height="14" fill="#3fb950"/>
+<rect x="45.2" y="112" width="8.4" height="14" fill="#3fb950"/>
+<rect x="53.6" y="112" width="8.4" height="14" fill="#3fb950"/>
+<rect x="62.0" y="112" width="8.4" height="14" fill="#3fb950"/>
+<rect x="70.4" y="112" width="8.4" height="14" fill="#3fb950"/>
+<rect x="78.8" y="112" width="8.4" height="14" fill="#8b949e" opacity=".35"/>
+<rect x="87.2" y="112" width="8.4" height="14" fill="#8b949e" opacity=".35"/>
+<rect x="95.6" y="112" width="8.4" height="14" fill="#8b949e" opacity=".35"/>
+<rect x="104.0" y="112" width="8.4" height="14" fill="#8b949e" opacity=".35"/>
+<rect x="112.4" y="112" width="8.4" height="14" fill="#8b949e" opacity=".35"/>
+<rect x="120.8" y="112" width="8.4" height="14" fill="#8b949e" opacity=".35"/>
+<rect x="129.2" y="112" width="8.4" height="14" fill="#8b949e" opacity=".35"/>
+<rect x="137.6" y="112" width="8.4" height="14" fill="#8b949e" opacity=".35"/>
+<rect x="146.0" y="112" width="8.4" height="14" fill="#8b949e" opacity=".35"/>
+<text x="171.2" y="124" class="c0 b" textLength="92.4" lengthAdjust="spacingAndGlyphs">4 of 11 met</text>
+<text x="272.0" y="124" class="c90" textLength="8.4" lengthAdjust="spacingAndGlyphs">·</text>
+<text x="288.8" y="124" class="c31" textLength="67.2" lengthAdjust="spacingAndGlyphs">5 to fix</text>
+<text x="364.4" y="124" class="c90" textLength="8.4" lengthAdjust="spacingAndGlyphs">·</text>
+<text x="381.2" y="124" class="c33" textLength="134.4" lengthAdjust="spacingAndGlyphs">1 couldn't check</text>
+<text x="524.0" y="124" class="c90" textLength="8.4" lengthAdjust="spacingAndGlyphs">·</text>
+<text x="540.8" y="124" class="c36" textLength="84.0" lengthAdjust="spacingAndGlyphs">1 accepted</text>
+<text x="633.2" y="124" class="c90" textLength="8.4" lengthAdjust="spacingAndGlyphs">·</text>
+<text x="641.6" y="124" class="c90" textLength="117.6" lengthAdjust="spacingAndGlyphs"> 1 don't apply</text>
+<text x="20.0" y="162" class="c35 b" textLength="8.4" lengthAdjust="spacingAndGlyphs">➤</text>
+<text x="28.4" y="162" class="c35 b" textLength="42.0" lengthAdjust="spacingAndGlyphs"> MUST</text>
+<text x="36.8" y="181" class="c31" textLength="8.4" lengthAdjust="spacingAndGlyphs">✗</text>
+<text x="53.6" y="181" class="c31" textLength="33.6" lengthAdjust="spacingAndGlyphs">FAIL</text>
+<text x="120.8" y="181" class="c0" textLength="336.0" lengthAdjust="spacingAndGlyphs"> BL-OS-02  Firewall on with stealth mode</text>
+<text x="20.0" y="200" class="c90" textLength="327.6" lengthAdjust="spacingAndGlyphs">             Firewall: on; stealth: off</text>
+<text x="36.8" y="219" class="c31" textLength="8.4" lengthAdjust="spacingAndGlyphs">✗</text>
+<text x="53.6" y="219" class="c31" textLength="33.6" lengthAdjust="spacingAndGlyphs">FAIL</text>
+<text x="120.8" y="219" class="c0" textLength="235.2" lengthAdjust="spacingAndGlyphs"> BL-OS-08  Touch ID for sudo</text>
+<text x="20.0" y="238" class="c90" textLength="294.0" lengthAdjust="spacingAndGlyphs">             Touch ID for sudo: off</text>
+<text x="36.8" y="257" class="c31" textLength="8.4" lengthAdjust="spacingAndGlyphs">✗</text>
+<text x="53.6" y="257" class="c31" textLength="33.6" lengthAdjust="spacingAndGlyphs">FAIL</text>
+<text x="120.8" y="257" class="c0" textLength="554.4" lengthAdjust="spacingAndGlyphs"> BL-SC-01  Safe Chain installed, with shims for scripts and agents</text>
+<text x="20.0" y="276" class="c90" textLength="722.4" lengthAdjust="spacingAndGlyphs">             Safe Chain or its --ci shims are missing: safe-chain shims/npm shims/pip3</text>
+<text x="36.8" y="295" class="c33" textLength="8.4" lengthAdjust="spacingAndGlyphs">!</text>
+<text x="53.6" y="295" class="c33" textLength="42.0" lengthAdjust="spacingAndGlyphs">ERROR</text>
+<text x="120.8" y="295" class="c0" textLength="403.2" lengthAdjust="spacingAndGlyphs"> BL-BR-06  DNS filtering with malware blocklists</text>
+<text x="20.0" y="314" class="c90" textLength="613.2" lengthAdjust="spacingAndGlyphs">             Couldn't test DNS filtering: this Mac's DNS answered nothing</text>
+<text x="36.8" y="333" class="c36" textLength="8.4" lengthAdjust="spacingAndGlyphs">○</text>
+<text x="53.6" y="333" class="c36" textLength="67.2" lengthAdjust="spacingAndGlyphs">ACCEPTED</text>
+<text x="120.8" y="333" class="c0" textLength="621.6" lengthAdjust="spacingAndGlyphs"> BL-SE-01  SSH keys live in a protected SSH agent (1Password, Secretive or</text>
+<text x="20.0" y="352" class="c0" textLength="277.2" lengthAdjust="spacingAndGlyphs">                       Bitwarden)</text>
+<text x="20.0" y="371" class="c90" textLength="504.0" lengthAdjust="spacingAndGlyphs">             your reason: My SSH keys live on a hardware key</text>
+<text x="36.8" y="390" class="c32" textLength="8.4" lengthAdjust="spacingAndGlyphs">✓</text>
+<text x="53.6" y="390" class="c32" textLength="33.6" lengthAdjust="spacingAndGlyphs">PASS</text>
+<text x="120.8" y="390" class="c0" textLength="193.2" lengthAdjust="spacingAndGlyphs"> BL-OS-01  FileVault on</text>
+<text x="36.8" y="409" class="c32" textLength="8.4" lengthAdjust="spacingAndGlyphs">✓</text>
+<text x="53.6" y="409" class="c32" textLength="33.6" lengthAdjust="spacingAndGlyphs">PASS</text>
+<text x="120.8" y="409" class="c0" textLength="201.6" lengthAdjust="spacingAndGlyphs"> BL-OS-03  Gatekeeper on</text>
+<text x="20.0" y="447" class="c35 b" textLength="8.4" lengthAdjust="spacingAndGlyphs">➤</text>
+<text x="28.4" y="447" class="c35 b" textLength="58.8" lengthAdjust="spacingAndGlyphs"> SHOULD</text>
+<text x="36.8" y="466" class="c31" textLength="8.4" lengthAdjust="spacingAndGlyphs">✗</text>
+<text x="53.6" y="466" class="c31" textLength="33.6" lengthAdjust="spacingAndGlyphs">FAIL</text>
+<text x="120.8" y="466" class="c0" textLength="613.2" lengthAdjust="spacingAndGlyphs"> BL-RC-02  Global git hook scans what a clone, pull or checkout brings in</text>
+<text x="20.0" y="485" class="c90" textLength="462.0" lengthAdjust="spacingAndGlyphs">             No scan hook for: post-checkout post-merge</text>
+<text x="36.8" y="504" class="c31" textLength="8.4" lengthAdjust="spacingAndGlyphs">✗</text>
+<text x="53.6" y="504" class="c31" textLength="33.6" lengthAdjust="spacingAndGlyphs">FAIL</text>
+<text x="120.8" y="504" class="c0" textLength="504.0" lengthAdjust="spacingAndGlyphs"> GD-AI-01  Agent control files unchanged since your baseline</text>
+<text x="20.0" y="523" class="c90" textLength="739.2" lengthAdjust="spacingAndGlyphs">             No accepted baseline yet: type fortkeep baseline accept in the Terminal app</text>
+<text x="36.8" y="542" class="c32" textLength="8.4" lengthAdjust="spacingAndGlyphs">✓</text>
+<text x="53.6" y="542" class="c32" textLength="33.6" lengthAdjust="spacingAndGlyphs">PASS</text>
+<text x="120.8" y="542" class="c0" textLength="478.8" lengthAdjust="spacingAndGlyphs"> BL-AU-02  A weekly security check runs and is up to date</text>
+<text x="20.0" y="580" class="c35 b" textLength="8.4" lengthAdjust="spacingAndGlyphs">➤</text>
+<text x="28.4" y="580" class="c35 b" textLength="42.0" lengthAdjust="spacingAndGlyphs"> NICE</text>
+<text x="36.8" y="599" class="c90" textLength="8.4" lengthAdjust="spacingAndGlyphs">–</text>
+<text x="53.6" y="599" class="c90" textLength="16.8" lengthAdjust="spacingAndGlyphs">NA</text>
+<text x="120.8" y="599" class="c0" textLength="428.4" lengthAdjust="spacingAndGlyphs"> BL-SE-08  AI-agent transcripts kept out of backups</text>
+<text x="20.0" y="618" class="c90" textLength="361.2" lengthAdjust="spacingAndGlyphs">             No AI-agent transcript folders</text>
+<text x="36.8" y="637" class="c32" textLength="8.4" lengthAdjust="spacingAndGlyphs">✓</text>
+<text x="53.6" y="637" class="c32" textLength="33.6" lengthAdjust="spacingAndGlyphs">PASS</text>
+<text x="120.8" y="637" class="c0" textLength="352.8" lengthAdjust="spacingAndGlyphs"> BL-RT-06  tirith terminal guard installed</text>
+<text x="20.0" y="675" class="c0 b" textLength="42.0" lengthAdjust="spacingAndGlyphs">Next:</text>
+<text x="87.2" y="675" class="c0" textLength="688.8" lengthAdjust="spacingAndGlyphs">fortkeep agent, then type /fix (in Codex, $fix). Why one matters: fortkeep explain</text>
+<text x="20.0" y="694" class="c0" textLength="92.4" lengthAdjust="spacingAndGlyphs">        ID.</text>
+</svg>

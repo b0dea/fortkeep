@@ -65,7 +65,7 @@ ui_progress() {  # reads checks/run.sh's stderr (and ui_ticker's lines); draws o
 }
 
 ui_status() {  # SIGNED COPY LAST NEXT — the block above the menu; SIGNED is empty for a copy that isn't a signed release
-  local mark="$UI_GREEN✓$UI_OFF"
+  local mark="${UI_GREEN}✓${UI_OFF}"  # braces: bash 3.2 in UTF-8 would read the ✓ as part of the name
   [ -n "$1" ] || mark="$UI_YELLOW!$UI_OFF"
   printf '%sfortkeep%s  %sa security checkup for this Mac%s\n\n' "$UI_BOLD" "$UI_OFF" "$UI_GRAY" "$UI_OFF"
   printf '  %sThis copy%s    %s %s\n' "$UI_GRAY" "$UI_OFF" "$mark" "$2"

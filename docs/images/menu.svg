@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="796" height="368" viewBox="0 0 796 368" role="img" aria-label="fortkeep in a terminal">
+<style>text{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,'Liberation Mono',monospace;font-size:14px;white-space:pre}.b{font-weight:700}.c0{fill:#e6edf3}.c31{fill:#ff7b72}.c32{fill:#3fb950}.c33{fill:#d29922}.c35{fill:#d2a8ff}.c36{fill:#39c5cf}.c90{fill:#8b949e}</style>
+<rect width="796" height="368" rx="10" fill="#0d1117" stroke="#30363d"/>
+<circle cx="22" cy="18" r="6" fill="#ff5f57"/><circle cx="42" cy="18" r="6" fill="#febc2e"/><circle cx="62" cy="18" r="6" fill="#28c840"/>
+<text x="20.0" y="48" class="c90" textLength="8.4" lengthAdjust="spacingAndGlyphs">$</text>
+<text x="28.4" y="48" class="c0" textLength="75.6" lengthAdjust="spacingAndGlyphs"> fortkeep</text>
+<text x="20.0" y="86" class="c0 b" textLength="67.2" lengthAdjust="spacingAndGlyphs">fortkeep</text>
+<text x="104.0" y="86" class="c90" textLength="260.4" lengthAdjust="spacingAndGlyphs">a security checkup for this Mac</text>
+<text x="36.8" y="124" class="c90" textLength="75.6" lengthAdjust="spacingAndGlyphs">This copy</text>
+<text x="146.0" y="124" class="c32" textLength="8.4" lengthAdjust="spacingAndGlyphs">✓</text>
+<text x="154.4" y="124" class="c0" textLength="210.0" lengthAdjust="spacingAndGlyphs"> v0.1.0, a signed release</text>
+<rect x="330.8" y="131" width="8.4" height="14" fill="#3fb950"/>
+<rect x="339.2" y="131" width="8.4" height="14" fill="#3fb950"/>
+<rect x="347.6" y="131" width="8.4" height="14" fill="#3fb950"/>
+<rect x="356.0" y="131" width="8.4" height="14" fill="#3fb950"/>
+<rect x="364.4" y="131" width="8.4" height="14" fill="#3fb950"/>
+<rect x="372.8" y="131" width="8.4" height="14" fill="#3fb950"/>
+<rect x="381.2" y="131" width="8.4" height="14" fill="#3fb950"/>
+<rect x="389.6" y="131" width="8.4" height="14" fill="#8b949e" opacity=".35"/>
+<rect x="398.0" y="131" width="8.4" height="14" fill="#8b949e" opacity=".35"/>
+<rect x="406.4" y="131" width="8.4" height="14" fill="#8b949e" opacity=".35"/>
+<text x="36.8" y="143" class="c90" textLength="84.0" lengthAdjust="spacingAndGlyphs">Last check</text>
+<text x="120.8" y="143" class="c0" textLength="193.2" lengthAdjust="spacingAndGlyphs">   2026-11-20 07:48 UTC</text>
+<text x="431.6" y="143" class="c0 b" textLength="92.4" lengthAdjust="spacingAndGlyphs">9 of 12 met</text>
+<text x="532.4" y="143" class="c90" textLength="8.4" lengthAdjust="spacingAndGlyphs">·</text>
+<text x="549.2" y="143" class="c31" textLength="67.2" lengthAdjust="spacingAndGlyphs">2 to fix</text>
+<text x="624.8" y="143" class="c90" textLength="8.4" lengthAdjust="spacingAndGlyphs">·</text>
+<text x="641.6" y="143" class="c36" textLength="84.0" lengthAdjust="spacingAndGlyphs">1 accepted</text>
+<text x="36.8" y="162" class="c90" textLength="33.6" lengthAdjust="spacingAndGlyphs">Next</text>
+<text x="70.4" y="162" class="c0" textLength="470.4" lengthAdjust="spacingAndGlyphs">         fortkeep agent, then type /fix (in Codex, $fix)</text>
+<text x="20.0" y="200" class="c36 b" textLength="8.4" lengthAdjust="spacingAndGlyphs">➤</text>
+<text x="28.4" y="200" class="c36 b" textLength="151.2" lengthAdjust="spacingAndGlyphs"> 1  Check this Mac</text>
+<text x="305.6" y="200" class="c90" textLength="184.8" lengthAdjust="spacingAndGlyphs">every check, read-only</text>
+<text x="20.0" y="219" class="c0" textLength="134.4" lengthAdjust="spacingAndGlyphs">  2  Scan a repo</text>
+<text x="305.6" y="219" class="c90" textLength="210.0" lengthAdjust="spacingAndGlyphs">is a folder safe to open?</text>
+<text x="20.0" y="238" class="c0" textLength="260.4" lengthAdjust="spacingAndGlyphs">  3  Fix with your coding agent</text>
+<text x="305.6" y="238" class="c90" textLength="302.4" lengthAdjust="spacingAndGlyphs">start claude, codex or opencode here</text>
+<text x="20.0" y="257" class="c0" textLength="159.6" lengthAdjust="spacingAndGlyphs">  4  Make a summary</text>
+<text x="305.6" y="257" class="c90" textLength="142.8" lengthAdjust="spacingAndGlyphs">one you can share</text>
+<text x="20.0" y="276" class="c0" textLength="92.4" lengthAdjust="spacingAndGlyphs">  5  Update</text>
+<text x="305.6" y="276" class="c90" textLength="277.2" lengthAdjust="spacingAndGlyphs">move to the newest signed release</text>
+<text x="20.0" y="295" class="c0" textLength="75.6" lengthAdjust="spacingAndGlyphs">  6  Quit</text>
+<text x="20.0" y="333" class="c90" textLength="8.4" lengthAdjust="spacingAndGlyphs">↑</text>
+<text x="28.4" y="333" class="c90" textLength="8.4" lengthAdjust="spacingAndGlyphs">↓</text>
+<text x="36.8" y="333" class="c90" textLength="126.0" lengthAdjust="spacingAndGlyphs"> or j/k to move</text>
+<text x="171.2" y="333" class="c90" textLength="8.4" lengthAdjust="spacingAndGlyphs">·</text>
+<text x="179.6" y="333" class="c90" textLength="134.4" lengthAdjust="spacingAndGlyphs"> Enter to choose</text>
+<text x="322.4" y="333" class="c90" textLength="8.4" lengthAdjust="spacingAndGlyphs">·</text>
+<text x="330.8" y="333" class="c90" textLength="33.6" lengthAdjust="spacingAndGlyphs"> 1-6</text>
+<text x="372.8" y="333" class="c90" textLength="8.4" lengthAdjust="spacingAndGlyphs">·</text>
+<text x="381.2" y="333" class="c90" textLength="84.0" lengthAdjust="spacingAndGlyphs"> q to quit</text>
+</svg>

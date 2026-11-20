@@ -215,6 +215,15 @@ Urgent: this may mean the Mac is compromised now. Read $T/docs/if-red.md before 
   grep -q ' icanon ' "$BATS_TEST_TMPDIR/after"; grep -q ' echo ' "$BATS_TEST_TMPDIR/after"  # typing shows again
 }
 
+@test "the menu marks a signed release with a green check, in a UTF-8 terminal too" {
+  git -C "$T" init -q -b main; signers_into "$T"; commit "$T"; sign_release "$T" v0.1.0
+  person_session
+  # bash 3.2 in a UTF-8 locale reads a symbol's first byte as part of a variable name written just before it
+  pty "export LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8; $(printf '%q' "$T/bin/fortkeep")" q
+  [ "$status" -eq 0 ]
+  [[ "$raw" == *$'\e[32m✓\e[0m v0.1.0, a signed release'* ]]
+}
+
 @test "the menu moves with the arrow keys and runs the item chosen" {
   stub claude 'echo "ran claude"'  # a wrong pick never starts a real agent
   mkdir -p "$HOME/dev/app"; git init -q "$HOME/dev/app"
