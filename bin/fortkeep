@@ -101,7 +101,6 @@ menu() {
     last="$(when "$RUN")  $(rjq '.results | score($ctl; 10; 200)' "$LATEST")" || die "could not read the last results, $LATEST"
   fi
   ui_status "$SIGNED" "$COPY" "$last" "$NEXT"
-  ui_traps
   ui_menu "Check this Mac|every check, read-only" "Scan a repo|is a folder safe to open?" \
     "Fix with your coding agent|start claude, codex or opencode here" "Make a summary|one you can share" \
     "Update|move to the newest signed release" "Quit|" || choice=$?
@@ -151,7 +150,7 @@ check() {
   # It starts with the person's PATH, as the agent's /posture does: the checks inspect that PATH (which pip3 or
   # python3 comes first), and run.sh puts the system folders first for its own commands.
   if ui_on 2; then
-    ui_traps; ui_hide_cursor 2
+    ui_hide_cursor 2
     { ui_ticker & t=$!
       PATH="$FORTKEEP_USER_PATH" "$SELF/checks/run.sh" "$@" 2>&1 >/dev/null; r=$?
       kill "$t"; wait "$t" 2>/dev/null; exit "$r"; } | ui_progress

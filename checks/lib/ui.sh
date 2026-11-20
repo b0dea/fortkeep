@@ -17,18 +17,15 @@ ui_cols() {  # the terminal's width: tput reads it from whichever of stdout or s
 
 UI_BOLD=$'\033[1m' UI_GRAY=$'\033[90m' UI_GREEN=$'\033[32m' UI_YELLOW=$'\033[33m' UI_CYAN=$'\033[36m' UI_OFF=$'\033[0m'
 
-# Whatever the menu or the progress line changed in the terminal goes back on exit, Ctrl-C included.
+# Whatever the menu or the progress line changed in the terminal goes back on exit. bash runs the EXIT trap on Ctrl-C
+# too, so one trap covers both.
 UI_STTY="" UI_CURSOR_FD=""
 ui_restore() {
   if [ -n "$UI_STTY" ]; then stty "$UI_STTY" 2>/dev/null; UI_STTY=""; fi
-  if [ -n "$UI_CURSOR_FD" ]; then printf '\033[?25h' >&"$UI_CURSOR_FD"; UI_CURSOR_FD=""; fi
+  # On its own line, which a progress line cut short by Ctrl-C would otherwise share with the prompt.
+  if [ -n "$UI_CURSOR_FD" ]; then printf '\r\033[K\033[?25h' >&"$UI_CURSOR_FD"; UI_CURSOR_FD=""; fi
 }
-ui_hide_cursor() { UI_CURSOR_FD="$1"; printf '\033[?25l' >&"$1"; }  # FD
-ui_traps() {
-  trap ui_restore EXIT
-  trap 'ui_restore; echo >&2; exit 130' INT
-  trap 'ui_restore; exit 143' TERM
-}
+ui_hide_cursor() { trap ui_restore EXIT; UI_CURSOR_FD="$1"; printf '\033[?25l' >&"$1"; }  # FD
 
 # The progress line. The caller hides the cursor (ui_hide_cursor 2), so its own trap shows it again. checks/run.sh prints "fortkeep: N/TOTAL ID (Ns so far)" on stderr as each check starts; its
 # output is its contract with agents, so it stays as it is and this reads it. ui_ticker's lines move the spinner

