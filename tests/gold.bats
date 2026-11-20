@@ -504,6 +504,14 @@ sweep() { FORTKEEP_WEEKLY_RUN=1 chk GD-RC-01; }  # the weekly run: always sweeps
   echo "$HOME/dev/app/clients" > "$FORTKEEP_PRIVATE_PATHS"
   sweep; [ "$(field status)" = PASS ]; [ "$(field note)" = "(a private folder was excluded)" ]; [[ "$output" != *clients* ]]
 }
+@test "GD-RC-01 never reads a private folder inside a repo added in the data volume's spelling" {
+  # /bin/bash's pwd -P keeps /System/Volumes/Data/..., where the swept repos are spelled as they were found.
+  repo "$HOME/dev/app"; mkdir -p "$HOME/dev/app/clients/c1"
+  p1='Cot%3'; p2='t=shtP'; printf 'var s = "%s%s";\n' "$p1" "$p2" > "$HOME/dev/app/clients/c1/m.js"; commit "$HOME/dev/app"
+  d="/System/Volumes/Data$(cd "$HOME" && pwd -P)"; [ -d "$d/dev/app/clients" ]
+  echo "$d/dev/app/clients" > "$FORTKEEP_PRIVATE_PATHS"
+  sweep; [ "$(field status)" = PASS ]; [ "$(field note)" = "(a private folder was excluded)" ]; [[ "$output" != *clients* ]]
+}
 @test "GD-RC-01 never follows a folder swapped for a symlink out of the repo, into a private folder or anywhere else" {
   repo "$HOME/dev/app"; mkdir -p "$HOME/dev/app/lib"; echo 'var ok = 1;' > "$HOME/dev/app/lib/m.js"; commit "$HOME/dev/app"
   p1='Cot%3'; p2='t=shtP'
