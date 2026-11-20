@@ -17,14 +17,15 @@ metadata:
 3. Run `checks/scan.sh "<path>"`, with the path in double quotes, and let it run for 3 minutes: in Claude Code, give
    the Bash call a timeout of 180000 (its default of 2 minutes cuts the scan short).
 4. **Verdict first**, one bold line with its symbol and the number of findings, such as
-   `✗ HIGH · 2 findings in 1 project`. The verdict is the scan's last line; the exit code says which, and its row is
-   what step 6 does:
+   `✗ HIGH · 2 findings in 1 project`. The verdict is the scan's last line, which matches one row below; read it
+   rather than adding anything to the command to print the exit code (the guards refuse that). Its row is what step 6
+   does:
 
    | Exit | Verdict | What to do |
    |---|---|---|
    | 1 | ✗ HIGH | Tell the person to keep the project closed: no install, build or run, and no opening it in an editor or agent. Then go straight to `/if-red`. |
    | 3 | ! look | Say what to check in each flagged file before trusting the project. |
-   | 4 | ! incomplete | Say what wasn't scanned (the SKIP, ERROR and NOTE lines, the time, or no git repo): nothing flagged so far is not a clean result. |
+   | 4 | ! incomplete | Say what wasn't scanned (the SKIP, ERROR and NOTE lines, the time, or no git repo): nothing flagged so far is not a clean result. If it says a temporary file couldn't be written, the agent is in a read-only sandbox (Codex's read-only mode): the person restarts it in its default mode. |
    | 0 | ✓ clean | No known sign of a poisoned repo was found; say this is not proof the project is safe. |
    | 2 | refused | Read its message and ask for another folder. |
 

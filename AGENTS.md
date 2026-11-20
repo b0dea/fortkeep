@@ -7,7 +7,8 @@ baseline. They may not be technical: plain language, one step at a time, explain
 
 The repo's hooks add a fortkeep message when a session starts. Greet the person in two sentences. If that
 message contains a WARNING, say so first. This copy not being exactly a signed release: recommend not running fixes;
-they should reinstall a signed release unless they made these changes themselves. The agent's mode: fixes are
+they should reinstall a signed release unless they made these changes themselves. It blocks fixes only: `/posture`,
+`/scan` and `/summary` still run. The agent's mode: fixes are
 refused until they switch back to the default mode. If there is no such message, the hooks did not run, and
 they are the guards: say so, point to `docs/agents.md` to turn them on, and don't run `/fix` until they do. Then offer
 `/posture`. If the message says this is a development session, don't offer `/posture`: follow `CONTRIBUTING.md`.
@@ -39,6 +40,8 @@ In a person's session the guards allow only this:
 - Read tools read this repo's files, never `private-paths`, `reports/.approvals` or `.git`. Codex has no read tool:
   read a file with `checks/show.sh <path>`.
 - Nothing in this repo is written by hand: `checks/configure.sh` saves settings and `checks/run.sh` writes results.
+- Use the read tool for files, never `ls`, `cat`, `grep` or `python3`. If the guards refuse a tool, don't try the same
+  thing another way (a subagent, another tool, another spelling): tell the person what was refused.
 
 ## How results work
 

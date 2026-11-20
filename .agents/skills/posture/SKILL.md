@@ -9,8 +9,9 @@ metadata:
 
 ## 1. Set up (first run, or when the person wants to change settings)
 
-If `reports/config.json` exists and the person hasn't asked to change their settings, skip steps 1–4 and go to
-"New overlays" below.
+Find out whether `reports/config.json` exists by reading it with the read tool (in Codex,
+`checks/show.sh reports/config.json`); don't list the folder. If it exists and the person hasn't asked to change their
+settings, skip steps 1–4 and go to "New overlays" below.
 
 1. Run `checks/detect.sh` and list the overlays: `checks/overlays.sh list`.
    Say in one sentence which security tools it found.
