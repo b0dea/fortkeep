@@ -70,7 +70,8 @@ lines="$out_dir/.lines"
 : > "$lines"
 
 # A full run takes minutes and an agent's shell tool may give up on silence: one progress line per check, on stderr
-# only, so stdout (the summary) and results.json stay the same.
+# only, so stdout (the summary) and results.json stay the same. bin/fortkeep draws its progress line from these
+# (checks/lib/ui.sh, ui_progress): keep their form.
 n=0; start=$SECONDS
 while IFS= read -r ctl; do
   [ -n "$ctl" ] || continue
