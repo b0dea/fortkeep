@@ -289,7 +289,8 @@ for f in "${apps[@]}"; do pub "$f" && [ -f "$f" ] && files+=("$f"); done
 if [ ${#files[@]} -gt 0 ]; then
   verdicts="$(/usr/bin/perl -e '
     my @tag = ("C25061"."7A", "C25061"."8A", "C25061"."9A", "C25062"."0A", "C26051"."1A", "RS2606"."05", "M26063"."0A", "NPM_WS"."_SHIM");
-    my $re = join "|", (map { quotemeta } @tag), quotemeta("eval(atob("), q{\t{50,}eval\(};
+    # A tag counts as the comment the patch writes (/*TAG*/): five of them are also plain hex strings.
+    my $re = join "|", (map { q{/\*\s*} . quotemeta } @tag), quotemeta("eval(atob("), q{\t{50,}eval\(};
     for my $f (@ARGV) {
       my ($h, $buf);
       unless (open($h, "<", $f) and defined read($h, $buf, 32 << 20)) { print "U\t$f\n"; next }

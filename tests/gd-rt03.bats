@@ -224,6 +224,7 @@ EOS"
 @test "GD-RT-03 an editor or app start-up file carrying PolinRider's patch → FAIL; ordinary code doesn't; a private folder isn't read" {
   M="$FORTKEEP_SYSROOT/Applications/Cursor.app/Contents/Resources/app/out"; mkdir -p "$M"
   printf 'console.log(1);\t\t\teval(x); // M2606\n' > "$M/main.js"; chk; [ "$(field status)" = PASS ]
+  printf 'var hex = "00%s11";\n' "C25061""7A" > "$M/main.js"; chk; [ "$(field status)" = PASS ]  # the tag's letters as data
   { printf 'console.log(1);'; printf '\t%.0s' $(seq 60); printf 'eval(x);\n'; } > "$M/main.js"
   chk; [ "$(field status)" = FAIL ]; [[ "$(field note)" == *"/Applications/Cursor.app/Contents/Resources/app/out/main.js is patched by PolinRider's second stage"* ]]
   printf 'console.log(1);eval(atob("eA=="));\n' > "$M/main.js"; chk; [ "$(field status)" = FAIL ]
