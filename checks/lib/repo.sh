@@ -56,11 +56,11 @@ EOF
 fortkeep_config_extras() {  # REPO — one line for each file or setting, beyond the tracked files, that changes what an agent
   # loads or what git runs here: untracked or ignored files where agents load config, git hooks, local git settings
   # that run commands. Ignored files count: an agent loads them as readily as tracked ones. OpenCode installs its
-  # plugin library in .opencode itself (node_modules, package.json, bun.lock, .gitignore); none of it is a plugin.
+  # plugin library in .opencode itself (node_modules, package.json, its bun or npm lockfile, .gitignore); none of it is a plugin.
   local r="$1" d f
   fortkeep_git "$r" -c core.quotePath=false ls-files --others -- .claude .codex .agents .opencode \
     ':(exclude).opencode/node_modules' ':(exclude).opencode/package.json' ':(exclude).opencode/bun.lock' \
-    ':(exclude).opencode/.gitignore' opencode.json opencode.jsonc .mcp.json \
+    ':(exclude).opencode/package-lock.json' ':(exclude).opencode/.gitignore' opencode.json opencode.jsonc .mcp.json \
     ':(glob)**/CLAUDE.md' ':(glob)**/CLAUDE.local.md' ':(glob)**/AGENTS.md' ':(glob)**/AGENTS.override.md' 2>/dev/null \
     || { echo "files: unreadable"; return 0; }
   # The copy's own hook folder. A hook folder from the person's own git config is theirs, not the copy's, and fortkeep's

@@ -73,7 +73,7 @@ warned() { start; [[ "$msg" == *"WARNING"*"$1"*"Don't run fixes; reinstall a sig
   done
   # OpenCode's own plugin library in .opencode is not a plugin
   mkdir -p "$T/.opencode/node_modules/x"; echo x > "$T/.opencode/node_modules/x/i.js"
-  echo '{}' > "$T/.opencode/package.json"; echo x > "$T/.opencode/bun.lock"; echo '*' > "$T/.opencode/.gitignore"
+  echo '{}' > "$T/.opencode/package.json"; echo x > "$T/.opencode/bun.lock"; echo x > "$T/.opencode/package-lock.json"; echo '*' > "$T/.opencode/.gitignore"
   clean
 }
 @test "git hooks and local git settings that run commands count as local changes (A5)" {
