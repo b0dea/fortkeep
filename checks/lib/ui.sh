@@ -22,16 +22,17 @@ UI_BOLD=$'\033[1m' UI_GRAY=$'\033[90m' UI_GREEN=$'\033[32m' UI_YELLOW=$'\033[33m
 UI_STTY="" UI_CURSOR_FD=""
 ui_restore() {
   if [ -n "$UI_STTY" ]; then stty "$UI_STTY" 2>/dev/null; UI_STTY=""; fi
-  # On its own line, which a progress line cut short by Ctrl-C would otherwise share with the prompt.
-  if [ -n "$UI_CURSOR_FD" ]; then printf '\r\033[K\033[?25h' >&"$UI_CURSOR_FD"; UI_CURSOR_FD=""; fi
+  # On its own line, which a progress line cut short by Ctrl-C would otherwise share with the prompt; line wrap back on
+  # (the menu turns it off).
+  if [ -n "$UI_CURSOR_FD" ]; then printf '\r\033[K\033[?25h\033[?7h' >&"$UI_CURSOR_FD"; UI_CURSOR_FD=""; fi
 }
 ui_hide_cursor() { trap ui_restore EXIT; UI_CURSOR_FD="$1"; printf '\033[?25l' >&"$1"; }  # FD
 
-# The progress line. The caller hides the cursor (ui_hide_cursor 2), so its own trap shows it again. checks/run.sh prints "fortkeep: N/TOTAL ID (Ns so far)" on stderr as each check starts; its
+# The progress line. checks/run.sh prints "fortkeep: N/TOTAL ID (Ns so far)" on stderr as each check starts; its
 # output is its contract with agents, so it stays as it is and this reads it. ui_ticker's lines move the spinner
-# between them.
+# between them. The caller hides the cursor (ui_hide_cursor 2), so its own trap shows it again.
 UI_TICK="fortkeep-ui: tick"
-ui_ticker() { while sleep 0.1; do echo "$UI_TICK"; done; }
+ui_ticker() { while sleep 0.1 && echo "$UI_TICK"; do :; done; }  # stops once nothing reads it
 
 ui_progress() {  # reads checks/run.sh's stderr (and ui_ticker's lines); draws one line on stderr that keeps updating
   local line n=0 total=0 id="" f=0 cols bar w full tail start=$SECONDS
@@ -107,6 +108,9 @@ ui_menu() {  # ITEM... — draws the menu on stdout; returns the number of the i
   cols="$(ui_cols)"
   UI_STTY="$(stty -g)" || UI_STTY=""
   ui_hide_cursor 1
+  # Keys typed between two reads aren't echoed under the menu, and with line wrap off every line is one row, so the
+  # redraw's count of rows to go back up holds in a narrow window too.
+  stty -echo -icanon 2>/dev/null; printf '\033[?7l'
   ui_menu_items "$sel" "$cols" "$@"
   while :; do
     key="$(ui_key)"
