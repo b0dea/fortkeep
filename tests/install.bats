@@ -32,6 +32,7 @@ nothing_installed() { [ ! -e "$DEST" ]; [ ! -e "$HOME/.config/fortkeep/release-s
   cmp "$HOME/.config/fortkeep/release-signers" "$O/.github/allowed_signers"
   [ "$(readlink "$HOME/.local/bin/fortkeep")" = "$DEST/bin/fortkeep" ]
   [[ "$output" == *"fortkeep agent"* ]]
+  [[ "$output" != *"warning:"* ]]  # git 2.54's clone --branch of a signed tag warned "is not a commit!"
   installed_release
 }
 
@@ -66,7 +67,7 @@ nothing_installed() { [ ! -e "$DEST" ]; [ ! -e "$HOME/.config/fortkeep/release-s
 
 @test "refuses a tag that is not the commit its same-named branch is" {
   echo next > "$O/next"; commit "$O"; sign_release "$O" v0.2.0
-  git -C "$O" branch v0.2.0 "$C"  # clone --branch takes the branch; the tag is elsewhere
+  git -C "$O" branch v0.2.0 "$C"  # a branch of the tag's name, at the pinned commit; the tag is elsewhere
   install --tag v0.2.0 --commit "$C"
   [ "$status" -eq 1 ]; [[ "$output" == *"not the pinned"* ]]
   nothing_installed
@@ -142,9 +143,9 @@ nothing_installed() { [ ! -e "$DEST" ]; [ ! -e "$HOME/.config/fortkeep/release-s
 }
 
 @test "a second install that finishes while this one clones wins, and this one never nests its clone inside it" {
-  # git that, on clone, first lets another install finish: DEST appears, holding a copy
+  # git that, on fetch, first lets another install finish: DEST appears, holding a copy
   real="$(command -v git)"
-  stub git "case \" \$* \" in *\" clone \"*) mkdir -p \"$DEST/bin\"; echo theirs > \"$DEST/bin/fortkeep\" ;; esac; exec \"$real\" \"\$@\""
+  stub git "case \" \$* \" in *\" fetch \"*) mkdir -p \"$DEST/bin\"; echo theirs > \"$DEST/bin/fortkeep\" ;; esac; exec \"$real\" \"\$@\""
   install --tag v0.1.0 --commit "$C"
   [ "$status" -eq 1 ]; [[ "$output" == *"another install got there first"* ]]
   [ ! -e "$DEST/fortkeep" ]; [ "$(cat "$DEST/bin/fortkeep")" = theirs ]

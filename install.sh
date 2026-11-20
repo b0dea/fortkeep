@@ -55,16 +55,20 @@ r="$tmp/fortkeep"
 g() { git --no-replace-objects -C "$r" -c core.fsmonitor= -c core.hooksPath=/dev/null "$@"; }
 
 echo "Cloning fortkeep $tag from $URL"
-# --no-local: a clone from a folder would otherwise copy its objects unchecked, so a tree or file stored under the
-# pinned commit's ids could differ from it. An empty template: no hooks from the person's init.templateDir.
+# An empty repo, then a fetch and a checkout of the pinned commit, rather than git clone --branch: the same on every
+# git version (git 2.54's clone warns that a signed tag "is not a commit"), and a tag is never mistaken for a branch of
+# the same name. A fetch always goes through git's transport, so even from a folder no object is copied in unchecked.
+# An empty template: no hooks from the person's init.templateDir.
 mkdir "$tmp/template" || stop "could not make a temporary folder in $tmp."
-git -c core.hooksPath=/dev/null -c advice.detachedHead=false clone --quiet --no-local --template="$tmp/template" \
-  --branch "$tag" -- "$URL" "$r" \
-  || stop "could not clone $tag from $URL (git's message is above). Nothing was installed."
-head="$(g rev-parse -q --verify 'HEAD^{commit}')"
+git -c init.defaultBranch=main init --quiet --template="$tmp/template" "$r" || stop "could not make a git repository in $r."
+g remote add origin "$URL" || stop "could not set $URL as where to fetch from."
+g -c remote.origin.uploadpack=git-upload-pack fetch --quiet --tags origin \
+  || stop "could not fetch $tag from $URL (git's message is above). Nothing was installed."
 tagged="$(g rev-parse -q --verify "refs/tags/$tag^{commit}")"
-[ "$head" = "$commit" ] && [ "$tagged" = "$commit" ] \
+[ "$tagged" = "$commit" ] \
   || stop "$tag on $URL is commit ${tagged:-unknown}, not the pinned $commit: refusing it. Nothing was installed."
+g -c advice.detachedHead=false checkout --quiet --detach "$commit" \
+  || stop "could not check out $commit (git's message is above). Nothing was installed."
 
 # Only now, with the content pinned, does any of the clone's code run: the repo's own release checks, the ones session
 # start and the fixes make, so a copy they would refuse is refused now.
