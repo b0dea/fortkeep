@@ -207,6 +207,11 @@ EOS"; }
   dns 1.1.1.2 1.0.0.2
   chk BL-BR-06; [ "$(field status)" = PASS ]
 }
+@test "BL-BR-06 Quad9's filtering addresses with ECS → PASS; its unfiltered 9.9.9.10 → FAIL" {
+  dns 9.9.9.11 149.112.112.11; chk BL-BR-06; [ "$(field status)" = PASS ]
+  dns 2620:fe::11 2620:fe::fe:11; chk BL-BR-06; [ "$(field status)" = PASS ]
+  dns 9.9.9.10; chk BL-BR-06; [ "$(field status)" = FAIL ]; [[ "$(field evidence)" == *9.9.9.10* ]]
+}
 @test "BL-BR-06 a plain public resolver → FAIL; a router or local resolver → FAIL with the ACCEPTED hint" {
   answers 104.18.4.35 2606:4700::6812:423   # the test name resolves: nothing filters it
   dns 1.1.1.1
