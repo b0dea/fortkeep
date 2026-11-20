@@ -3,7 +3,7 @@
 What changed in each release, for someone deciding whether to update. Each
 [GitHub release](https://github.com/b0dea/fortkeep/releases) also lists the merged pull requests.
 
-## Unreleased: 0.1.4
+## 0.1.4
 
 - **The repo sweep finishes on a Mac with many repos.** It gets about two seconds per repo instead of a fixed 140
   seconds, up to 6 minutes when your agent runs it. `fortkeep check` typed in the Terminal app, and the weekly job,
