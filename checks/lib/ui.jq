@@ -28,25 +28,28 @@ def tint($c): if $c == "bold" then bold elif $c == "red" then red elif $c == "ye
   else gray end;
 
 # The score: a bar, then "52 of 66 met · 3 urgent · 4 to fix ...", wrapped to $w after the bar. Met is PASS, out of
-# the controls that apply (all but NA). Urgent FAILs count as urgent, not as "to fix".
+# the controls that apply (all but NA). Urgent FAILs count as urgent, not as "to fix". The bar is at most $barw wide,
+# and gives up width (down to 10) when that keeps the text on one line.
 def score($ctl; $barw; $w):
   [.[] | select(.status != "NA")] as $apply
   | ($apply | length) as $n | ($apply | count(.status == "PASS")) as $met
-  | (if $n > 0 then ($met * $barw / $n | floor) else 0 end) as $full
   | [["\($met) of \($n) met", "bold"],
      (count(urgent($ctl)) | select(. > 0) | ["\(.) urgent", "red"]),
      (count(.status == "FAIL" and (urgent($ctl) | not)) | select(. > 0) | ["\(.) to fix", "red"]),
      (count(.status == "ERROR") | select(. > 0) | ["\(.) couldn't check", "yellow"]),
      (count(.status == "ACCEPTED") | select(. > 0) | ["\(.) accepted", "cyan"]),
      (count(.status == "NA") | select(. > 0) | ["\(.) don't apply", "gray"])] as $parts
-  | ([$w - $barw - 4, 20] | max) as $room
+  | ($w - 4 - ($parts | map(.[0]) | join(" · ") | length)) as $fit
+  | (if $fit >= $barw or $fit < 10 then $barw else $fit end) as $bw
+  | (if $n > 0 then ($met * $bw / $n | floor) else 0 end) as $full
+  | ([$w - $bw - 4, 20] | max) as $room
   # The parts in lines of at most $room characters, never splitting a part.
   | (reduce $parts[] as $p ([];
       if length > 0 and (.[-1] | map(.[0] | length + 3) | add) + ($p[0] | length) <= $room then .[length - 1] += [$p]
       else . + [[$p]] end)
      | map(map(. as [$t, $c] | $t | tint($c))) | map(join(" · " | gray))) as $lines
-  | ("█" | repeat($full) | green) + ("░" | repeat($barw - $full) | gray) + "  " + $lines[0],
-    ($lines[1:][] | indent($barw + 4));
+  | ("█" | repeat($full) | green) + ("░" | repeat($bw - $full) | gray) + "  " + $lines[0],
+    ($lines[1:][] | indent($bw + 4));
 
 # One result: its symbol, status, id and title, then its evidence or reason under the id. Titles wrap under the
 # title column (23), evidence under the id column (13).
@@ -71,7 +74,7 @@ def check_view($ctl; $picked; $w; $when; $self):
   | ([$picked[] | urgent($ctl)] | any) as $urgent
   | ("fortkeep check" | bold) + ("  \($when) · macOS \(.macos | clean)" | gray),
     "",
-    (.results | score($ctl; [[$w - 60, 10] | max, 20] | min; $w - 2) | indent(2)),
+    (.results | score($ctl; 20; $w - 2) | indent(2)),
     "",
     ($picked | map(. + {group: group($ctl)}) | group_by(.group) | sort_by(.[0].group | group_rank) | .[]
      | (.[0].group | clean) as $g
