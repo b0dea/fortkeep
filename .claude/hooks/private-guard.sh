@@ -5,8 +5,9 @@ fail() { echo "Blocked by fortkeep: guard could not read the request" >&2; exit 
 blocked() { echo "Blocked: that location is private to this person and is never read or reported." >&2; exit 2; }
 # shellcheck source=.claude/hooks/lib.sh
 . "$(dirname "$0")/lib.sh"
+fail_closed
 # shellcheck source=/dev/null
-. "$REPO/checks/lib/common.sh" 2>/dev/null || fail
+. "$REPO/checks/lib/common.sh" || fail
 input="$(cat)"
 [ -n "$input" ] || fail
 hay="$(printf '%s' "$input" | jq -r '[.tool_input | .. | strings] | join("\n")')" || fail
