@@ -60,16 +60,14 @@ If `reports/config.json` exists and the person hasn't asked to change their sett
      check". It is not a failure of the Mac: the person asks whoever manages that tool for an exclusion, and never
      turns the tool off.
    Then `checks/run.sh`, read `reports/latest/results.json` and run `checks/diff.sh`.
-2. **Urgent first.** Look up each FAIL's control in `controls/controls.json`. An urgent FAIL (AGENTS.md, "How
-   results work") goes first, as that rule says, and the review stops there.
-3. Then explain the rest in this order: MUST, then SHOULD, then NICE. Within each level: FAIL, ERROR, ACCEPTED,
-   NA, then one summary line for the PASSes. Name the layer (baseline, gold or an overlay's title) only when it helps.
-   - FAIL: title, what was found (evidence), and why it matters in one sentence from the teach file's "Why".
-   - ERROR: the check couldn't decide; say why from its evidence and offer `checks/run.sh --only <ID>`.
-   - NA: why it doesn't apply. ACCEPTED: the person's recorded reason.
-4. Mention anything `checks/diff.sh` shows as changed since the last run.
-5. If `reports/config.json` has `"teach": true`: for each FAIL, give the lesson from `teach/<ID>.md` in your own
-   words, briefly.
-6. Offer `/fix` for the FAILs and ERRORs, `/summary` for a shareable summary, and `/scan` before they open or
-   install a repo they aren't sure of. Say they can ask to change their settings at any time, for example to add a
-   private folder; that repeats the set-up (section 1).
+2. **Urgent first.** Look up each FAIL's control in `controls/controls.json`. With an urgent FAIL (AGENTS.md, "How
+   results work"), show the score, then follow that rule; the review stops there.
+3. Show the results in the shape "Showing results" in AGENTS.md sets: the score, the table, the line for the rest.
+   Name the layer (baseline, gold or an overlay's title) in a row's "Why" only when it helps.
+4. Under the table, one line per change `checks/diff.sh` shows since the last run, as `BL-OS-01 ✗ FAIL → ✓ PASS`.
+   Leave this out when nothing changed.
+5. If `reports/config.json` has `"teach": true`: for each FAIL, a lesson of two or three lines from `teach/<ID>.md`
+   in your own words, led by its ID in bold.
+6. What next, as one question. Options: `Fix them one at a time` (`/fix`; only when there is a FAIL or ERROR),
+   `Make a summary to share` (`/summary`), `Scan a repo before opening it` (`/scan`), and `Change my settings`
+   (repeats the set-up in section 1, for example to add a private folder). Run the skill the person picks.
