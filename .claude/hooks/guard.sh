@@ -15,6 +15,13 @@ tool="$(jq -r '.tool_name // "" | strings' <<<"$input")" || block "guard could n
 [ -n "$tool" ] || block "guard could not read the request"
 also() { local s; for s in "$@"; do "$HOOKS/$s.sh" <<<"$input" || exit "$?"; done; }  # SCRIPT... — run these guards too
 
+# In either session: before the question is shown, only the model can have written its answers, and the approval
+# recorder mints a token from the answers it gets back.
+if [ "$tool" = AskUserQuestion ]; then
+  jq -e '.tool_input | has("answers") | not' >/dev/null <<<"$input" \
+    || block "a question is asked without answers filled in: only the person answers it"
+fi
+
 if fortkeep_dev_session; then
   case "$tool" in
     Bash) also bash-guard private-guard ;;

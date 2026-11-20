@@ -78,7 +78,8 @@ A fix runs only after the person answers `Apply <ID>` or `Undo <ID>`. Accepting 
 - **What it is.** A hook records the person's own answer: an option they picked in the agent's question tool, in
   exactly the question `checks/ask.sh` prints for that action, or, in Codex, a message that is exactly that answer.
   It writes a one-use token under `reports/.approvals`, which the script that acts on it consumes. A token expires
-  after five minutes. The model can't write the person's messages, a subagent's prompt records nothing, and in a
+  after five minutes. The model can't write the person's messages, `guard.sh` refuses a question that arrives with
+  its answers already filled in (only the model could have written them), a subagent's prompt records nothing, and in a
   person's session the model can't reach `reports/.approvals` by any tool. The hook records nothing when another agent
   started this one (`codex exec`, `claude -p` or `opencode run` inside a session). `checks/accept.sh` and
   `checks/private.sh add` need no token when the person types them in a terminal app.

@@ -286,6 +286,18 @@ EOF
   refused call Bash '{"command":["bash","reports/s.sh"]}'
   refused call Bash '{"command":["checks/run.sh","--only","$(x)"]}'
 }
+@test "a question that arrives with its answers already filled in is refused, in either session: only the person answers" {
+  q='{"question":"Accept BL-RC-01?","header":"Accept","multiSelect":false,"options":[{"label":"Accept BL-RC-01","description":"a"},{"label":"Keep it as a FAIL","description":"b"}]}'
+  allowed call AskUserQuestion "$(jq -cn --argjson q "$q" '{questions:[$q]}')"
+  for m in default bypassPermissions auto; do
+    refused call AskUserQuestion "$(jq -cn --argjson q "$q" '{questions:[$q], answers:{($q.question):"Accept BL-RC-01"}}')" "$REPO" "$m"
+  done
+  refused call AskUserQuestion "$(jq -cn --argjson q "$q" '{questions:[$q], answers:{}}')"
+  refused call AskUserQuestion '"not an object"'
+  export FORTKEEP_DEV=1
+  allowed call AskUserQuestion "$(jq -cn --argjson q "$q" '{questions:[$q]}')"
+  refused call AskUserQuestion "$(jq -cn --argjson q "$q" '{questions:[$q], answers:{($q.question):"Accept BL-RC-01"}}')"
+}
 @test "the guard fails closed on unreadable input" {
   run bash -c "printf 'not json' | '$G'"; [ "$status" -eq 2 ]
   run bash -c "printf '' | '$G'"; [ "$status" -eq 2 ]

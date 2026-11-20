@@ -58,7 +58,8 @@ The others:
 - `approval-recorder.sh`: turns the person's `Apply <ID>`, `Undo <ID>`, `Accept <ID>` or `Add private folder` into a
   one-use token under `reports/.approvals`, only when it is the answer to exactly the question `checks/ask.sh` prints
   for it, and never when another agent started this one (`codex exec`, `claude -p` or `opencode run` inside a
-  session). A fix script, `checks/accept.sh` or `checks/private.sh add` refuses to run without a fresh token; a
+  session). `guard.sh` refuses, in either session, a question that arrives with its answers already filled in: only
+  the model could have written them. A fix script, `checks/accept.sh` or `checks/private.sh add` refuses to run without a fresh token; a
   private-folder token holds the folder its question named, and adds only that one; an accept token holds the reason
 its question named, and `checks/accept.sh` records only that reason. The
   token is a guard against mistakes, not a wall: it is a file the person's own account can write. What stops an
