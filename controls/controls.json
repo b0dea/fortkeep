@@ -241,7 +241,7 @@
   },
   {
     "id": "BL-RC-02",
-    "title": "Global git hook scans what a clone, pull or checkout brings in",
+    "title": "Global git hook scans what you clone, pull, check out or push",
     "layer": "baseline",
     "level": "SHOULD",
     "source": "§3",

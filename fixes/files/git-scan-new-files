@@ -67,10 +67,11 @@
 #   forged commit dates — https://github.com/OpenSourceMalware/PolinRider
 #   text-direction characters in author names — https://github.com/orgs/community/discussions/197873
 #   editor extension folders — https://cursor.com/blog/claude-code-extension-security-notice, https://github.com/OpenSourceMalware/PolinRider
-"""Global git hook installed by fortkeep BL-RC-02: scans the files a git operation just brought in.
-Read-only, no network, always exits 0. With --sweep (GD-RC-01) it scans whole repos already on disk instead. Follows the PolinRider / BeaverTail indicator pack; marker strings are
+"""Global git hook installed by fortkeep BL-RC-02: scans the files a git operation just brought in, and as pre-push the
+files a push sends, refusing the push (exit 1) on a HIGH finding. Otherwise read-only, no network, and exits 0. With
+--sweep (GD-RC-01) it scans whole repos already on disk instead. Follows the PolinRider / BeaverTail indicator pack; marker strings are
 fragments so this file does not contain them (antivirus tools would quarantine it)."""
-import os, re, sys, json, subprocess, time, datetime, errno, collections, unicodedata
+import os, re, sys, json, subprocess, time, datetime, errno, collections, unicodedata, tempfile, posixpath, bisect
 
 T0 = time.time(); BUDGET = 8.0; MAXFILES = 400; MAXSIZE = 3_000_000
 DEADLINE = None  # a sweep's end: no git call it makes runs past it
@@ -370,7 +371,7 @@ def names(out):  # NUL-separated (-z): names with spaces or non-ASCII letters ar
     return [f for f in out.split('\0') if f]
 
 def changed(old, new):
-    return names(git('diff', '--name-only', '-z', '--diff-filter=ACMR', old, new))
+    return names(git('diff', '--name-only', '-z', '--diff-filter=ACMRT', old, new))
 
 def is_agent(rel):
     return rel.endswith(AGENT_FILES)
@@ -1025,25 +1026,120 @@ def sweep(argv):
     print('DONE\t%d\t%d' % (swept, len(targets)), flush=True)
     return 0
 
+def git_strict(*a):
+    """git's output; OutOfTime past the hook's budget, RuntimeError when git fails. A push is refused or let through on
+    this, so a failure must not read as 'nothing to scan', as it does with git(). Replace objects don't count: the push
+    sends the real ones."""
+    left = BUDGET - (time.time() - T0)
+    if left <= 0:
+        raise OutOfTime()
+    try:
+        r = subprocess.run(['git', '--no-replace-objects', *SAFE_GIT, *a], capture_output=True, text=True, errors='surrogateescape',
+                           timeout=left, env=dict(os.environ, **NO_FETCH))
+    except subprocess.TimeoutExpired:
+        raise OutOfTime()
+    if r.returncode:
+        raise RuntimeError('git %s failed' % a[0])
+    return r.stdout
+
+def pushed(lines):
+    """(ref, commit, files) for each ref a push updates (LINES: pre-push's stdin), FILES being what its new commits add
+    or change. A ref the remote has is compared with the remote's tip; a new branch, or a remote tip this clone hasn't
+    fetched, sends the commits no remote-tracking ref has. A delete sends nothing. No rename detection: it reads blobs,
+    which a partial clone may lack, and a renamed file is listed as added anyway."""
+    out = []
+    for line in lines:
+        p = line.split()
+        if len(p) != 4 or set(p[1]) == {'0'}:
+            continue
+        ref, local, _, remote = p
+        if set(remote) != {'0'} and git('rev-parse', '--verify', '--quiet', remote + '^{commit}').strip():
+            files = git_strict('diff', '--name-only', '-z', '--no-renames', '--diff-filter=ACMRT', remote, local)
+        else:
+            files = git_strict('log', '--format=', '--name-only', '-z', '--no-renames', '--root', '--diff-filter=ACMRT',
+                               '--diff-merges=first-parent', local, '--not', '--remotes')
+        out.append((ref.removeprefix('refs/heads/'), local, sorted(set(names(files)))))
+    return out
+
+REGULAR = ('100644', '100755')
+
+def link_aliases(tree, sent):
+    """(name, path) for each regular file a symlink in TREE ({path: (mode, blob)}) gives another name that picks other
+    rules, as follow() reads a link on disk: when the push SENT the file or the link. A link out of the tree or to
+    another link leads to no file."""
+    regular = sorted(p for p, (m, _) in tree.items() if m in REGULAR)
+    out = []
+    for link, (mode, oid) in sorted(tree.items()):
+        if mode != '120000' or not (wanted(link) or LINK_DIRS & set(link.split('/'))):
+            continue
+        target = posixpath.normpath(posixpath.join(posixpath.dirname(link), git_strict('cat-file', 'blob', oid)))
+        if target == '..' or target.startswith(('/', '../')):
+            continue
+        prefix = '' if target == '.' else target + '/'
+        i = bisect.bisect_left(regular, prefix); under = []  # the files under PREFIX sort together
+        while i < len(regular) and regular[i].startswith(prefix):
+            under.append(regular[i]); i += 1
+        for p in ([target] if target in tree and tree[target][0] in REGULAR else []) + under:
+            alias = link if p == target else link + '/' + p[len(prefix):]
+            if (link in sent or p in sent) and (wanted(alias) or path_rules(alias) != path_rules(p)):
+                out.append((alias, p))
+    return out
+
+def scan_commit(tmp, commit, files, findings):
+    """Scans FILES as COMMIT holds them, never as the working tree does: what a push sends is the commit. A file is
+    scanned under its own name and under each name a symlink gives it (link_aliases). Each copy is written alone to its
+    own folder under TMP, so two names APFS folds together can't overwrite each other. Config and code files go first,
+    so a time budget a large lockfile uses up leaves those read. False when the time ran out."""
+    if not files:
+        return True
+    tree = {}
+    for entry in names(git_strict('ls-tree', '-r', '-z', '--full-tree', commit)):
+        meta, _, rel = entry.partition('\t')
+        mode, _, oid = meta.split(' ')
+        tree[rel] = (mode, oid)
+    todo = set((f, f) for f in files if tree.get(f, ('',))[0] in REGULAR) | set(link_aliases(tree, set(files)))
+    first = lambda item: (not (wanted(item[0]) or os.path.splitext(item[0])[1].lower() in CODE_EXT), item)
+    for name, rel in sorted(todo, key=first):
+        if {'', '.', '..'} & set(name.split('/')):
+            continue
+        left = BUDGET - (time.time() - T0)
+        if left <= 0:
+            return False
+        top = tempfile.mkdtemp(dir=tmp); path = os.path.join(top, name)
+        try:  # one file at a time: a name this disk can't hold must not stop the files after it
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            with open(path, 'wb') as fh:
+                subprocess.run(['git', '--no-replace-objects', *SAFE_GIT, 'cat-file', 'blob', tree[rel][1]], stdout=fh,
+                               stderr=subprocess.DEVNULL, timeout=left, check=True, env=dict(os.environ, **NO_FETCH))
+        except subprocess.TimeoutExpired:
+            return False
+        except (OSError, subprocess.CalledProcessError):
+            findings.append(('WARN', name, 'could not read it from the commit, so it was not scanned'))
+            continue
+        if not scan(top, [name], T0, BUDGET, findings):
+            return False
+        os.remove(path)
+    return True
+
 if hook == '--sweep':
     sys.exit(sweep(args))
 
-top = git('rev-parse', '--show-toplevel').strip()
+top = git('rev-parse', '--show-toplevel').strip() or hook == 'pre-push' and git('rev-parse', '--absolute-git-dir').strip()
 if not top:
     sys.exit(0)
-files = []
+files = []; pushes = []
 try:
     if hook == 'post-checkout' and len(args) >= 3:
         old, new, branch = args[:3]
         if branch != '1':           # git checkout <ref> -- <path>: files from another ref came into the working tree
-            files = names(git('diff', '--name-only', '-z', '--diff-filter=ACMR', 'HEAD'))
+            files = names(git('diff', '--name-only', '-z', '--diff-filter=ACMRT', 'HEAD'))
         elif set(old) == {'0'}:     # a clone
             files = names(git('ls-files', '-z'))
         elif old != new:
             files = changed(old, new)
     elif hook == 'post-merge':
         if args[:1] == ['1']:       # a squash merge: staged, not committed
-            files = names(git('diff', '--cached', '--name-only', '-z', '--diff-filter=ACMR', 'HEAD'))
+            files = names(git('diff', '--cached', '--name-only', '-z', '--diff-filter=ACMRT', 'HEAD'))
         else:
             files = changed('ORIG_HEAD', 'HEAD') or changed('HEAD@{1}', 'HEAD')
     elif hook == 'post-rewrite' and args[:1] != ['amend']:  # an amend rewrites your own commit; nothing came in
@@ -1056,22 +1152,44 @@ try:
                 if len(p) >= 2:
                     seen.update(changed(p[0], p[1]))
             files = sorted(seen)
+    elif hook == 'pre-push':
+        pushes = pushed(sys.stdin.read().splitlines())
 except SystemExit:
     raise
-except Exception:
+except Exception as e:
+    if hook == 'pre-push':  # said, not silent: the person would take the push as checked
+        why = 'its time budget ran out' if isinstance(e, OutOfTime) else str(e) or type(e).__name__
+        sys.stderr.write(field('git-scan [pre-push]: could not work out what this push sends (%s), so it goes ahead unscanned' % why) + '\n')
     sys.exit(0)
-files += links_to(top, files)
 
 findings = []
 def add(sev, path, what):
     findings.append((sev, path, what))
 
-toomany = len(files) > MAXFILES
-if toomany:
-    files = config_files(files, MAXFILES)
-
-if not scan(top, files, T0, BUDGET, findings):
-    add('WARN', '(scan)', 'time budget reached, remaining files not scanned')
+if hook == 'pre-push':
+    toomany = False; done = True
+    with tempfile.TemporaryDirectory(prefix='git-scan-push.') as tmp:
+        for ref, commit, fs in pushes:
+            toomany = toomany or len(fs) > MAXFILES
+            got = []
+            try:
+                done = scan_commit(tmp, commit, config_files(fs, MAXFILES) if len(fs) > MAXFILES else fs, got)
+            except OutOfTime:
+                done = False
+            except Exception as e:
+                got.append(('WARN', '(scan)', 'could not read what %s sends (%s), so it was not scanned' % (ref, e)))
+            # Several refs: each path as git show names it there.
+            findings += [(s, '%s:%s' % (ref, p) if len(pushes) > 1 else p, w) for s, p, w in got]
+            if not done:
+                break
+else:
+    files += links_to(top, files)
+    toomany = len(files) > MAXFILES
+    if toomany:
+        files = config_files(files, MAXFILES)
+    done = scan(top, files, T0, BUDGET, findings)
+if not done:
+    add('WARN', '(scan)', 'time budget reached, remaining files not scanned' + ('; the push goes ahead without them' if hook == 'pre-push' else ''))
 weigh_artifacts(findings)
 
 if toomany:
@@ -1085,6 +1203,8 @@ if findings and (highs or warns):
         out.append('  %s %s  %s' % (sev, p, w))
     if highs:
         out.append('  Do NOT run npm/pnpm/yarn, a dev server or a build here. Inspect with git show / grep only.')
+    if highs and hook == 'pre-push':
+        out.append('  Push refused, so this can\'t spread to the remote. Once you are sure it is safe, git push --no-verify skips this check (and every other pre-push hook) for that one push.')
     out = [field(l) for l in out]  # file names and scripts can carry terminal escapes
     sys.stderr.write('\n'.join(out) + '\n')
     try:
@@ -1096,8 +1216,11 @@ if findings and (highs or warns):
         pass
     if highs and not os.environ.get('GIT_SCAN_NO_NOTIFY'):
         try:
-            msg = '%s: %d suspicious file(s) after %s. Do not run it.' % (field(repo), len(highs), hook)
+            if hook == 'pre-push':
+                msg = '%s: %d suspicious file(s) in a push. The push was refused.' % (field(repo), len(highs))
+            else:
+                msg = '%s: %d suspicious file(s) after %s. Do not run it.' % (field(repo), len(highs), hook)
             subprocess.run(['osascript', '-e', 'display notification "%s" with title "git-scan"' % msg.replace('"', "'")], timeout=3, capture_output=True)
         except Exception:
             pass
-sys.exit(0)
+sys.exit(1 if hook == 'pre-push' and highs else 0)

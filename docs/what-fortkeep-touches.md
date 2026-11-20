@@ -52,7 +52,7 @@ A fix writes only after you answer `Apply <ID>`, and logs what it did in `report
 |---|---|
 | BL-SC-02 | `~/.config/fortkeep/path-front.sh`, and one marked line in `~/.zshenv`, `~/.zshrc`, `~/.zlogin` and your bash start-up files |
 | BL-RC-01 | `"task.allowAutomaticTasks": "off"` in each VS Code-family editor's `settings.json` |
-| BL-RC-02 | the scan hook at `~/.local/bin/git-scan-new-files`, hook entries in `~/.gitconfig`; the hook logs to `~/.local/var/log/git-scan.log` |
+| BL-RC-02 | the scan hook at `~/.local/bin/git-scan-new-files`, hook entries in `~/.gitconfig`; the hook logs to `~/.local/var/log/git-scan.log`. Before a push it copies the files the push sends, from the commits, into a temporary folder it deletes when done |
 | BL-SE-06 | a gitleaks pre-commit hook entry in `~/.gitconfig` |
 | BL-AU-02 | the weekly LaunchAgent `~/Library/LaunchAgents/io.github.b0dea.fortkeep.weekly.plist`, logging to `~/Library/Logs/fortkeep-weekly.log` |
 

@@ -8,7 +8,7 @@ setup() {
   cp "$REPO/fixes/files/git-scan-new-files" "$BATS_TEST_TMPDIR/"; chmod +x "$BATS_TEST_TMPDIR/git-scan-new-files"
 }
 chk() { run /bin/bash "$REPO/checks/macos/$1.sh"; }
-hooks() { for e in post-checkout post-merge post-rewrite; do git config --global "hook.s-$e.event" "$e"; git config --global "hook.s-$e.command" "$1 $e"; done; }
+hooks() { for e in post-checkout post-merge post-rewrite pre-push; do git config --global "hook.s-$e.event" "$e"; git config --global "hook.s-$e.command" "$1 $e"; done; }
 
 @test "git checks never run Apple's /usr/bin/git stub without the Command Line Tools: NA saying they're needed" {
   mkdir -p "$BATS_TEST_TMPDIR/gl"; printf '#!/bin/sh\n' > "$BATS_TEST_TMPDIR/gl/gitleaks"; chmod +x "$BATS_TEST_TMPDIR/gl/gitleaks"
@@ -18,9 +18,9 @@ hooks() { for e in post-checkout post-merge post-rewrite; do git config --global
     chk "$c"; [ "$(field status)" = NA ]; [[ "$(field evidence)" == *"needs Apple's Command Line Tools"* ]]
   done
 }
-@test "BL-RC-02 no hooks → FAIL naming all three events" {
+@test "BL-RC-02 no hooks → FAIL naming all four events" {
   chk BL-RC-02; [ "$(field status)" = FAIL ]
-  [[ "$(field evidence)" == *post-checkout*post-merge*post-rewrite* ]]
+  [[ "$(field evidence)" == *post-checkout*post-merge*post-rewrite*pre-push* ]]
 }
 @test "BL-RC-02 config hooks with a runnable command on git 2.54+ → PASS" {
   hooks "$BATS_TEST_TMPDIR/git-scan-new-files"
@@ -34,7 +34,7 @@ hooks() { for e in post-checkout post-merge post-rewrite; do git config --global
 }
 @test "BL-RC-02 core.hooksPath hooks with an outdated ~/.local/bin scanner → FAIL out of date" {
   mkdir -p "$HOME/hooks" "$HOME/.local/bin"
-  for e in post-checkout post-merge post-rewrite; do printf '#!/bin/sh\nexec "$HOME/.local/bin/git-scan-new-files" %s "$@"\n' "$e" > "$HOME/hooks/$e"; chmod +x "$HOME/hooks/$e"; done
+  for e in post-checkout post-merge post-rewrite pre-push; do printf '#!/bin/sh\nexec "$HOME/.local/bin/git-scan-new-files" %s "$@"\n' "$e" > "$HOME/hooks/$e"; chmod +x "$HOME/hooks/$e"; done
   git config --global core.hooksPath '~/hooks'
   printf '#!/bin/sh\nexit 0\n' > "$HOME/.local/bin/git-scan-new-files"; chmod +x "$HOME/.local/bin/git-scan-new-files"
   chk BL-RC-02; [ "$(field status)" = FAIL ]; [[ "$(field note)" == "~/.local/bin/git-scan-new-files differs"* ]]
@@ -49,11 +49,13 @@ hooks() { for e in post-checkout post-merge post-rewrite; do git config --global
   hooks "$BATS_TEST_TMPDIR/missing-scan"
   chk BL-RC-02; [ "$(field status)" = FAIL ]
 }
-@test "BL-RC-02 core.hooksPath with all three hooks → PASS on any git version" {
+@test "BL-RC-02 core.hooksPath with all four hooks → PASS on any git version; without pre-push → FAIL naming it" {
   mkdir -p "$HOME/hooks"
-  for e in post-checkout post-merge post-rewrite; do printf '#!/bin/sh\nexec "$HOME/.local/bin/git-scan-new-files" %s "$@"\n' "$e" > "$HOME/hooks/$e"; chmod +x "$HOME/hooks/$e"; done
+  for e in post-checkout post-merge post-rewrite pre-push; do printf '#!/bin/sh\nexec "$HOME/.local/bin/git-scan-new-files" %s "$@"\n' "$e" > "$HOME/hooks/$e"; chmod +x "$HOME/hooks/$e"; done
   git config --global core.hooksPath '~/hooks'
   FAKE_GIT_VERSION=2.39.0 chk BL-RC-02; [ "$(field status)" = PASS ]
+  rm "$HOME/hooks/pre-push"
+  chk BL-RC-02; [ "$(field status)" = FAIL ]; [ "$(field evidence)" = "No scan hook for: pre-push" ]
 }
 @test "BL-RC-02 a hook that runs some other program doesn't count; the scanner by name does, quoted or with ~" {
   printf '#!/bin/sh\nexit 0\n' > "$BATS_TEST_TMPDIR/other"; chmod +x "$BATS_TEST_TMPDIR/other"
@@ -65,13 +67,13 @@ hooks() { for e in post-checkout post-merge post-rewrite; do git config --global
 }
 @test "BL-RC-02 a core.hooksPath hook that can't be read → ERROR with evidence" {
   [ "$(id -u)" -ne 0 ] || skip "root reads everything"
-  mkdir -p "$HOME/hooks"; for e in post-checkout post-merge post-rewrite; do printf '#!/bin/sh\nexec git-scan-new-files\n' > "$HOME/hooks/$e"; chmod 111 "$HOME/hooks/$e"; done
+  mkdir -p "$HOME/hooks"; for e in post-checkout post-merge post-rewrite pre-push; do printf '#!/bin/sh\nexec git-scan-new-files\n' > "$HOME/hooks/$e"; chmod 111 "$HOME/hooks/$e"; done
   git config --global core.hooksPath '~/hooks'
   chk BL-RC-02; chmod 755 "$HOME/hooks"/*
   [ "$(field status)" = ERROR ]; [[ "$(field evidence)" == *post-checkout* ]]
 }
 @test "BL-RC-02 a core.hooksPath hook that doesn't call the scanner doesn't count" {
-  mkdir -p "$HOME/hooks"; for e in post-checkout post-merge post-rewrite; do printf '#!/bin/sh\nexit 0\n' > "$HOME/hooks/$e"; chmod +x "$HOME/hooks/$e"; done
+  mkdir -p "$HOME/hooks"; for e in post-checkout post-merge post-rewrite pre-push; do printf '#!/bin/sh\nexit 0\n' > "$HOME/hooks/$e"; chmod +x "$HOME/hooks/$e"; done
   git config --global core.hooksPath '~/hooks'
   chk BL-RC-02; [ "$(field status)" = FAIL ]
 }

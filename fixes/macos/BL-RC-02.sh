@@ -1,6 +1,6 @@
 #!/bin/bash -p
-# Installs the git scan hook, which checks the files a clone, pull or checkout brings in, as a
-# global git hook for post-checkout, post-merge and post-rewrite. Usage: apply | undo
+# Installs the git scan hook, which checks the files a clone, pull or checkout brings in and refuses a push that
+# carries malware, as a global git hook for post-checkout, post-merge, post-rewrite and pre-push. Usage: apply | undo
 . "$(dirname "$0")/../lib/fix.sh"
 ID=BL-RC-02
 fx_require_approval "$ID" "${1:-}"
@@ -19,7 +19,7 @@ backup() {  # FILE — on failure, drop this run's backup folder so undo never p
 case "$1" in
   apply)
     [ -z "${GIT_CONFIG_GLOBAL:-}" ] || stop "GIT_CONFIG_GLOBAL is set, so git would write the hooks to a file this fix can't back up or undo; nothing was changed. Unset it in your start-up files, open a new Terminal, then try again"
-    if passes; then echo "nothing to change: a scan hook already runs after checkout, merge and rewrite"; exit 0; fi
+    if passes; then echo "nothing to change: a scan hook already runs after checkout, merge and rewrite, and before a push"; exit 0; fi
     g="$(fortkeep_shell_probe zsh-login 'command -v git' | tail -n 1)"
     case "$g" in /*) ;; *) g=/usr/bin/git ;; esac
     v="$("$g" --version 2>/dev/null | awk '{print $3}')"
@@ -33,15 +33,15 @@ case "$1" in
     { cp "$FORTKEEP_REPO/fixes/files/git-scan-new-files" "$DEST" && chmod 755 "$DEST"; } || stop "could not write $(fortkeep_tilde "$DEST")"
     # Quoted and spelled with $HOME, which the shell git runs the hook with expands: a home folder with a space in
     # it still names one program, and the BL-RC-02 check reads the same spelling.
-    for ev in post-checkout post-merge post-rewrite; do
-      n="fortkeep-scan-${ev#post-}"
+    for ev in post-checkout post-merge post-rewrite pre-push; do
+      n="fortkeep-scan-${ev#*-}"
       # shellcheck disable=SC2016 # $HOME is for the hook's shell to expand
       { "$g" config --global "hook.$n.event" "$ev" && "$g" config --global "hook.$n.command" "\"\$HOME/${DEST#"$HOME"/}\" $ev"; } \
         || stop "could not update your global git config"
     done
-    fx_seal "$ID"; fx_log "$ID" apply "git scan hook installed for checkout, merge and rewrite"
+    fx_seal "$ID"; fx_log "$ID" apply "git scan hook installed for checkout, merge, rewrite and push"
     changed=0
-    if passes; then echo "done: every clone, pull and checkout is now scanned"; exit 0; fi
+    if passes; then echo "done: every clone, pull and checkout is now scanned, and a push that carries malware is refused"; exit 0; fi
     stop "the hook is installed but the check still fails; run checks/run.sh --only $ID to see why" ;;
   undo)
     # Removes only what apply added: its hook.fortkeep-scan-* sections, then the scanner if it's still as
@@ -53,7 +53,7 @@ case "$1" in
     # Each file apply backed up is edited by name: --global would miss the XDG file once a ~/.gitconfig exists.
     for f in "$HOME/.gitconfig" "${XDG_CONFIG_HOME:-$HOME/.config}/git/config"; do
       [ -f "$f" ] || continue
-      for ev in checkout merge rewrite; do
+      for ev in checkout merge rewrite push; do
         if "$g" config --file "$f" --get-regexp "^hook\.fortkeep-scan-$ev\." >/dev/null 2>&1; then
           "$g" config --file "$f" --remove-section "hook.fortkeep-scan-$ev" >/dev/null 2>&1 || bad=1
         fi

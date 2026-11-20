@@ -95,7 +95,8 @@ A poisoned repo does not need `npm install` to hurt you:
 
 **SHOULD:** a global git hook (`git config --global hook.<name>.event post-checkout` +
 `post-merge` + `post-rewrite`, git ≥ 2.54) that scans the files a clone/pull/checkout just brought
-in for exactly those patterns and shows a notification before you run anything. The public IOC pack
+in for exactly those patterns and shows a notification before you run anything, plus `pre-push`, which scans
+the files a push sends and refuses it on a serious finding, so a planted payload doesn't spread. The public IOC pack
 for PolinRider lives at [OpenSourceMalware/PolinRider](https://github.com/OpenSourceMalware/PolinRider).
 **MUST:** never run an interview take-home, a "demo project" from a recruiter, or a random GitHub
 project on your main user account. Use a VM or container (§8).

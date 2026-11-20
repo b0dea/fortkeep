@@ -24,7 +24,7 @@ case "$hp" in '~'/*) hp="$HOME/${hp#\~/}" ;; esac
 gcfg --get-regexp '^hook\..*\.event$'; rc=$?
 case "$rc" in 0) events="$out" ;; 1) events="" ;; *) bad ;; esac
 missing=""; unread=""; viaconfig=0; scanners=""
-for ev in post-checkout post-merge post-rewrite; do
+for ev in post-checkout post-merge post-rewrite pre-push; do
   ok=0
   while read -r key val; do
     [ "$val" = "$ev" ] || continue
@@ -68,5 +68,5 @@ else
     av="$(/usr/bin/git --version 2>/dev/null | awk '{print $3}')"
     fortkeep_version_ge "${av:-0}" 2.54 || note="Apps that use Apple's git ($av) skip the scan"
   fi
-  fortkeep_result "$ID" PASS "A scan hook runs after checkout, merge and rewrite (git $v)" "$note"
+  fortkeep_result "$ID" PASS "A scan hook runs after checkout, merge and rewrite, and before a push (git $v)" "$note"
 fi

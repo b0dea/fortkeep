@@ -758,3 +758,84 @@ TASK='{"tasks":[{"runOptions":{"runOn":"folderOpen"},"command":"curl https://x.e
   [ "$status" -eq 0 ]
   [[ "$output" == *"HIGH	$r	postcss.config.mjs:2	code hidden after a long run of spaces"* ]]
 }
+
+# The pre-push hook: what a push sends, read from its commits, never the working tree. The remote is a local bare repo.
+push_repo() {  # R: a repo with main pushed to the bare remote B, and the scanner wired for pre-push as the fix wires it
+  B="$BATS_TEST_TMPDIR/remote.git"; git init -q --bare "$B"
+  newrepo work; git symbolic-ref HEAD refs/heads/main; git remote add origin "$B"
+  git config --global hook.s-push.event pre-push; git config --global hook.s-push.command "\"$(S)\" pre-push"
+  echo hello > README.md; save; git push -q origin main
+}
+psh() { run env GIT_SCAN_NO_NOTIFY=1 git push -q "$@"; }
+padded() { printf 'module.exports = {};%60s%s\n' '' "require('./x')"; }  # HIGH in a config file
+
+@test "a push that carries a HIGH finding is refused, judged by the commit and not the working tree" {
+  push_repo
+  padded > postcss.config.mjs; save; echo 'export default {};' > postcss.config.mjs
+  psh origin main; [ "$status" -ne 0 ]
+  [[ "$output" == *"git-scan [pre-push] in work: 1 high, 0 warn"* ]]
+  [[ "$output" == *"HIGH postcss.config.mjs:1  code hidden after a long run of spaces"* ]]
+  [[ "$output" == *"git push --no-verify"* ]]
+  [ "$(git -C "$B" rev-parse main)" = "$(git rev-parse HEAD~1)" ]
+  grep -q 'git-scan \[pre-push\] in work: 1 high' "$HOME/.local/var/log/git-scan.log"
+}
+@test "a clean push goes through quietly; a push with only warnings goes through and shows them" {
+  push_repo
+  echo 'export default {};' > postcss.config.mjs; save
+  psh origin main; [ "$status" -eq 0 ]; [ -z "$output" ]
+  mkdir .claude; echo '{"permissions": {}}' > .claude/settings.json; save
+  psh origin main; [ "$status" -eq 0 ]
+  [[ "$output" == *"git-scan [pre-push] in work: 0 high, 1 warn"* ]]; [[ "$output" == *"WARN .claude/settings.json"* ]]
+  [ "$(git -C "$B" rev-parse main)" = "$(git rev-parse HEAD)" ]
+}
+@test "a new branch's push scans only the commits no remote has yet" {
+  push_repo
+  padded > postcss.config.mjs; save; git push -q --no-verify origin main
+  git switch -qc feature; echo note > notes.txt; save
+  psh origin feature; [ "$status" -eq 0 ]; [ -z "$output" ]
+  git switch -qc bad; padded > tailwind.config.js; save
+  psh origin bad; [ "$status" -ne 0 ]; [[ "$output" == *"1 high, 0 warn"* ]]; [[ "$output" == *"HIGH tailwind.config.js:1"* ]]
+  run git -C "$B" rev-parse --verify -q refs/heads/bad; [ "$status" -ne 0 ]
+}
+@test "a symlink a push or a pull turns into a file is scanned" {
+  push_repo
+  echo 'module.exports = {};' > real.js; ln -s real.js postcss.config.js; save; git push -q origin main; old="$(git rev-parse HEAD)"
+  rm postcss.config.js; padded > postcss.config.js; save
+  psh origin main; [ "$status" -ne 0 ]; [[ "$output" == *"HIGH postcss.config.js:1"* ]]
+  run env GIT_SCAN_NO_NOTIFY=1 "$(S)" post-checkout "$old" "$(git rev-parse HEAD)" 1
+  [[ "$output" == *"HIGH postcss.config.js:1"* ]]
+}
+@test "a push scans a file under the name a symlinked folder gives it, whether it sends the file or the link" {
+  push_repo
+  mkdir cfg; echo "$TASK" > cfg/tasks.json; save; git push -q origin main
+  ln -s cfg .vscode; save
+  psh origin main; [ "$status" -ne 0 ]; [[ "$output" == *"HIGH .vscode/tasks.json  task runs automatically when the folder is opened"* ]]
+  git push -q --no-verify origin main
+  echo "${TASK/\/t/\/u}" > cfg/tasks.json; save
+  psh origin main; [ "$status" -ne 0 ]; [[ "$output" == *"1 high, 0 warn"* ]]; [[ "$output" == *"HIGH .vscode/tasks.json"* ]]
+}
+@test "a push that deletes a branch scans nothing" {
+  push_repo
+  git switch -qc bad; padded > postcss.config.mjs; save; git push -q --no-verify origin bad
+  psh origin --delete bad; [ "$status" -eq 0 ]; [ -z "$output" ]
+  run git -C "$B" rev-parse --verify -q refs/heads/bad; [ "$status" -ne 0 ]
+}
+@test "a push the scan can't finish within its time budget goes through, and the hook says so" {
+  push_repo
+  padded > postcss.config.mjs; save
+  stub git "for a; do [ \"\$a\" = cat-file ] && sleep 9; done; exec '$REAL_GIT' \"\$@\""
+  run env GIT_SCAN_NO_NOTIFY=1 "$(S)" pre-push origin "$B" <<<"refs/heads/main $(git rev-parse HEAD) refs/heads/main $(git rev-parse HEAD~1)"
+  [ "$status" -eq 0 ]; [[ "$output" == *"0 high, 1 warn"* ]]
+  [[ "$output" == *"WARN (scan)  time budget reached"*"the push goes ahead"* ]]
+}
+@test "a Mac with only the older three hooks fails the check on pre-push; apply adds it and undo removes it" {
+  approve apply; fix apply; [ "$status" -eq 0 ]
+  [ "$(git config --global --get hook.fortkeep-scan-push.command)" = '"$HOME/.local/bin/git-scan-new-files" pre-push' ]
+  git config --global --remove-section hook.fortkeep-scan-push
+  run /bin/bash "$REPO/checks/macos/BL-RC-02.sh"; [ "$(field status)" = FAIL ]; [ "$(field evidence)" = "No scan hook for: pre-push" ]
+  approve apply; fix apply; [ "$status" -eq 0 ]; [[ "$output" != *"nothing to change"* ]]
+  [ "$(git config --global --get hook.fortkeep-scan-push.event)" = pre-push ]
+  [ "$(/bin/bash "$REPO/checks/macos/BL-RC-02.sh" | jq -r .status)" = PASS ]
+  approve undo; fix undo; [ "$status" -eq 0 ]
+  run git config --global --get-regexp '^hook\.fortkeep-scan-'; [ "$status" -ne 0 ]
+}
