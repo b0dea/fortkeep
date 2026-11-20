@@ -179,6 +179,12 @@ refused() { run "$@"; [ "$status" -eq 2 ] || { echo "allowed: $*"; return 1; }; 
   done
   ln -s "$HOME" "$BATS_TEST_TMPDIR/h"; refused read_ "$BATS_TEST_TMPDIR/h/x"
 }
+@test "a file the checkout's .gitignore keeps out as a secret (.env, a key) is never read, in any tool or letter case" {
+  for p in .env .ENV .env.local reports/.env x.pem keys/a.KEY id_ed25519 "$REPO/.env"; do refused read_ "$p"; done
+  refused call Grep '{"pattern":"TOKEN","path":".env"}'
+  run "$REPO/checks/show.sh" .env; [ "$status" -eq 2 ]; [[ "$output" == *"Blocked by fortkeep"* ]]
+  allowed read_ accepted.example.json
+}
 @test "a search may not reach private-paths, approvals or .git: the checkout and reports/ are not search roots" {
   allowed call Grep '{"pattern":"x","path":"controls"}'
   allowed call Grep '{"pattern":"x","path":"teach/BL-RC-01.md"}'
