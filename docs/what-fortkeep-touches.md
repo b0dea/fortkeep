@@ -16,7 +16,8 @@ looks at. In short:
   recognise a hidden node or python loader, never reporting them. Of the open apps' environment, only `PATH` is read.
 - **Your start-up and tool configuration:** shell start-up files (`~/.zshrc`, `~/.zprofile`, `~/.zshenv`,
   `~/.zlogin`, `~/.bashrc`, `~/.bash_profile`, `~/.profile`), `~/.gitconfig` and its hooks, the npm, Yarn, pnpm,
-  Bun, pip and uv config files, Safe Chain's files in `~/.safe-chain`, `~/.ssh/config`, and the key files in `~/.ssh`, which
+  Bun, pip and uv config files, Safe Chain's files in `~/.safe-chain` (and its older `~/.aikido/config.json`),
+  `~/.ssh/config`, and the key files in `~/.ssh`, which
   `ssh-keygen` tries to open with an empty passphrase to see whether each has one; no key is printed or kept.
 - **Coding agents' settings:** Claude Code (`~/.claude`, `~/.claude.json`'s MCP servers, the managed settings in
   `/Library/Application Support/ClaudeCode`), Codex (`~/.codex`, `/etc/codex/requirements.toml`), OpenCode, Zed,
