@@ -6,6 +6,8 @@ What's left to build. What fortkeep doesn't stop yet is in the [threat model](th
 
 - **Run on more kinds of Mac.** Different macOS versions, managed Macs, other security tools and each agent's newer
   versions. Wrong results reported through the issue forms come first. 1.0 follows once it has.
+- **Exact exclusion steps per security tool.** `docs/security-tools.md` has CrowdStrike Falcon's; Defender,
+  SentinelOne, Bitdefender and others come from the wrong-result reports of people whose tool stopped a check.
 - **Measure a run.** How long a full check takes on a reference Mac, and which checks are slow.
 - **A versioned indicator pack.** Malware indicators that update without a new release, each with its public source,
   and a cross-check against public malicious-package data when a release is built.

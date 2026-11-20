@@ -61,7 +61,8 @@ the person's choice · – NA doesn't apply. These five are the only symbols you
    What: the control's title. Why it matters, one plain line:
    - FAIL: why it matters, plus the evidence in a few words when the title alone doesn't say what was found.
    - ERROR: what stopped the check, from its evidence. "Something outside fortkeep stopped this check" means a
-     security tool killed it: the person asks whoever manages that tool for an exclusion, and never turns the tool off.
+     security tool killed it: the person asks whoever manages that tool to exclude that one check, never the whole
+     fortkeep folder, and never turns the tool off. `docs/security-tools.md` in the repo says what to ask for.
    - ACCEPTED: the person's recorded reason (`note`).
 4. **One line for the rest**: `✓ 52 met · – 3 don't apply here`, then a key for the symbols the table used, such as
    `✗ not met · ! couldn't check · ○ kept as it is, by your choice`.

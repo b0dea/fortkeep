@@ -61,11 +61,14 @@ fortkeep_result() {  # ID STATUS EVIDENCE [NOTE] — an ERROR never goes out wit
     '{id:$id, status:$status, evidence:$evidence, note:$note}'
 }
 
-fortkeep_check_verdict() {  # ID EXIT_CODE OUTPUT SECONDS — the check's own result, or the ERROR that says why there is none
+fortkeep_check_verdict() {  # ID EXIT_CODE OUTPUT SECONDS [TOOLS] — the check's own result, or the ERROR that says why
+  # there is none. TOOLS: the security tools running on this Mac, named in the ERROR when a signal stopped the check.
+  # The exclusion asked for is this one check: the fortkeep folder is the person's to write, so excluding all of it
+  # would let anything put there past the security tool.
   local sig
   if [ "$2" -eq 142 ]; then fortkeep_result "$1" ERROR "timed out after ${4}s" ""
   elif sig="$(fortkeep_signal_name "$2")"; then
-    fortkeep_result "$1" ERROR "Something outside fortkeep stopped this check (signal $sig). It is often a security tool mistaking a read-only check for malware; ask whoever manages it for an exclusion, and never turn it off." ""
+    fortkeep_result "$1" ERROR "Something outside fortkeep stopped this check (signal $sig)${5:+, most likely a security tool running on this Mac: $5}. Security tools can mistake a read-only check for malware: ask whoever manages it to exclude this one check (docs/security-tools.md says what to ask for), not the whole fortkeep folder, and never turn it off." ""
   elif jq -e --arg id "$1" 'type == "object" and .id == $id and (.status | IN("PASS","FAIL","NA","ERROR"))' >/dev/null 2>&1 <<<"$3"; then
     printf '%s\n' "$3"
   else fortkeep_result "$1" ERROR "check produced no valid result (exit $2)" ""; fi

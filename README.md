@@ -230,8 +230,9 @@ fortkeep uninstall                         remove fortkeep's state, once its fix
 
 **A check says "Something outside fortkeep stopped this check".** A security tool on the Mac, usually antivirus or
 endpoint protection (EDR), ended a read-only check it mistook for malware. The Mac isn't unsafe because of it; that
-check just has no answer. Ask whoever manages the tool for an exclusion for the fortkeep folder. Never turn the tool
-off to make a check pass.
+check just has no answer. Ask whoever manages the tool to exclude that one check, not the whole fortkeep folder:
+[docs/security-tools.md](docs/security-tools.md) says what to ask for and has a message to forward. Never turn the
+tool off to make a check pass.
 
 **Microsoft Defender quarantined a fortkeep file.** fortkeep's scanners look for malware by its markers, and an
 antivirus can mistake that for malware. The repo keeps every marker in pieces for this reason, so tell us in an issue
