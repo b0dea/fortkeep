@@ -4,7 +4,7 @@
 
 ## Use fortkeep
 
-- [README](https://raw.githubusercontent.com/b0dea/fortkeep/main/README.md): what fortkeep checks, how to scan a repo before opening it, how to start it in each agent, what it can change, and your data
+- [README](https://raw.githubusercontent.com/b0dea/fortkeep/main/README.md): what fortkeep checks, its commands (a menu, the check, a scan of a repo before you open it), how to start it in each agent and what the skills show, what it can change, and your data
 - [Agents](https://raw.githubusercontent.com/b0dea/fortkeep/main/docs/agents.md): how Claude Code, Codex and OpenCode load the skills and guards, and how approvals are given in each
 - [Threat model](https://raw.githubusercontent.com/b0dea/fortkeep/main/docs/threat-model.md): what the guards, the approval and the signed releases stop, and what they don't
 

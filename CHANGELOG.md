@@ -12,14 +12,18 @@ The first public release.
   around, runtime protection and browsers. A stricter gold layer and opt-in overlays sit on top. The controls are in
   `controls/`, with the reasoning in `controls/baseline-source.md`.
 - **How.** Your coding agent (Claude Code, Codex or OpenCode) runs the read-only checks, explains each result in
-  plain language, and fixes a gap only after you approve that one change, with a backup and an undo. Teach mode adds
-  a short lesson per control.
-- **Trust.** Guard hooks limit what the agent may do in your session, and copies update only to releases a
-  maintainer signed. [docs/threat-model.md](docs/threat-model.md) says what that does and doesn't stop.
+  plain language, and fixes a gap only after you approve that one change, with a backup and an undo. `/posture` shows
+  one score line, one table of what needs attention and a "what next" question; `/fix` goes one control at a time
+  ("Fix 2 of 5") and shows each result as `✗ FAIL → ✓ PASS`. Teach mode adds a short lesson per control.
+- **Trust.** Guard hooks limit what the agent may do in your session: only fortkeep's own scripts and files, no web
+  tools, subagents or MCP tools, and never your private folders. Copies update only to releases a maintainer
+  signed. Before a release, maintainers run a live eval that tries to talk a real agent past the guards
+  (`ci/agent-eval/`). [docs/threat-model.md](docs/threat-model.md) says what that does and doesn't stop.
 - **The `fortkeep` command.** Check the Mac from the Terminal without an agent (`fortkeep check`, with `--json`), read
   a control's lesson (`fortkeep explain`), scan a repo for signs it is poisoned before you open it (`fortkeep scan`, or
   `/scan` in your agent), start your agent in the right folder (`fortkeep agent`), make the posture summary, update,
-  and uninstall once the fixes are undone.
+  and uninstall once the fixes are undone. In a terminal, `fortkeep` alone opens an arrow-key menu, and
+  `fortkeep check` shows colour, a symbol per status, a score bar and a progress line; piped, it prints plain text.
 - **Install.** An installer you download and check before running, pinned to one release's tag and commit, and a
   Homebrew formula in the `b0dea/tap` tap that runs the same installer on first use. Both install to
   `~/.local/share/fortkeep`.

@@ -10,76 +10,27 @@
 </p>
 
 <p align="center">
-  <a href="#try-it">Try it</a> ·
   <a href="#install">Install</a> ·
+  <a href="#try-it">Try it</a> ·
+  <a href="#with-your-agent">With your agent</a> ·
   <a href="#safety">Safety</a> ·
   <a href="#commands">Commands</a> ·
   <a href="#faq">FAQ</a>
 </p>
 
-fortkeep checks a developer's Mac against a practical security baseline, with [Claude Code](https://code.claude.com/docs),
-[Codex](https://developers.openai.com/codex) or [OpenCode](https://opencode.ai) as your guide:
+<p align="center">
+  <img src="docs/images/check.svg" alt="fortkeep check in a terminal: a score bar reading 4 of 11 met, then each control under MUST, SHOULD and NICE with a coloured ✓, ✗, !, ○ or – and what was found">
+</p>
 
-- **It explains in plain words.** Your agent runs the read-only checks, then goes through the results with you, most
-  important first, and says why each gap matters. Teach mode adds a short lesson per control.
-- **It changes nothing without your answer.** Each fix is one change you approve, with a backup, an undo and a line
-  in a change log. Admin steps are commands you type yourself.
-- **It is written for people who aren't security experts.**
+- **It checks.** Read-only checks compare your Mac with a baseline built around how developer Macs get attacked
+  today: hijacked npm and PyPI packages, poisoned repos, AI agents tricked into bad commands, and secrets left in files.
+- **It explains.** Your coding agent ([Claude Code](https://code.claude.com/docs),
+  [Codex](https://developers.openai.com/codex) or [OpenCode](https://opencode.ai)) goes through the results with you
+  in plain words, most important first.
+- **It fixes, one change at a time.** Each fix runs only after you approve it, with a backup and an undo.
 
-It aims at how developer Macs get compromised today: a malicious or hijacked npm or PyPI package, a poisoned repo
-(a fake take-home test, a "please review my code" project), an AI agent tricked into running a bad command, and
-secrets lying around in files. It is not an antivirus, not device management and not a sandbox.
-
-## Try it
-
-Once it's [installed](#install), `fortkeep check` runs every check from your Terminal, no agent needed:
-
-```console
-$ fortkeep check
-fortkeep check: 2026-11-19 17:54 UTC, macOS 27.2.1
-
-MUST
-  FAIL      BL-OS-02  Firewall on with stealth mode
-            Firewall is on; stealth mode is off
-  FAIL      BL-SC-01  Safe Chain installed, with shims for scripts and agents
-            safe-chain is not on your PATH
-  ERROR     BL-BR-04  No crypto wallet extensions on this Mac
-            Something outside fortkeep stopped this check (signal KILL). It is often a security tool mistaking a read-only check for malware; ask whoever manages it for an exclusion, and never turn it off.
-  ACCEPTED  BL-SE-01  SSH keys live in a protected SSH agent (1Password, Secretive or Bitwarden)
-            your reason: My keys live on a hardware key
-  PASS      BL-OS-01  FileVault on
-  PASS      BL-OS-03  Gatekeeper on
-  PASS      BL-OS-07  Screen locks immediately
-
-SHOULD
-  FAIL      BL-RC-02  Global git hook scans what a clone, pull or checkout brings in
-            No global git hook scans what a clone or pull brings in
-  FAIL      GD-AI-01  Agent control files unchanged since your baseline
-            No accepted baseline yet: type fortkeep baseline accept in the Terminal app
-  PASS      BL-AU-02  A weekly security check runs and is up to date
-
-NICE
-  NA        BL-SE-08  AI-agent transcripts kept out of backups
-            No agent transcripts on this Mac
-  PASS      BL-RT-06  tirith terminal guard installed
-
-ACCEPTED 1 · ERROR 1 · FAIL 4 · NA 1 · PASS 5
-Next: fortkeep agent, then type /fix (in Codex, $fix). Why one matters: fortkeep explain ID.
-```
-
-That is sample output from the test fixtures: real control titles and layout, stand-in checks and a short list. A
-real run checks every control and takes minutes. Then ask why one matters:
-
-```console
-$ fortkeep explain BL-OS-02
-# BL-OS-02 · Firewall on with stealth mode
-
-**Why:** The firewall stops other devices on the same network from connecting to services on your Mac. Stealth mode
-makes the Mac ignore probes, so it is harder to find at all.
-...
-```
-
-To fix things, start your agent with `fortkeep agent` and type `/posture`.
+It is not an antivirus, not device management and not a sandbox. The image above is sample output from a test
+fixture: real control titles and layout, with a short list. A real run checks every control and takes minutes.
 
 ## Install
 
@@ -110,7 +61,37 @@ signed by a maintainer that release lists. Those pins are what you trust on firs
 ones in the [release notes](https://github.com/b0dea/fortkeep/releases). From then on `fortkeep update` moves it only
 to releases a maintainer it already trusts signed.
 
-## The agent workflow
+## Try it
+
+```sh
+fortkeep                              # a menu: check, scan a repo, fix with your agent, summary, update
+fortkeep check                        # check this Mac, read-only, no agent needed
+fortkeep scan ~/Downloads/some-repo   # is this repo safe to open? reads it, runs nothing from it
+fortkeep agent                        # start your coding agent in the fortkeep folder, then type /posture
+```
+
+In a terminal you get colour, a progress line and an arrow-key menu; piped or in a script, plain text.
+
+![The fortkeep menu: this copy is a signed release, the last check's score, what to do next, and six numbered choices](docs/images/menu.svg)
+
+In your agent, `/posture` runs the check (the first time, after a few set-up questions) and shows one score line
+and one table:
+
+> **4 of 11 met · 5 to fix · 1 couldn't check · 1 accepted**
+>
+> | Status | ID | What | Why it matters |
+> |---|---|---|---|
+> | ✗ FAIL | BL-OS-02 | Firewall on with stealth mode | Stealth is off, so other devices on your network can find this Mac. |
+> | ! ERROR | BL-BR-06 | DNS filtering with malware blocklists | This Mac's DNS answered nothing, so the check couldn't test it. |
+> | ○ ACCEPTED | BL-SE-01 | SSH keys live in a protected SSH agent (1Password, Secretive or Bitwarden) | Your reason: my SSH keys live on a hardware key. |
+>
+> ✓ 4 met · – 1 doesn't apply here
+>
+> What next? Fix them one at a time · Make a summary to share · Scan a repo before opening it · Change my settings
+
+The real table lists every result that needs attention; this one is cut to three rows.
+
+## With your agent
 
 ```sh
 fortkeep agent          # starts your coding agent in the fortkeep folder, so its guards and skills load
@@ -121,9 +102,9 @@ Then type:
 | Command | What it does |
 |---|---|
 | `/posture` | First time: asks about teach mode, the set-ups that apply and any private folders. Then runs the check and explains the results. |
-| `/fix` | Works through the failures one at a time, each only after your answer. Also undoes a fix. |
-| `/summary` | A posture summary you can share: each control's title, level and result, and your reason for any you kept. No file paths or evidence. |
+| `/fix` | Works through the failures one at a time ("Fix 2 of 5"), each only after your answer, and checks again: `✗ FAIL → ✓ PASS`. Also undoes a fix. |
 | `/scan` | Before you open or install a repo: scans it, or the repos in one folder, for signs it is poisoned. Reads only. |
+| `/summary` | A posture summary you can share: each control's title, level and result, and your reason for any you kept. No file paths or evidence. |
 | `/if-red` | What to do when a check finds something that looks like real malware. |
 
 Each agent loads the same instructions, skills and guard scripts; only the wiring differs
@@ -142,16 +123,17 @@ unless you changed it yourself.
 ## Safety
 
 - **The checks only read.** They report how the Mac is set up and change nothing.
-- **The agent's session is allow-listed.** In the fortkeep folder the agent may run only fortkeep's own scripts, read
-  only fortkeep's own files and write none of them. Guard scripts check every tool call
-  ([docs/agents.md](docs/agents.md)).
 - **Every change needs your answer.** A fix runs only after you answer `Apply <ID>` for that one change. It keeps a
   backup, has an undo, and is logged in `reports/change-log.md`.
 - **It never runs `sudo`.** Admin steps are commands you type yourself in the Terminal app, each ending with
   `sudo -k`.
-- **Private folders stay private.** Name a folder and every check skips it, and the agent never lists, opens or
-  searches it. Only you can take one off the list.
-- **Secrets are shown as counts.** Results show counts, lengths or fingerprints of secrets, never their values.
+- **The agent's session is allow-listed.** In the fortkeep folder the agent may run only fortkeep's own scripts and
+  read only fortkeep's own files, and it writes none of them. Web fetch and search, subagents and MCP tools are
+  refused. Guard scripts check every tool call ([docs/agents.md](docs/agents.md)).
+- **Private folders stay private.** Name a folder and every check and scan skips it, and the agent never lists, opens
+  or searches it. Only you can take one off the list.
+- **Secrets stay out of the chat.** The agent can't open files outside the fortkeep folder, such as your SSH keys,
+  and results show secrets as counts, lengths or fingerprints, never their values.
 - **Releases are signed.** Your copy runs version tags a maintainer signed with an SSH key listed in
   [`.github/allowed_signers`](.github/allowed_signers), and warns when it has local changes.
 - **It is not a sandbox.** The guards stop agent mistakes and prompt injection that asks for a guarded action. They
@@ -200,39 +182,30 @@ to do: go offline, stop using the Mac, change passwords and keys from a clean de
 
 ## Commands
 
-Run `fortkeep` alone for the commands, the last check and what to do next.
+```text
+fortkeep                                   a menu in a terminal; otherwise the help, the last check and what to do next
+fortkeep check [--only ID]... [--json]     check this Mac (read-only); exit 1 when something fails
+fortkeep explain ID                        the short lesson for one control
+fortkeep scan FOLDER                       is this repo safe to open? scans it, or the repos in it (read-only)
+fortkeep agent [claude|codex|opencode]     start your coding agent here, then type /posture
+fortkeep summary [--name NAME]             a posture summary you can share
+fortkeep update                            move to the newest signed release
+fortkeep version [--json]                  which release this is, and where
+fortkeep accept ID "reason" | --remove ID  keep a failed control as it is, with your reason
+fortkeep private add|remove|count          folders every check skips
+fortkeep baseline accept                   accept what is on this Mac now as your baseline
+fortkeep uninstall                         remove fortkeep's state, once its fixes are undone
+```
 
-**`fortkeep check [--only ID]... [--json]`** runs the checks, read-only, and prints the results grouped as above.
-`--only` rechecks those controls after a full run. `--json` prints the full results instead. Exit status: 0 nothing
-failed, 1 something failed or couldn't be checked, 2 the check didn't finish.
-
-**`fortkeep explain ID`** prints the lesson for one control: why it matters, a real attack, how to check it yourself,
-and how to fix it.
-
-**`fortkeep scan FOLDER`** scans one repo, or the git repos in a folder, for signs it is poisoned, before you open,
-install, build or run it. It reads the repo's files (tracked or not, except node_modules), git hooks and history, runs
-nothing from them, and skips private folders. Exit status: 0 nothing flagged, 1 signs of a poisoned repo, 2 refused, 3 only lower-confidence findings, 4
-not everything was scanned.
-
-**`fortkeep agent [claude|codex|opencode]`** starts your coding agent in the fortkeep folder, so its guards and skills
-load. With no name, the first one installed.
-
-**`fortkeep summary [--name NAME]`** writes the posture summary, as `/summary` does, and asks the name to show on it.
-It is self-reported: anyone with your account could edit it before sharing.
-
-**`fortkeep update`** moves your copy to the newest signed release. Use it instead of `git pull`.
-
-**`fortkeep version [--json]`** says which release this is, its commit, whether anything changed locally, and where
-it is installed.
-
-**`fortkeep accept ID "reason"`** keeps a failed control as it is, with your reason; **`fortkeep accept --remove ID`**
-takes that back. **`fortkeep private add|remove|count`** manages the folders every check skips.
-**`fortkeep baseline accept`** accepts what is on the Mac now as your baseline. These are yours to type: the agent
-can't remove a private folder or accept a baseline.
-
-**`fortkeep uninstall`** removes fortkeep's own state. It refuses while a fix that installed something is still
-applied, prints the admin changes you may want to revert yourself, asks before removing anything, and leaves the
-fortkeep folder for you to delete.
+- **`check`** exits 0 when nothing failed, 1 when something failed or couldn't be checked, 2 when the check didn't
+  finish. `--only` rechecks those controls after a full run; `--json` prints the full results.
+- **`scan`** reads the repo's files (tracked or not, except node_modules), git hooks and history, and runs nothing
+  from them. It exits 0 clean, 1 signs of a poisoned repo, 2 refused, 3 only lower-confidence findings, 4 not
+  everything was scanned. A clean scan is not proof a project is safe.
+- **`accept`, `private` and `baseline`** are yours to type: the agent can't remove a private folder or accept a
+  baseline.
+- **`summary`** is self-reported: anyone with your account could edit it before sharing.
+- **`update`** takes only signed releases; use it instead of `git pull`.
 
 ## How it differs
 
@@ -242,9 +215,9 @@ fortkeep folder for you to delete.
   fortkeep is narrower, about developer threats, and explains and fixes with you.
 - **[osquery](https://osquery.io/) and [Fleet](https://fleetdm.com/)**: query device state across a fleet from a
   server. fortkeep is one Mac and no server.
-- **[mSCP](https://github.com/usnistgov/macos_security)**: the macOS Security Compliance Project's baselines and
-  scripts for compliance frameworks. fortkeep isn't a compliance tool, but its macOS controls name the matching mSCP
-  rules (`mscp` in `controls/baseline.yaml`; mSCP is CC BY 4.0).
+- **[mSCP](https://github.com/usnistgov/macos_security)**: the macOS Security Compliance Project's baselines for
+  compliance frameworks. fortkeep isn't a compliance tool, but its macOS controls name the matching mSCP rules
+  (`mscp` in `controls/baseline.yaml`; mSCP is CC BY 4.0).
 - **[Santa](https://github.com/northpolesec/santa)**: allows or blocks which programs may run. fortkeep blocks
   nothing; it checks settings.
 - **[Pareto Security](https://paretosecurity.com/)**: a menu-bar app that checks common macOS settings. fortkeep also
@@ -268,10 +241,10 @@ the folder and reinstall.
 **Why Safe Chain, and 1Password?** [Safe Chain](https://github.com/AikidoSec/safe-chain) is free and open source: it
 blocks packages on a malware feed and refuses versions published in the last 48 hours, when most hijacked versions are
 caught. 1Password is one way to keep SSH keys in a protected agent; Secretive and Bitwarden are free alternatives,
-and fortkeep accepts them. The baseline's
-[what costs money](controls/baseline-source.md#what-costs-money) section lists a free way to meet every MUST.
+and fortkeep accepts them.
 
-**Does it send anything?** No telemetry and no results. The network uses are listed under [Privacy](#privacy).
+**Can I fix things without an agent?** Not yet. `fortkeep check`, `scan` and `explain` work on their own, and each
+lesson says how to fix its control by hand, but fortkeep's own fixes run only in your agent's session.
 
 **Can I use it for my team?** Overlays cover set-ups such as a managed antivirus or a TLS-inspecting proxy. For your
 own controls or a stricter policy, fork it: set your fork's name in `checks/lib/repo.sh` (`FORTKEEP_RELEASE_NAME`) and
@@ -288,7 +261,8 @@ pins a release instead.
 ## Contributing
 
 Contributions are welcome: a check that gives the wrong result, a control, a lesson, a fix. People start with
-[CONTRIBUTING.md](CONTRIBUTING.md), agents with [AGENTS.md](AGENTS.md). What's planned is in
+[CONTRIBUTING.md](CONTRIBUTING.md), agents with [AGENTS.md](AGENTS.md). Before a release, maintainers also run a live
+eval that tries to talk a real agent past the guards (`ci/agent-eval/`). What's planned is in
 [docs/ROADMAP.md](docs/ROADMAP.md), what changed in [CHANGELOG.md](CHANGELOG.md). Follow the
 [Code of Conduct](CODE_OF_CONDUCT.md).
 
