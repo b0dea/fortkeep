@@ -469,3 +469,10 @@ s="$(printf '\xc5\xbf')"  # U+017F, a long s: APFS opens it as s
   run dev_call Read "$(jq -cn --arg p "$HOME/${s}ecret/a.txt" '{file_path:$p}')"; [ "$status" -eq 2 ]
   run dev_call Bash '{"command":"checks/run.sh --only BL-OS-01"}'; [ "$status" -eq 0 ]
 }
+@test "a development session checks a command sent as cmd (Codex's name for it) like one sent as command" {
+  printf '~/Secret\n' > "$FORTKEEP_PRIVATE_PATHS"; mkdir -p "$HOME/Secret"
+  run dev_call Bash '{"cmd":"sudo id"}'; [ "$status" -eq 2 ]
+  run dev_call Bash '{"cmd":"ls ~/Sec*"}'; [ "$status" -eq 2 ]
+  run dev_call Bash '{"cmd":["bash","-lc","sudo id"]}'; [ "$status" -eq 2 ]
+  run dev_call Bash '{"cmd":"checks/run.sh --only BL-OS-01"}'; [ "$status" -eq 0 ]
+}

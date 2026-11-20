@@ -21,6 +21,12 @@ if [ "$tool" = AskUserQuestion ]; then
   jq -e '.tool_input | has("answers") | not' >/dev/null <<<"$input" \
     || block "a question is asked without answers filled in: only the person answers it"
 fi
+# A shell call names its command once: with both command (Claude Code) and cmd (Codex's own name), the guards would
+# check one while the agent might run the other.
+if [ "$tool" = Bash ]; then
+  jq -e '.tool_input | has("command") and has("cmd") | not' >/dev/null <<<"$input" \
+    || block "a shell call names its command once, as command or cmd, not both"
+fi
 
 if fortkeep_dev_session; then
   case "$tool" in

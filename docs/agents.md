@@ -22,7 +22,9 @@ never reach a hook; `.codex/config.toml` turns the web search off.
   spelling the skills use. The list is `.claude/hooks/allow-list`. Any other program, a pipe, redirection, variable,
   substitution, glob, newline or backslash is refused, and so is a character beyond ASCII, except letters and
   punctuation inside quotes in a name or reason. A fix is also refused while the agent is in bypass, auto or
-  accept-edits mode, where it would run without the person's prompt.
+  accept-edits mode, where it would run without the person's prompt. A call that names its command twice, as
+  `command` and Codex's `cmd`, is refused in either session: the guards would check one and the agent might run the
+  other.
 - Read, Grep and Glob: physical paths inside this checkout, never `private-paths`, `reports/.approvals` or `.git`, plus
   this project's own scratch folder and Claude Code project folder (memory, saved tool output). A search may not start
   at a folder that holds any of those. Codex has no read tool, so `checks/show.sh <path>` prints a file under the

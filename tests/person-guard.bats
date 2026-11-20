@@ -298,6 +298,16 @@ EOF
   allowed call AskUserQuestion "$(jq -cn --argjson q "$q" '{questions:[$q]}')"
   refused call AskUserQuestion "$(jq -cn --argjson q "$q" '{questions:[$q], answers:{($q.question):"Accept BL-RC-01"}}')"
 }
+@test "a shell call that names its command twice, as command and cmd, is refused in either session" {
+  allowed call Bash '{"cmd":"checks/run.sh"}'
+  refused call Bash '{"cmd":"touch /tmp/fk-canary","command":"checks/run.sh"}'
+  refused call Bash '{"cmd":"checks/run.sh","command":"checks/run.sh"}'
+  refused call Bash '{"cmd":["bash","-lc","ls"],"command":["checks/run.sh"]}'
+  refused call Bash '{"cmd":"ls","command":null}'
+  export FORTKEEP_DEV=1
+  allowed call Bash '{"command":"ls"}'
+  refused call Bash '{"cmd":"sudo id","command":"ls"}'
+}
 @test "the guard fails closed on unreadable input" {
   run bash -c "printf 'not json' | '$G'"; [ "$status" -eq 2 ]
   run bash -c "printf '' | '$G'"; [ "$status" -eq 2 ]
