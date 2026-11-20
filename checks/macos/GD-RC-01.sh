@@ -9,11 +9,19 @@ ID=GD-RC-01
 STORE="$HOME/.config/fortkeep/repo-sweep.json"
 # Never read or write it through a symlink: a link could point the check at a PASS kept anywhere.
 safe() { fortkeep_plain_store "${STORE%/*}" repo-sweep.json repo-sweep.json.tmp; }
+# The repo copy of the scanner, not the installed one: an edited ~/.local/bin copy can't hide a finding here.
+SCAN="$FORTKEEP_REPO/fixes/files/git-scan-new-files"
+# A stored result counts only for the scanner that made it: after an update that changes what it flags, sweep again.
+scanner="$(/usr/bin/shasum -a 256 < "$SCAN" 2>/dev/null | cut -d' ' -f1)"
+r=""
 if [ -z "${FORTKEEP_WEEKLY_RUN:-}" ] && { [ -e "$STORE" ] || [ -L "$STORE" ]; }; then
   safe || { fortkeep_result "$ID" ERROR "The stored result of the weekly repo sweep isn't a plain file in a plain folder" "$(fortkeep_tilde "$STORE") or its folder is a symlink or not a file: look at it, then delete it so the next review sweeps again"; exit 0; }
   r="$(jq -ce 'select((.status | IN("PASS", "FAIL", "NA", "ERROR")) and (.evidence | type == "string")
     and (.note | type == "string") and (.time | type == "number" and . == floor))' "$STORE" 2>/dev/null)" \
     || { fortkeep_result "$ID" ERROR "Could not read the stored result of the weekly repo sweep" "$(fortkeep_tilde "$STORE") is not a sweep result; the weekly security check (BL-AU-02) writes it again"; exit 0; }
+  [ -n "$scanner" ] && [ "$(jq -r '.scanner // ""' <<<"$r")" = "$scanner" ] || r=""
+fi
+if [ -n "$r" ]; then
   age=$(( $(date +%s) - $(jq -r '.time' <<<"$r") ))
   # A day of clock skew is allowed; a result dated later than that would never go stale.
   [ "$age" -ge -86400 ] || { fortkeep_result "$ID" ERROR "The stored result of the weekly repo sweep is dated in the future" "$(fortkeep_tilde "$STORE") is not a result this Mac's clock could have made; the weekly security check (BL-AU-02) writes it again"; exit 0; }
@@ -25,7 +33,7 @@ fi
 finish() {  # STATUS EVIDENCE [NOTE] — report the sweep's result and keep it for the runs until the next weekly one
   local out note="${3:-}"
   out="$(fortkeep_result "$ID" "$1" "$2" "$note")" || exit 1
-  if ! { safe && (umask 077; mkdir -p "${STORE%/*}") && jq -c --argjson t "$(date +%s)" '{status, evidence, note, time: $t}' <<<"$out" > "$STORE.tmp" \
+  if ! { safe && (umask 077; mkdir -p "${STORE%/*}") && jq -c --argjson t "$(date +%s)" --arg s "$scanner" '{status, evidence, note, time: $t, scanner: $s}' <<<"$out" > "$STORE.tmp" \
     && mv -f "$STORE.tmp" "$STORE"; } 2>/dev/null; then
     rm -f "$STORE.tmp" 2>/dev/null
     out="$(fortkeep_result "$ID" "$1" "$2" "${note:+$note }Could not store this result in $(fortkeep_tilde "$STORE"), so the next review sweeps again.")"
@@ -33,8 +41,6 @@ finish() {  # STATUS EVIDENCE [NOTE] — report the sweep's result and keep it f
   printf '%s\n' "$out"
   exit 0
 }
-# The repo copy of the scanner, not the installed one: an edited ~/.local/bin copy can't hide a finding here.
-SCAN="$FORTKEEP_REPO/fixes/files/git-scan-new-files"
 t="${FORTKEEP_SWEEP_TIMEOUT:-140}"
 budget=$(( t > 20 ? t - 15 : t / 2 ))  # the scanner stops itself first, so a slow sweep still reports what it found
 skipped=""; looked=""; repos=(); blocked=""
