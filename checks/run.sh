@@ -4,11 +4,11 @@
 # Started as `bash run.sh`: start again in privileged mode, which ignores BASH_ENV, ENV and exported functions.
 case $- in *p*) ;; *) exec /usr/bin/env -u BASH_ENV -u ENV /bin/bash -p "$0" "$@" ;; esac
 case "$0" in */*) . "${0%/*}/lib/common.sh" ;; *) . ./lib/common.sh ;; esac
-devward_clean_start "$0" "$@"
-export DEVWARD_USER_PATH
-CONTROLS="${DEVWARD_CONTROLS:-$DEVWARD_REPO/controls/controls.json}"
-CONFIG="${DEVWARD_CONFIG:-$DEVWARD_REPORTS/config.json}"
-ACCEPTED="${DEVWARD_ACCEPTED:-$DEVWARD_REPO/accepted.json}"
+fortkeep_clean_start "$0" "$@"
+export FORTKEEP_USER_PATH
+CONTROLS="${FORTKEEP_CONTROLS:-$FORTKEEP_REPO/controls/controls.json}"
+CONFIG="${FORTKEEP_CONFIG:-$FORTKEEP_REPORTS/config.json}"
+ACCEPTED="${FORTKEEP_ACCEPTED:-$FORTKEEP_REPO/accepted.json}"
 TIMEOUT=20
 ONLY=""
 usage="usage: $0 [--only ID]... [--timeout SECONDS] [--weekly]"
@@ -16,14 +16,14 @@ while [ $# -gt 0 ]; do
   case "$1" in
     --only) [ $# -ge 2 ] || { echo "$usage" >&2; exit 2; }; ONLY="$ONLY $2"; shift 2 ;;
     --timeout) [ $# -ge 2 ] || { echo "$usage" >&2; exit 2; }; TIMEOUT="$2"; shift 2 ;;
-    --weekly) DEVWARD_WEEKLY_RUN=1; export DEVWARD_WEEKLY_RUN; shift ;;
+    --weekly) FORTKEEP_WEEKLY_RUN=1; export FORTKEEP_WEEKLY_RUN; shift ;;
     *) echo "$usage" >&2; exit 2 ;;
   esac
 done
 # The weekly job (weekly.sh passes --weekly) runs while KnockKnock or Spotlight load the Mac: every limit triples,
 # and shell probes get 30 s unless the caller chose a value.
 factor=1
-if [ -n "${DEVWARD_WEEKLY_RUN:-}" ]; then factor=3; DEVWARD_SHELL_TIMEOUT="${DEVWARD_SHELL_TIMEOUT:-30}"; export DEVWARD_SHELL_TIMEOUT; fi
+if [ -n "${FORTKEEP_WEEKLY_RUN:-}" ]; then factor=3; FORTKEEP_SHELL_TIMEOUT="${FORTKEEP_SHELL_TIMEOUT:-30}"; export FORTKEEP_SHELL_TIMEOUT; fi
 
 jq -e 'type == "array"' "$CONTROLS" >/dev/null 2>&1 || { echo "controls file missing or not a JSON array: $CONTROLS" >&2; exit 2; }
 overlays='[]'
@@ -51,7 +51,7 @@ while IFS= read -r id; do
 done <<EOF
 $(jq -r .id <<<"$selected")
 EOF
-prev="$DEVWARD_REPORTS/latest/results.json"
+prev="$FORTKEEP_REPORTS/latest/results.json"
 if [ -n "$ONLY" ]; then
   for id in $ONLY; do
     jq -e --arg id "$id" 'select(.id == $id)' >/dev/null 2>&1 <<<"$selected" || { echo "unknown control: $id" >&2; exit 2; }
@@ -60,11 +60,11 @@ if [ -n "$ONLY" ]; then
     || { echo "run a full review first: checks/run.sh" >&2; exit 2; }
 fi
 
-mkdir -p "$DEVWARD_REPORTS" || exit 1
+mkdir -p "$FORTKEEP_REPORTS" || exit 1
 run_id="$(date -u +%Y%m%dT%H%M%SZ)"
 # One run per second: never reuse (or later delete) an earlier run's folder.
-while [ -e "$DEVWARD_REPORTS/$run_id" ]; do sleep 1; run_id="$(date -u +%Y%m%dT%H%M%SZ)"; done
-out_dir="$DEVWARD_REPORTS/$run_id"
+while [ -e "$FORTKEEP_REPORTS/$run_id" ]; do sleep 1; run_id="$(date -u +%Y%m%dT%H%M%SZ)"; done
+out_dir="$FORTKEEP_REPORTS/$run_id"
 mkdir "$out_dir" || exit 1
 lines="$out_dir/.lines"
 : > "$lines"
@@ -76,13 +76,13 @@ while IFS= read -r ctl; do
   [ -n "$ctl" ] || continue
   id="$(jq -r .id <<<"$ctl")"
   if [ -n "$ONLY" ]; then case " $ONLY " in *" $id "*) ;; *) continue ;; esac; fi
-  check="$DEVWARD_REPO/$(jq -r .check <<<"$ctl")"
+  check="$FORTKEEP_REPO/$(jq -r .check <<<"$ctl")"
   t="$(jq -r --arg d "$TIMEOUT" '.timeout // $d' <<<"$ctl")"
   case "$t" in ''|*[!0-9]*) ;; *) t=$((t * factor)) ;; esac
-  n=$((n + 1)); printf 'devward: %d/%d %s (%ds so far)\n' "$n" "$expected" "$id" "$((SECONDS - start))" >&2
-  devward_timeout "$t" /usr/bin/env -u BASH_ENV -u ENV /bin/bash -p "$check" > "$out_dir/.out" 2>/dev/null </dev/null
+  n=$((n + 1)); printf 'fortkeep: %d/%d %s (%ds so far)\n' "$n" "$expected" "$id" "$((SECONDS - start))" >&2
+  fortkeep_timeout "$t" /usr/bin/env -u BASH_ENV -u ENV /bin/bash -p "$check" > "$out_dir/.out" 2>/dev/null </dev/null
   rc=$?
-  res="$(devward_check_verdict "$id" "$rc" "$(cat "$out_dir/.out")" "$t")"
+  res="$(fortkeep_check_verdict "$id" "$rc" "$(cat "$out_dir/.out")" "$t")"
   jq -c --argjson c "$ctl" --argjson acc "$accepted" '
     . + ($c | {id, title, layer, level, source})
     | if .status == "FAIL" and $acc[.id] != null then .status = "ACCEPTED" | .note = ($acc[.id].reason // "accepted") else . end
@@ -108,6 +108,6 @@ if ! "${build[@]}" --arg run "$run_id" --arg os "$os" --argjson ov "$overlays" "
   echo "failed to write results.json" >&2; rm -rf "$out_dir"; exit 1
 fi
 rm -f "$lines" "$out_dir/.out"
-ln -sfn "$run_id" "$DEVWARD_REPORTS/latest"
+ln -sfn "$run_id" "$FORTKEEP_REPORTS/latest"
 jq -r '.results | group_by(.status) | map("\(.[0].status): \(length)") | join("  ")' "$out_dir/results.json"
 echo "report: reports/$run_id/results.json"

@@ -3,13 +3,13 @@
 . "$(dirname "$0")/../lib/apps.sh"
 . "$(dirname "$0")/../lib/agents.sh"
 ID=BL-AI-03
-dirs="$(devward_claude_dirs)"; cx=""; devward_codex_present && cx=1
+dirs="$(fortkeep_claude_dirs)"; cx=""; fortkeep_codex_present && cx=1
 if [ -z "$dirs" ] && [ -z "$cx" ]; then
-  if devward_claude_private_skipped; then devward_claude_excluded_error "$ID"; else devward_result "$ID" NA "Neither Claude Code nor Codex is set up on this Mac"; fi
+  if fortkeep_claude_private_skipped; then fortkeep_claude_excluded_error "$ID"; else fortkeep_result "$ID" NA "Neither Claude Code nor Codex is set up on this Mac"; fi
   exit 0
 fi
-rcfiles=".zshrc .zprofile .zshenv .zlogin .bashrc .bash_profile .config/devward/path-front.sh"
-m="$(devward_managed_settings)"
+rcfiles=".zshrc .zprofile .zshenv .zlogin .bashrc .bash_profile .config/fortkeep/path-front.sh"
+m="$(fortkeep_managed_settings)"
 phys() {  # PATH — the same path with its folder's symlinks resolved, when that folder exists
   local d; d="$(dirname "$1")"
   case "$d" in *[*?[]*) return 0 ;; esac
@@ -56,22 +56,22 @@ while IFS= read -r d; do
   s="$d/settings.json"
   rules="$mrules"; need="$s"; hl=""
   if [ -f "$s" ]; then
-    if good_json "$s" && hl="$(devward_bash_hooks "$s")"; then rules="$rules"$'\n'"$(deny_rules "$s" "$d")"
-    else undecided="$undecided $(devward_tilde "$d")"; continue; fi
+    if good_json "$s" && hl="$(fortkeep_bash_hooks "$s")"; then rules="$rules"$'\n'"$(deny_rules "$s" "$d")"
+    else undecided="$undecided $(fortkeep_tilde "$d")"; continue; fi
   fi
   for f in $rcfiles; do
     [ -f "$HOME/$f" ] && need="$need"$'\n'"$HOME/$f"
   done
   while IFS= read -r h; do
     [ -n "$h" ] || continue
-    exe="$(devward_hook_script "$h")"; [ -n "$exe" ] && need="$need"$'\n'"$exe"
+    exe="$(fortkeep_hook_script "$h")"; [ -n "$exe" ] && need="$need"$'\n'"$exe"
   done <<EOF
 $hl
 EOF
   while IFS= read -r f; do
     [ -n "$f" ] || continue
     total=$((total + 1))
-    if covered "$f" "$rules"; then good=$((good + 1)); else missing="$missing"$'\n'"$(devward_tilde "$f")"; fi
+    if covered "$f" "$rules"; then good=$((good + 1)); else missing="$missing"$'\n'"$(fortkeep_tilde "$f")"; fi
   done <<EOF
 $need
 EOF
@@ -85,25 +85,25 @@ if [ -n "$cx" ]; then
     [ "$d" != '!skipped' ] || { priv=" (a private folder was excluded)"; continue; }
     hj="$d/hooks.json"; hw=""; need="$hj"$'\n'"$d/config.toml"
     if [ -f "$hj" ]; then
-      if good_json "$hj" && hw="$(devward_tool_hooks "$hj" apply_patch)" && s="$(devward_hook_scripts "$hj")"; then need="$need"$'\n'"$s"
-      else undecided="$undecided $(devward_tilde "$d")"; continue; fi
+      if good_json "$hj" && hw="$(fortkeep_tool_hooks "$hj" apply_patch)" && s="$(fortkeep_hook_scripts "$hj")"; then need="$need"$'\n'"$s"
+      else undecided="$undecided $(fortkeep_tilde "$d")"; continue; fi
     fi
     for f in "$d"/rules/*.rules; do [ -f "$f" ] && need="$need"$'\n'"$f"; done
     for f in $rcfiles; do [ -f "$HOME/$f" ] && need="$need"$'\n'"$HOME/$f"; done
     while IFS= read -r f; do
       [ -n "$f" ] || continue
       total=$((total + 1)); r=1
-      [ -z "$hw" ] || { devward_hooks_refuse "$hw" apply_patch "$f"; r=$?; }
+      [ -z "$hw" ] || { fortkeep_hooks_refuse "$hw" apply_patch "$f"; r=$?; }
       case "$r" in
         0) good=$((good + 1)) ;;
-        2) undecided="$undecided $(devward_tilde "$d") (a hook timed out)"; break ;;
-        *) cmissing="$cmissing"$'\n'"$(devward_tilde "$f")" ;;
+        2) undecided="$undecided $(fortkeep_tilde "$d") (a hook timed out)"; break ;;
+        *) cmissing="$cmissing"$'\n'"$(fortkeep_tilde "$f")" ;;
       esac
     done <<EOF
 $(printf '%s\n' "$need" | awk 'NF && !s[$0]++')
 EOF
   done <<EOF
-$(devward_codex_dirs)
+$(fortkeep_codex_dirs)
 EOF
 fi
 ev="$good of $total agent control files are protected from agent edits"
@@ -111,10 +111,10 @@ list() { printf '%s\n' "$1" | sed '/^$/d' | awk '!s[$0]++' | paste -sd, - | sed 
 note=""
 [ -z "$missing" ] || note="Add Edit(…) deny rules for: $(list "$missing")"
 [ -z "$cmissing" ] || note="${note:+$note. }Make the apply_patch guard in Codex's hooks.json refuse edits to: $(list "$cmissing")"
-note="$(devward_claude_note "$note")$priv"; note="${note# }"
+note="$(fortkeep_claude_note "$note")$priv"; note="${note# }"
 if [ -n "$missing$cmissing" ]; then
   [ -z "$undecided" ] || note="$note. Could not read settings in:$undecided"
-  devward_result "$ID" FAIL "$ev" "$note"
-elif [ -n "$undecided" ]; then devward_result "$ID" ERROR "$ev" "Could not read these settings (invalid JSON or a bad hook matcher):$undecided${note:+. $note}"
-elif [ -n "$priv" ] && [ "$total" -eq 0 ]; then devward_result "$ID" ERROR "$ev" "$note"
-else devward_result "$ID" PASS "$ev" "$note"; fi
+  fortkeep_result "$ID" FAIL "$ev" "$note"
+elif [ -n "$undecided" ]; then fortkeep_result "$ID" ERROR "$ev" "Could not read these settings (invalid JSON or a bad hook matcher):$undecided${note:+. $note}"
+elif [ -n "$priv" ] && [ "$total" -eq 0 ]; then fortkeep_result "$ID" ERROR "$ev" "$note"
+else fortkeep_result "$ID" PASS "$ev" "$note"; fi

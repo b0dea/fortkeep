@@ -2,7 +2,7 @@ load helpers
 
 setup() {
   setup_env
-  T="$BATS_TEST_TMPDIR/T"; mkdir -p "$T" "$DEVWARD_SYSROOT/tmp"
+  T="$BATS_TEST_TMPDIR/T"; mkdir -p "$T" "$FORTKEEP_SYSROOT/tmp"
   stub getconf 'exit 1'
   stub crontab 'exit 1'
   # ps: launchd, plus $PROC ("PID TTY ETIME PROGRAM") and $ARGS ("PID COMMAND") when a test sets them.
@@ -62,7 +62,7 @@ chk() { run env TMPDIR="$T" PATH="$BATS_TEST_TMPDIR/bin:/usr/bin:/bin:/usr/sbin:
   chk; [ "$(field status)" = PASS ]
   echo 'ssh-ed25519 AAAAC3Nzb svc-telemetry' >> "$HOME/.ssh/authorized_keys"
   chk; [ "$(field status)" = FAIL ]; [[ "$(field note)" == "~/.ssh/authorized_keys lets in a key labelled svc-telemetry"* ]]
-  echo "$HOME/.ssh" > "$DEVWARD_PRIVATE_PATHS"
+  echo "$HOME/.ssh" > "$FORTKEEP_PRIVATE_PATHS"
   chk; [ "$(field status)" = PASS ]; [ "$(field note)" = "(a private folder was excluded)" ]
 }
 @test "GD-RT-03 the loader's home folders → FAIL; a ~/.node_modules without its packages is only noted" {
@@ -73,9 +73,9 @@ chk() { run env TMPDIR="$T" PATH="$BATS_TEST_TMPDIR/bin:/usr/bin:/bin:/usr/sbin:
   chk; [ "$(field status)" = FAIL ]; [[ "$(field note)" == "~/.node_modules holds the BeaverTail loader's packages"* ]]
 }
 @test "GD-RT-03 loader staging in a temp folder → FAIL: an npm stage, staged pip packages, a dotfile named after you" {
-  mkdir -p "$DEVWARD_SYSROOT/tmp/.npm/x\$y_123456_654321"
+  mkdir -p "$FORTKEEP_SYSROOT/tmp/.npm/x\$y_123456_654321"
   chk; [ "$(field status)" = FAIL ]; [[ "$(field note)" == *"/tmp/.npm/x\$y_123456_654321 is a loader staging folder"* ]]
-  rm -rf "$DEVWARD_SYSROOT/tmp/.npm"; mkdir -p "$T/.pip/lib/pyzipper"
+  rm -rf "$FORTKEEP_SYSROOT/tmp/.npm"; mkdir -p "$T/.pip/lib/pyzipper"
   chk; [ "$(field status)" = FAIL ]; [[ "$(field note)" == *"/.pip holds the loader's staged Python packages"* ]]
   rm -rf "$T/.pip"; mkdir "$T/.pip"
   chk; [ "$(field status)" = PASS ]; [[ "$(field note)" == *"/.pip exists" ]]

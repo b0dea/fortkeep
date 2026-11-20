@@ -11,37 +11,37 @@ setup() {
   setup_env
   copy_signed_origin
   C="$(git -C "$O" rev-parse HEAD)"
-  export DEVWARD_INSTALL_URL="$O"
+  export FORTKEEP_INSTALL_URL="$O"
   stub sw_vers 'echo 15.7.9'
   stub xcode-select '[ "$1" = -p ] && echo /Library/Developer/CommandLineTools'
-  DEST="$HOME/.local/share/devward"
+  DEST="$HOME/.local/share/fortkeep"
 }
 install() { run "$REPO/install.sh" "$@"; }
-installed_release() {  # the copy it made is release v0.1.0, unchanged, to devward itself
-  run "$DEST/bin/devward" version --json
+installed_release() {  # the copy it made is release v0.1.0, unchanged, to fortkeep itself
+  run "$DEST/bin/fortkeep" version --json
   [ "$(field version)" = v0.1.0 ]; [ "$(field local_changes)" = false ]
 }
-nothing_installed() { [ ! -e "$DEST" ]; [ ! -e "$HOME/.config/devward/release-signers" ]; [ -z "$(ls -A "$HOME/.local/share" 2>/dev/null)" ]; }
+nothing_installed() { [ ! -e "$DEST" ]; [ ! -e "$HOME/.config/fortkeep/release-signers" ]; [ -z "$(ls -A "$HOME/.local/share" 2>/dev/null)" ]; }
 
 @test "installs the pinned release, records its signers as trusted, links the command and says what's next" {
   mkdir -p "$HOME/.local/bin"
   install --tag v0.1.0 --commit "$C"
   [ "$status" -eq 0 ]
   [ "$(git -C "$DEST" rev-parse HEAD)" = "$C" ]
-  [ "$(cat "$HOME/.config/devward/highest-release")" = v0.1.0 ]
-  cmp "$HOME/.config/devward/release-signers" "$O/.github/allowed_signers"
-  [ "$(readlink "$HOME/.local/bin/devward")" = "$DEST/bin/devward" ]
-  [[ "$output" == *"devward agent"* ]]
+  [ "$(cat "$HOME/.config/fortkeep/highest-release")" = v0.1.0 ]
+  cmp "$HOME/.config/fortkeep/release-signers" "$O/.github/allowed_signers"
+  [ "$(readlink "$HOME/.local/bin/fortkeep")" = "$DEST/bin/fortkeep" ]
+  [[ "$output" == *"fortkeep agent"* ]]
   installed_release
 }
 
 @test "without ~/.local/bin, or with --no-link, it links nothing and says how to run it" {
   install --tag v0.1.0 --commit "$C"
-  [ "$status" -eq 0 ]; [ ! -e "$HOME/.local/bin/devward" ]
-  [[ "$output" == *'export PATH="$HOME/.local/share/devward/bin:$PATH"'* ]]
+  [ "$status" -eq 0 ]; [ ! -e "$HOME/.local/bin/fortkeep" ]
+  [[ "$output" == *'export PATH="$HOME/.local/share/fortkeep/bin:$PATH"'* ]]
   rm -rf "$DEST"; mkdir -p "$HOME/.local/bin"
   install --tag v0.1.0 --commit "$C" --no-link
-  [ "$status" -eq 0 ]; [ ! -e "$HOME/.local/bin/devward" ]; [[ "$output" != *"export PATH"* ]]
+  [ "$status" -eq 0 ]; [ ! -e "$HOME/.local/bin/fortkeep" ]; [[ "$output" != *"export PATH"* ]]
 }
 
 @test "refuses a release whose commit isn't the pinned one, and leaves nothing behind" {
@@ -52,13 +52,13 @@ nothing_installed() { [ ! -e "$DEST" ]; [ ! -e "$HOME/.config/devward/release-si
 
 @test "refuses a tag that isn't signed by a key the pinned commit's signers list names" {
   echo next > "$O/next"; commit "$O"; C2="$(git -C "$O" rev-parse HEAD)"
-  git -C "$O" -c user.name=t -c user.email=t@example.com tag -a -m "b0dea/devward v0.2.0" v0.2.0
+  git -C "$O" -c user.name=t -c user.email=t@example.com tag -a -m "b0dea/fortkeep v0.2.0" v0.2.0
   install --tag v0.2.0 --commit "$C2"
   [ "$status" -eq 1 ]; [[ "$output" == *"not signed"* ]]
   nothing_installed
   ssh-keygen -q -t ed25519 -N '' -C other -f "$BATS_TEST_TMPDIR/other"
   git -C "$O" -c user.name=t -c user.email=t@example.com -c gpg.format=ssh -c user.signingkey="$BATS_TEST_TMPDIR/other" \
-    tag -s -m "b0dea/devward v0.3.0" v0.3.0
+    tag -s -m "b0dea/fortkeep v0.3.0" v0.3.0
   install --tag v0.3.0 --commit "$C2"
   [ "$status" -eq 1 ]; [[ "$output" == *"not signed"* ]]
   nothing_installed
@@ -124,27 +124,27 @@ nothing_installed() { [ ! -e "$DEST" ]; [ ! -e "$HOME/.config/devward/release-si
 @test "never replaces an existing install" {
   mkdir -p "$DEST"; echo mine > "$DEST/file"
   install --tag v0.1.0 --commit "$C"
-  [ "$status" -eq 1 ]; [[ "$output" == *"devward update"* ]]
+  [ "$status" -eq 1 ]; [[ "$output" == *"fortkeep update"* ]]
   [ "$(cat "$DEST/file")" = mine ]
 }
 
-@test "the Homebrew shim installs on first run without mixing the installer's output into devward's JSON" {
+@test "the Homebrew shim installs on first run without mixing the installer's output into fortkeep's JSON" {
   # The shim as the formula writes it, with this release's pins and this repo's install.sh as its libexec copy
-  awk '/<<~SH$/ { on = 1; next } /^ *SH$/ { on = 0 } on' "$REPO/packaging/homebrew/devward.rb" \
+  awk '/<<~SH$/ { on = 1; next } /^ *SH$/ { on = 0 } on' "$REPO/packaging/homebrew/fortkeep.rb" \
     | sed -e 's/^      //' -e "s|#{libexec}|$REPO|" -e 's|#{version}|0.1.0|' -e "s|#{COMMIT}|$C|" > "$BATS_TEST_TMPDIR/shim"
   grep -q "install.sh\" --tag \"v0.1.0\" --commit \"$C\"" "$BATS_TEST_TMPDIR/shim"
   run --separate-stderr bash "$BATS_TEST_TMPDIR/shim" version --json
   [ "$status" -eq 0 ]
   [ "$(field version)" = v0.1.0 ]
-  [[ "$stderr" == *"Installed devward v0.1.0"* ]]
+  [[ "$stderr" == *"Installed fortkeep v0.1.0"* ]]
 }
 
 @test "a second install that finishes while this one clones wins, and this one never nests its clone inside it" {
   # git that, on clone, first lets another install finish: DEST appears, holding a copy
   real="$(command -v git)"
-  stub git "case \" \$* \" in *\" clone \"*) mkdir -p \"$DEST/bin\"; echo theirs > \"$DEST/bin/devward\" ;; esac; exec \"$real\" \"\$@\""
+  stub git "case \" \$* \" in *\" clone \"*) mkdir -p \"$DEST/bin\"; echo theirs > \"$DEST/bin/fortkeep\" ;; esac; exec \"$real\" \"\$@\""
   install --tag v0.1.0 --commit "$C"
   [ "$status" -eq 1 ]; [[ "$output" == *"another install got there first"* ]]
-  [ ! -e "$DEST/devward" ]; [ "$(cat "$DEST/bin/devward")" = theirs ]
-  [ ! -e "$HOME/.config/devward/release-signers" ]
+  [ ! -e "$DEST/fortkeep" ]; [ "$(cat "$DEST/bin/fortkeep")" = theirs ]
+  [ ! -e "$HOME/.config/fortkeep/release-signers" ]
 }

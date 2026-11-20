@@ -5,7 +5,7 @@ if [ $# -eq 2 ]; then
   prev="$1"; cur="$2"
 else
   # shellcheck disable=SC2012  # run dirs are timestamp-named
-  runs="$(ls -1d "$DEVWARD_REPORTS"/2*/ 2>/dev/null | sort | tail -2)"
+  runs="$(ls -1d "$FORTKEEP_REPORTS"/2*/ 2>/dev/null | sort | tail -2)"
   if [ "$(printf '%s\n' "$runs" | grep -c .)" -lt 2 ]; then echo "no previous run to compare with"; exit 0; fi
   prev="$(printf '%s\n' "$runs" | head -1)results.json"
   cur="$(printf '%s\n' "$runs" | tail -1)results.json"

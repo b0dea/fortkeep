@@ -13,25 +13,25 @@ chrome_ext() {  # PROFILE ID NAME [LOCALE_KEY]
   else jq -n --arg n "$3" '{name:$n}' > "$d/manifest.json"; fi
 }
 
-@test "devward_app finds apps in /Applications and ~/Applications" {
-  mkdir -p "$DEVWARD_SYSROOT/Applications/KnockKnock.app" "$HOME/Applications/LuLu.app"
-  [ "$(devward_app KnockKnock)" = "$DEVWARD_SYSROOT/Applications/KnockKnock.app" ]
-  [ "$(devward_app Nope LuLu)" = "$HOME/Applications/LuLu.app" ]
-  run devward_app Nope; [ "$status" -eq 1 ]
+@test "fortkeep_app finds apps in /Applications and ~/Applications" {
+  mkdir -p "$FORTKEEP_SYSROOT/Applications/KnockKnock.app" "$HOME/Applications/LuLu.app"
+  [ "$(fortkeep_app KnockKnock)" = "$FORTKEEP_SYSROOT/Applications/KnockKnock.app" ]
+  [ "$(fortkeep_app Nope LuLu)" = "$HOME/Applications/LuLu.app" ]
+  run fortkeep_app Nope; [ "$status" -eq 1 ]
 }
-@test "devward_endpoint_products names protection apps and Defender's command once each, and ignores look-alikes" {
-  DEVWARD_USER_PATH="$BATS_TEST_TMPDIR/bin:/usr/bin:/bin" run devward_endpoint_products; [ -z "$output" ]
-  mkdir -p "$DEVWARD_SYSROOT/Applications/Bitdefender Antivirus for Mac.app" "$DEVWARD_SYSROOT/Applications/Microsoft Defender.app" \
-    "$DEVWARD_SYSROOT/Applications/Network Reset Tool.app" "$DEVWARD_SYSROOT/Applications/SentinelOne/SentinelOne Extensions.app"
+@test "fortkeep_endpoint_products names protection apps and Defender's command once each, and ignores look-alikes" {
+  FORTKEEP_USER_PATH="$BATS_TEST_TMPDIR/bin:/usr/bin:/bin" run fortkeep_endpoint_products; [ -z "$output" ]
+  mkdir -p "$FORTKEEP_SYSROOT/Applications/Bitdefender Antivirus for Mac.app" "$FORTKEEP_SYSROOT/Applications/Microsoft Defender.app" \
+    "$FORTKEEP_SYSROOT/Applications/Network Reset Tool.app" "$FORTKEEP_SYSROOT/Applications/SentinelOne/SentinelOne Extensions.app"
   stub mdatp 'exit 0'
-  DEVWARD_USER_PATH="$BATS_TEST_TMPDIR/bin:/usr/bin:/bin" run devward_endpoint_products
+  FORTKEEP_USER_PATH="$BATS_TEST_TMPDIR/bin:/usr/bin:/bin" run fortkeep_endpoint_products
   [ "${#lines[@]}" -eq 3 ]; [[ "$output" == *Bitdefender* ]]; [[ "$output" == *"Microsoft Defender"* ]]; [[ "$output" == *SentinelOne* ]]
   [[ "$output" != *Reset* ]]
 }
-@test "devward_running asks pgrep for an exact name" {
+@test "fortkeep_running asks pgrep for an exact name" {
   stub pgrep '[ "$1" = -x ] && [ "$2" = LuLu ]'
-  devward_running LuLu
-  run devward_running Other; [ "$status" -ne 0 ]
+  fortkeep_running LuLu
+  run fortkeep_running Other; [ "$status" -ne 0 ]
 }
 @test "Chromium profiles and extensions, with localised names" {
   P="$AS/Google/Chrome/Default"; mkdir -p "$P"; echo '{}' > "$P/Preferences"
@@ -40,16 +40,16 @@ chrome_ext() {  # PROFILE ID NAME [LOCALE_KEY]
   chrome_ext "$P" aeblfdkhhhdcdjpifhhbdiojplfjncoa "1Password" extName
   chrome_ext "$P" cjpalhdlnbpafiamejdnhcphjbkeiagm "uBlock Origin"
   mkdir -p "$P/Extensions/Temp"
-  run devward_chromium_profiles; [ "${#lines[@]}" -eq 2 ]; [[ "$output" == *"Chrome	$P"* ]]; [[ "$output" == *"Brave	$Q"* ]]
-  run devward_extensions Chrome "$P"; [ "${#lines[@]}" -eq 2 ]
+  run fortkeep_chromium_profiles; [ "${#lines[@]}" -eq 2 ]; [[ "$output" == *"Chrome	$P"* ]]; [[ "$output" == *"Brave	$Q"* ]]
+  run fortkeep_extensions Chrome "$P"; [ "${#lines[@]}" -eq 2 ]
   [[ "$output" == *"aeblfdkhhhdcdjpifhhbdiojplfjncoa	1Password"* ]]; [[ "$output" == *"uBlock Origin"* ]]
 }
 @test "Firefox profiles from profiles.ini, relative and absolute, and their extensions" {
   F="$AS/Firefox"; mkdir -p "$F/Profiles/a.default" "$BATS_TEST_TMPDIR/abs"
   printf '[General]\nStartWithLastProfile=1\n\n[Profile0]\nName=a\nIsRelative=1\nPath=Profiles/a.default\n\n[Profile1]\nName=b\nPath=%s\nIsRelative=0\n\n[Profile2]\nName=gone\nIsRelative=1\nPath=Profiles/missing\n' "$BATS_TEST_TMPDIR/abs" > "$F/profiles.ini"
   jq -n '{addons:[{id:"uBlock0@raymondhill.net",type:"extension",location:"app-profile",defaultLocale:{name:"uBlock Origin"}},{id:"x@sys",type:"extension",location:"app-system-defaults",defaultLocale:{name:"System"}}]}' > "$F/Profiles/a.default/extensions.json"
-  run devward_firefox_profiles; [ "${#lines[@]}" -eq 2 ]
-  run devward_extensions Firefox "$F/Profiles/a.default"; [ "$output" = "uBlock0@raymondhill.net	uBlock Origin" ]
+  run fortkeep_firefox_profiles; [ "${#lines[@]}" -eq 2 ]
+  run fortkeep_extensions Firefox "$F/Profiles/a.default"; [ "$output" = "uBlock0@raymondhill.net	uBlock Origin" ]
 }
 @test "user LaunchAgents: label, weekly schedule, script, loaded" {
   L="$HOME/Library/LaunchAgents"; mkdir -p "$L"
@@ -60,16 +60,16 @@ chrome_ext() {  # PROFILE ID NAME [LOCALE_KEY]
   plutil -insert Program -string /usr/local/bin/b "$L/b.plist"
   plutil -insert StartCalendarInterval -json '[{"Hour":1},{"Weekday":3}]' "$L/b.plist"
   plutil -create xml1 "$L/c.plist"; plutil -insert Label -string c.job "$L/c.plist"; plutil -insert RunAtLoad -bool true "$L/c.plist"
-  run devward_user_agents; [ "${#lines[@]}" -eq 3 ]
-  devward_agent_weekly "$L/a.plist"; devward_agent_weekly "$L/b.plist"
-  run devward_agent_weekly "$L/c.plist"; [ "$status" -ne 0 ]
-  [ "$(devward_agent_script "$L/a.plist")" = /opt/x/weekly.sh ]
-  [ "$(devward_agent_script "$L/b.plist")" = /usr/local/bin/b ]
+  run fortkeep_user_agents; [ "${#lines[@]}" -eq 3 ]
+  fortkeep_agent_weekly "$L/a.plist"; fortkeep_agent_weekly "$L/b.plist"
+  run fortkeep_agent_weekly "$L/c.plist"; [ "$status" -ne 0 ]
+  [ "$(fortkeep_agent_script "$L/a.plist")" = /opt/x/weekly.sh ]
+  [ "$(fortkeep_agent_script "$L/b.plist")" = /usr/local/bin/b ]
   plutil -replace ProgramArguments -json '["/bin/zsh","-l","/opt/x/s.sh"]' "$L/a.plist"
-  [ "$(devward_agent_script "$L/a.plist")" = /opt/x/s.sh ]; [ -z "$(devward_agent_command "$L/a.plist")" ]
+  [ "$(fortkeep_agent_script "$L/a.plist")" = /opt/x/s.sh ]; [ -z "$(fortkeep_agent_command "$L/a.plist")" ]
   plutil -replace ProgramArguments -json '["/bin/zsh","-lc","brew update"]' "$L/a.plist"
-  [ "$(devward_agent_command "$L/a.plist")" = "brew update" ]; [ -z "$(devward_agent_script "$L/a.plist")" ]
+  [ "$(fortkeep_agent_command "$L/a.plist")" = "brew update" ]; [ -z "$(fortkeep_agent_script "$L/a.plist")" ]
   stub launchctl '[ "$1" = print ] && [ "${2##*/}" = a.job ]'
-  devward_agent_loaded a.job
-  run devward_agent_loaded b.job; [ "$status" -ne 0 ]
+  fortkeep_agent_loaded a.job
+  run fortkeep_agent_loaded b.job; [ "$status" -ne 0 ]
 }

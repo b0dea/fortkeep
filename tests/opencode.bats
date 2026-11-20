@@ -10,8 +10,8 @@ setup() {
   ln -s "$REPO/.claude" "$WT/.claude"; ln -s "$REPO/checks" "$WT/checks"
   cat > "$BATS_TEST_TMPDIR/drive.mjs" <<'EOF'
 const [plugin, wt, step, json] = process.argv.slice(2)
-const { Devward } = await import(plugin)
-const hooks = await Devward({ directory: wt, worktree: wt })
+const { Fortkeep } = await import(plugin)
+const hooks = await Fortkeep({ directory: wt, worktree: wt })
 const call = JSON.parse(json ?? "{}")
 try {
   if (step === "system") {
@@ -30,13 +30,13 @@ try {
 }
 EOF
 }
-drive() { node --experimental-strip-types "$BATS_TEST_TMPDIR/drive.mjs" "$REPO/.opencode/plugins/devward.ts" "$WT" "$@" 2>/dev/null; }
+drive() { node --experimental-strip-types "$BATS_TEST_TMPDIR/drive.mjs" "$REPO/.opencode/plugins/fortkeep.ts" "$WT" "$@" 2>/dev/null; }
 
 @test "opencode: the session-start message reaches the model" {
   person_session
-  run drive system; [ "$status" -eq 0 ]; [[ "$output" == *"devward checks and hardens this Mac"* ]]
+  run drive system; [ "$status" -eq 0 ]; [[ "$output" == *"fortkeep checks and hardens this Mac"* ]]
 }
-@test "opencode: a person's session runs only devward's scripts and reads only the checkout" {
+@test "opencode: a person's session runs only fortkeep's scripts and reads only the checkout" {
   person_session
   run drive before '{"tool":"bash","args":{"command":"checks/run.sh --only BL-OS-01"}}'; [ "$status" -eq 0 ]
   run drive before '{"tool":"bash","args":{"command":"ls"}}'; [ "$status" -eq 2 ]
@@ -56,7 +56,7 @@ drive() { node --experimental-strip-types "$BATS_TEST_TMPDIR/drive.mjs" "$REPO/.
   [ "$status" -eq 2 ]
 }
 @test "opencode: a private folder is blocked for reads and searches" {
-  mkdir -p "$HOME/Private"; printf '%s\n' "$HOME/Private" > "$DEVWARD_PRIVATE_PATHS"
+  mkdir -p "$HOME/Private"; printf '%s\n' "$HOME/Private" > "$FORTKEEP_PRIVATE_PATHS"
   run drive before "$(jq -cn --arg f "$HOME/Private/a.txt" '{tool:"read", args:{filePath:$f}}')"; [ "$status" -eq 2 ]
   run drive before "$(jq -cn --arg p "$HOME" '{tool:"grep", args:{pattern:"x", path:$p}}')"; [ "$status" -eq 2 ]
   run drive before "$(jq -cn --arg f "$WT/reports/notes.md" '{tool:"read", args:{filePath:$f}}')"; [ "$status" -eq 0 ]

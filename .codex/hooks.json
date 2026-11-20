@@ -1,5 +1,5 @@
 {
-  "description": "devward guards: the same scripts Claude Code runs from .claude/settings.json. Codex runs them only after the person trusts this folder and its hooks (docs/agents.md).",
+  "description": "fortkeep guards: the same scripts Claude Code runs from .claude/settings.json. Codex runs them only after the person trusts this folder and its hooks (docs/agents.md).",
   "hooks": {
     "SessionStart": [
       {

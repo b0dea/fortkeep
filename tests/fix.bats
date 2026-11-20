@@ -9,21 +9,21 @@ setup() {
   echo '{}' > "$U/profiles/p1/settings.json"
 }
 fix() { run /bin/bash "$T/fixes/macos/BL-RC-01.sh" "$1"; }
-approve() { date +%s > "$DEVWARD_REPORTS/.approvals/BL-RC-01.$1"; }
+approve() { date +%s > "$FORTKEEP_REPORTS/.approvals/BL-RC-01.$1"; }
 
 @test "refuses without approval" {
   fix apply; [ "$status" -eq 4 ]; [[ "$output" == *REFUSED* ]]
   [ "$(jq -r '."task.allowAutomaticTasks" // "unset"' "$U/settings.json")" = unset ]
 }
 @test "refuses an expired approval and consumes it" {
-  approve apply; touch -t 202001010000 "$DEVWARD_REPORTS/.approvals/BL-RC-01.apply"
+  approve apply; touch -t 202001010000 "$FORTKEEP_REPORTS/.approvals/BL-RC-01.apply"
   fix apply; [ "$status" -eq 4 ]; [[ "$output" == *expired* ]]
-  [ ! -e "$DEVWARD_REPORTS/.approvals/BL-RC-01.apply" ]
+  [ ! -e "$FORTKEEP_REPORTS/.approvals/BL-RC-01.apply" ]
 }
 @test "refuses a future-dated approval as expired and consumes it" {
-  approve apply; touch -t 203001010000 "$DEVWARD_REPORTS/.approvals/BL-RC-01.apply"
+  approve apply; touch -t 203001010000 "$FORTKEEP_REPORTS/.approvals/BL-RC-01.apply"
   fix apply; [ "$status" -eq 4 ]; [[ "$output" == *expired* ]]
-  [ ! -e "$DEVWARD_REPORTS/.approvals/BL-RC-01.apply" ]
+  [ ! -e "$FORTKEEP_REPORTS/.approvals/BL-RC-01.apply" ]
   [ "$(jq -r '."task.allowAutomaticTasks" // "unset"' "$U/settings.json")" = unset ]
 }
 @test "checks the approval before loading any other helper" {
@@ -35,16 +35,16 @@ approve() { date +%s > "$DEVWARD_REPORTS/.approvals/BL-RC-01.$1"; }
 @test "the environment cannot redirect approvals, the token lifetime or PATH" {
   E="$BATS_TEST_TMPDIR/evil"; mkdir -p "$E/.approvals" "$E/bin"
   date +%s > "$E/.approvals/BL-RC-01.apply"
-  approve apply; touch -t 202001010000 "$DEVWARD_REPORTS/.approvals/BL-RC-01.apply"
+  approve apply; touch -t 202001010000 "$FORTKEEP_REPORTS/.approvals/BL-RC-01.apply"
   printf '#!/bin/bash\necho $(( $(date +%%s) - 100 ))\n' > "$E/bin/stat"; chmod +x "$E/bin/stat"
-  run env DEVWARD_REPORTS="$E" DEVWARD_REPO="$E" FX_TOKEN_TTL=999999999 PATH="$E/bin:$PATH" \
+  run env FORTKEEP_REPORTS="$E" FORTKEEP_REPO="$E" FX_TOKEN_TTL=999999999 PATH="$E/bin:$PATH" \
     /bin/bash "$T/fixes/macos/BL-RC-01.sh" apply
   [ "$status" -eq 4 ]; [[ "$output" == *expired* ]]
   [ -e "$E/.approvals/BL-RC-01.apply" ]
   [ "$(jq -r '."task.allowAutomaticTasks" // "unset"' "$U/settings.json")" = unset ]
 }
 @test "an old token stays expired whatever lifetime the environment asks for" {
-  approve apply; touch -t 202001010000 "$DEVWARD_REPORTS/.approvals/BL-RC-01.apply"
+  approve apply; touch -t 202001010000 "$FORTKEEP_REPORTS/.approvals/BL-RC-01.apply"
   run env FX_TOKEN_TTL=999999999 /bin/bash "$T/fixes/macos/BL-RC-01.sh" apply
   [ "$status" -eq 4 ]; [[ "$output" == *expired* ]]
 }
@@ -52,7 +52,7 @@ approve() { date +%s > "$DEVWARD_REPORTS/.approvals/BL-RC-01.$1"; }
   approve apply
   fix apply; [ "$status" -eq 0 ]
   for e in "VS Code" Insiders Cursor Windsurf VSCodium; do
-    [[ "$output" == *"$e"* ]]; grep '| BL-RC-01 | apply |' "$DEVWARD_REPORTS/change-log.md" | grep -q "$e"
+    [[ "$output" == *"$e"* ]]; grep '| BL-RC-01 | apply |' "$FORTKEEP_REPORTS/change-log.md" | grep -q "$e"
   done
 }
 @test "apply sets off everywhere, keeps other settings, consumes the token, logs" {
@@ -61,8 +61,8 @@ approve() { date +%s > "$DEVWARD_REPORTS/.approvals/BL-RC-01.$1"; }
   [ "$(jq -r '."task.allowAutomaticTasks"' "$U/settings.json")" = off ]
   [ "$(jq -r '."editor.fontSize"' "$U/settings.json")" = 14 ]
   [ "$(jq -r '."task.allowAutomaticTasks"' "$U/profiles/p1/settings.json")" = off ]
-  [ ! -e "$DEVWARD_REPORTS/.approvals/BL-RC-01.apply" ]
-  grep -q '| BL-RC-01 | apply |' "$DEVWARD_REPORTS/change-log.md"
+  [ ! -e "$FORTKEEP_REPORTS/.approvals/BL-RC-01.apply" ]
+  grep -q '| BL-RC-01 | apply |' "$FORTKEEP_REPORTS/change-log.md"
   run /bin/bash "$REPO/checks/macos/BL-RC-01.sh"; [ "$(field status)" = PASS ]
 }
 @test "undo restores the originals and needs its own approval" {
@@ -109,7 +109,7 @@ approve() { date +%s > "$DEVWARD_REPORTS/.approvals/BL-RC-01.$1"; }
   rm -r "$U/profiles"
   printf '{\n  // mine\n  "a": 1\n}\n' > "$U/settings.json"
   approve apply; fix apply; [ "$status" -eq 3 ]
-  [ ! -e "$DEVWARD_REPORTS/change-log.md" ]
+  [ ! -e "$FORTKEEP_REPORTS/change-log.md" ]
   approve undo; fix undo; [ "$status" -eq 5 ]
 }
 @test "a failed restore keeps the backup, exits 6, and does not claim restored" {
@@ -118,7 +118,7 @@ approve() { date +%s > "$DEVWARD_REPORTS/.approvals/BL-RC-01.$1"; }
   approve undo; fix undo
   chmod 644 "$U/settings.json"
   [ "$status" -eq 6 ]; [[ "$output" == *"could not restore"* ]]; [[ "$output" != *"restored"* ]]
-  run grep -q '| undo |' "$DEVWARD_REPORTS/change-log.md"; [ "$status" -ne 0 ]
+  run grep -q '| undo |' "$FORTKEEP_REPORTS/change-log.md"; [ "$status" -ne 0 ]
   approve undo; fix undo; [ "$status" -eq 0 ]
   [ "$(cat "$U/settings.json")" = '{"editor.fontSize":14}' ]
 }
@@ -126,12 +126,12 @@ approve() { date +%s > "$DEVWARD_REPORTS/.approvals/BL-RC-01.$1"; }
   mv "$U/profiles" "$U/profiles.off"
   approve apply; fix apply; [ "$status" -eq 0 ]
   mv "$U/profiles.off" "$U/profiles"; chmod 444 "$U/profiles/p1/settings.json"
-  rows="$(wc -l < "$DEVWARD_REPORTS/change-log.md")"
+  rows="$(wc -l < "$FORTKEEP_REPORTS/change-log.md")"
   approve apply; fix apply
   chmod 644 "$U/profiles/p1/settings.json"
   [ "$status" -eq 3 ]; [[ "$output" == *MANUAL* ]]
-  [ "$(wc -l < "$DEVWARD_REPORTS/change-log.md")" -eq "$rows" ]
-  [ "$(ls "$DEVWARD_BACKUPS/BL-RC-01" | wc -l)" -eq 1 ]
+  [ "$(wc -l < "$FORTKEEP_REPORTS/change-log.md")" -eq "$rows" ]
+  [ "$(ls "$FORTKEEP_BACKUPS/BL-RC-01" | wc -l)" -eq 1 ]
   approve undo; fix undo; [ "$status" -eq 0 ]
   [ "$(cat "$U/settings.json")" = '{"editor.fontSize":14}' ]
 }
@@ -144,7 +144,7 @@ approve() { date +%s > "$DEVWARD_REPORTS/.approvals/BL-RC-01.$1"; }
 }
 @test "apply records the post-fix state; undo with no later edit restores as before" {
   approve apply; fix apply; [ "$status" -eq 0 ]
-  [ -f "$(ls -d "$DEVWARD_BACKUPS"/BL-RC-01/*/)sealed.tsv" ]
+  [ -f "$(ls -d "$FORTKEEP_BACKUPS"/BL-RC-01/*/)sealed.tsv" ]
   approve undo; fix undo; [ "$status" -eq 0 ]
   [ "$(cat "$U/settings.json")" = '{"editor.fontSize":14}' ]
   [ "$(cat "$U/profiles/p1/settings.json")" = '{}' ]
@@ -155,14 +155,14 @@ approve() { date +%s > "$DEVWARD_REPORTS/.approvals/BL-RC-01.$1"; }
   edited="$(cat "$U/settings.json")"
   approve undo; fix undo
   [ "$status" -eq 6 ]; [[ "$output" == *"undo stopped"* ]]; [[ "$output" == *"~/Library/Application Support/Code/User/settings.json"* ]]
-  [[ "$output" == *"backup kept in ~/.local/state/devward/backups/BL-RC-01/"* ]]
+  [[ "$output" == *"backup kept in ~/.local/state/fortkeep/backups/BL-RC-01/"* ]]
   [ "$(cat "$U/settings.json")" = "$edited" ]
   [ "$(jq -r '."task.allowAutomaticTasks"' "$U/profiles/p1/settings.json")" = off ]
-  run grep -q '| undo |' "$DEVWARD_REPORTS/change-log.md"; [ "$status" -ne 0 ]
+  run grep -q '| undo |' "$FORTKEEP_REPORTS/change-log.md"; [ "$status" -ne 0 ]
 }
 @test "a backup made before sealing existed restores as before" {
   approve apply; fix apply; [ "$status" -eq 0 ]
-  rm "$DEVWARD_BACKUPS"/BL-RC-01/*/sealed.tsv
+  rm "$FORTKEEP_BACKUPS"/BL-RC-01/*/sealed.tsv
   echo '{"other":1}' > "$U/settings.json"
   approve undo; fix undo; [ "$status" -eq 0 ]
   [ "$(cat "$U/settings.json")" = '{"editor.fontSize":14}' ]
@@ -170,22 +170,22 @@ approve() { date +%s > "$DEVWARD_REPORTS/.approvals/BL-RC-01.$1"; }
 @test "a partly manual apply still records the post-fix state" {
   printf '{\n  // mine\n  "a": 1\n}\n' > "$U/settings.json"
   approve apply; fix apply; [ "$status" -eq 3 ]
-  [ -f "$(ls -d "$DEVWARD_BACKUPS"/BL-RC-01/*/)sealed.tsv" ]
+  [ -f "$(ls -d "$FORTKEEP_BACKUPS"/BL-RC-01/*/)sealed.tsv" ]
 }
-@test "a fix run directly ignores BASH_ENV and passes no DEVWARD_* setting or BASH_ENV to the checks it runs" {
-  printf '#!/bin/bash\nenv | grep -oE "^(DEVWARD_[A-Z_]+|BASH_ENV|ENV|CDPATH)=" | tr -d = > "%s/seen"\necho "{\\"status\\":\\"PASS\\"}"\n' "$BATS_TEST_TMPDIR" > "$T/checks/macos/BL-RC-02.sh"
+@test "a fix run directly ignores BASH_ENV and passes no FORTKEEP_* setting or BASH_ENV to the checks it runs" {
+  printf '#!/bin/bash\nenv | grep -oE "^(FORTKEEP_[A-Z_]+|BASH_ENV|ENV|CDPATH)=" | tr -d = > "%s/seen"\necho "{\\"status\\":\\"PASS\\"}"\n' "$BATS_TEST_TMPDIR" > "$T/checks/macos/BL-RC-02.sh"
   printf 'touch "%s/sourced"\n' "$BATS_TEST_TMPDIR" > "$BATS_TEST_TMPDIR/benv.sh"
-  date +%s > "$DEVWARD_REPORTS/.approvals/BL-RC-02.apply"
-  run env BASH_ENV="$BATS_TEST_TMPDIR/benv.sh" ENV="$BATS_TEST_TMPDIR/benv.sh" CDPATH=/tmp DEVWARD_SHELL_TIMEOUT=1 DEVWARD_CLAUDE_DIRS=/x \
+  date +%s > "$FORTKEEP_REPORTS/.approvals/BL-RC-02.apply"
+  run env BASH_ENV="$BATS_TEST_TMPDIR/benv.sh" ENV="$BATS_TEST_TMPDIR/benv.sh" CDPATH=/tmp FORTKEEP_SHELL_TIMEOUT=1 FORTKEEP_CLAUDE_DIRS=/x \
     "$T/fixes/macos/BL-RC-02.sh" apply
   [ "$status" -eq 0 ]; [[ "$output" == *"nothing to change"* ]]
   [ ! -e "$BATS_TEST_TMPDIR/sourced" ]
-  run grep -E '^(DEVWARD_SHELL_TIMEOUT|DEVWARD_CLAUDE_DIRS|BASH_ENV|ENV|CDPATH)$' "$BATS_TEST_TMPDIR/seen"; [ "$status" -eq 1 ]
-  grep -q '^DEVWARD_REPO$' "$BATS_TEST_TMPDIR/seen"
+  run grep -E '^(FORTKEEP_SHELL_TIMEOUT|FORTKEEP_CLAUDE_DIRS|BASH_ENV|ENV|CDPATH)$' "$BATS_TEST_TMPDIR/seen"; [ "$status" -eq 1 ]
+  grep -q '^FORTKEEP_REPO$' "$BATS_TEST_TMPDIR/seen"
 }
 @test "a caller's exported function can't spoof the check a fix runs to verify itself" {
   printf '#!/bin/bash\n[ "$(type -t jq)" = function ] && touch "%s/fn-seen"\necho "{\\"status\\":\\"PASS\\"}"\n' "$BATS_TEST_TMPDIR" > "$T/checks/macos/BL-RC-02.sh"
-  date +%s > "$DEVWARD_REPORTS/.approvals/BL-RC-02.apply"
+  date +%s > "$FORTKEEP_REPORTS/.approvals/BL-RC-02.apply"
   jq() { echo '{"status":"PASS"}'; }; export -f jq
   [ "$(/bin/bash -c 'type -t jq')" = function ]   # the export really reaches a plain /bin/bash
   run "$T/fixes/macos/BL-RC-02.sh" apply
@@ -195,7 +195,7 @@ approve() { date +%s > "$DEVWARD_REPORTS/.approvals/BL-RC-01.$1"; }
 }
 @test "every fix runs its checks with bash -p" {
   run grep -nE '/bin/bash "\$' "$REPO"/fixes/macos/*.sh "$REPO"/fixes/lib/fix.sh; [ "$status" -eq 1 ]
-  grep -q '/bin/bash -p "\$DEVWARD_REPO/checks/macos/' "$REPO/fixes/macos/BL-RC-02.sh"
+  grep -q '/bin/bash -p "\$FORTKEEP_REPO/checks/macos/' "$REPO/fixes/macos/BL-RC-02.sh"
 }
 @test "every fix script and fix.sh start with #!/bin/bash -p" {
   for f in "$REPO"/fixes/lib/fix.sh "$REPO"/fixes/macos/*.sh; do [ "$(head -1 "$f")" = '#!/bin/bash -p' ] || { echo "$f"; false; }; done

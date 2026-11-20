@@ -11,10 +11,10 @@ backporting.
 explains the problem is a disclosure too.
 
 Report it privately through GitHub's private vulnerability reporting: open the repository's
-[**Security** tab](https://github.com/b0dea/devward/security) and choose **Report a vulnerability**. There is no
+[**Security** tab](https://github.com/b0dea/fortkeep/security) and choose **Report a vulnerability**. There is no
 security email address.
 
-A useful report gives what an attacker can do, the smallest reproduction you can make, the devward version and macOS
+A useful report gives what an attacker can do, the smallest reproduction you can make, the fortkeep version and macOS
 version involved, which coding agent ran it, and whether you intend to publish. Leave out anything from your own Mac
 that you wouldn't publish: real paths, usernames, `results.json` as it is.
 
@@ -38,7 +38,7 @@ no fix has shipped **90 days** after acknowledgement, you are free to publish; a
 
 ## Scope
 
-devward runs on people's Macs, beside a coding agent, and some of what it does there runs later without a prompt.
+fortkeep runs on people's Macs, beside a coding agent, and some of what it does there runs later without a prompt.
 What it promises, and what it doesn't, is in the [threat model](docs/threat-model.md). In scope is anything that
 breaks those promises:
 
@@ -53,20 +53,20 @@ breaks those promises:
 
 Out of scope:
 
-- something already running as the person's macOS user outside a devward session. It can change any file that user
-  can, devward's included; the threat model says so;
-- vulnerabilities in the coding agents, Safe Chain or the other tools devward checks for. Report those upstream, and
-  tell us as well if devward should check for them.
+- something already running as the person's macOS user outside a fortkeep session. It can change any file that user
+  can, fortkeep's included; the threat model says so;
+- vulnerabilities in the coding agents, Safe Chain or the other tools fortkeep checks for. Report those upstream, and
+  tell us as well if fortkeep should check for them.
 
 **Not security reports:** a check that gives the wrong result, or an indicator that flags something harmless. Open
-an ordinary issue with the [wrong check result](https://github.com/b0dea/devward/issues/new?template=wrong-result.yml)
+an ordinary issue with the [wrong check result](https://github.com/b0dea/fortkeep/issues/new?template=wrong-result.yml)
 form.
 
 ## Verifying a release
 
 Releases are version tags that a maintainer signs with an SSH key listed in
 [`.github/allowed_signers`](.github/allowed_signers). `checks/update.sh` refuses any other tag. To check one by hand,
-in a devward folder:
+in a fortkeep folder:
 
 ```sh
 git fetch --tags origin
@@ -74,7 +74,7 @@ git -c gpg.ssh.allowedSignersFile=.github/allowed_signers verify-tag v0.1.0
 ```
 
 It prints `Good "git" signature for <maintainer>` and the key's fingerprint. A release tag's message is
-`b0dea/devward <tag>`; `checks/update.sh` refuses a tag whose message names another repo or another tag.
+`b0dea/fortkeep <tag>`; `checks/update.sh` refuses a tag whose message names another repo or another tag.
 
 Compare the listed keys with the ones the maintainers publish on GitHub, rather than trusting the file alone:
 

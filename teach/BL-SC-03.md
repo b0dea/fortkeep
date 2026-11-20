@@ -13,7 +13,7 @@
 1. `sudo launchctl config user path "$HOME/.safe-chain/shims:$HOME/.safe-chain/bin:/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin:/usr/local/bin"` (one line). macOS asks for your password; nothing appears on screen while you type it, which is normal.
 2. `sudo -k`, which ends the admin session.
 3. Restart the Mac (Apple menu → Restart). The setting takes effect only after a restart.
-4. To come back afterwards: open the Terminal app, type `cd` and a space followed by the devward folder, press Return, start your coding agent as before and type `/fix` (in Codex, `$fix`). It checks the Mac again first.
+4. To come back afterwards: open the Terminal app, type `cd` and a space followed by the fortkeep folder, press Return, start your coding agent as before and type `/fix` (in Codex, `$fix`). It checks the Mac again first.
 - It applies to every user account on this Mac. If other people log in to this Mac, ask whoever manages this Mac first.
 - If you use a Node version manager (nvm, fnm, Volta), its folder isn't in this PATH. Tell the agent, and it will show you how to add it.
 - To undo it, type `sudo launchctl config user path "/usr/bin:/bin:/usr/sbin:/sbin"`, then `sudo -k`, and restart.

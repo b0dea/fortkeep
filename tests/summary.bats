@@ -2,7 +2,7 @@ load helpers
 
 setup() {
   setup_env
-  R="$DEVWARD_REPORTS/20261016T050000Z"; mkdir -p "$R"
+  R="$FORTKEEP_REPORTS/20261016T050000Z"; mkdir -p "$R"
   cat > "$R/results.json" <<EOF
 {"run":"20261016T050000Z","macos":"15.7.9","overlays":["tls-proxy"],"results":[
  {"id":"BL-OS-02","title":"Firewall","layer":"baseline","level":"MUST","status":"FAIL","evidence":"$HOME/secret-evidence","note":"host-abc"},
@@ -11,9 +11,9 @@ setup() {
  {"id":"BL-RC-02","title":"Hook","layer":"baseline","level":"SHOULD","status":"ACCEPTED","evidence":"","note":"private reason"}
 ]}
 EOF
-  ln -s 20261016T050000Z "$DEVWARD_REPORTS/latest"
-  export DEVWARD_CONTROLS="$BATS_TEST_TMPDIR/controls.json"
-  cat > "$DEVWARD_CONTROLS" <<'EOF'
+  ln -s 20261016T050000Z "$FORTKEEP_REPORTS/latest"
+  export FORTKEEP_CONTROLS="$BATS_TEST_TMPDIR/controls.json"
+  cat > "$FORTKEEP_CONTROLS" <<'EOF'
 [
  {"id":"BL-OS-01","layer":"baseline"}, {"id":"BL-OS-02","layer":"baseline"}, {"id":"BL-RC-02","layer":"baseline"},
  {"id":"OV-PX-01","layer":"overlay:tls-proxy"}, {"id":"OV-ZZ-01","layer":"overlay:other"}
@@ -61,7 +61,7 @@ line() { grep -n -e "$1" "$2" | head -n 1 | cut -d: -f1; }  # PATTERN FILE — t
 
 @test "an urgent FAIL comes first, whatever its level; a set-up FAIL named by not_urgent_if does not" {
   jq '.results |= map(if .id == "OV-PX-01" then .status = "FAIL" | .evidence = "2 signs of live malware" else . end)' "$R/results.json" > "$R/r.tmp" && mv "$R/r.tmp" "$R/results.json"
-  jq 'map(if .id == "OV-PX-01" then .urgent = true | .not_urgent_if = "No accepted baseline yet" else . end)' "$DEVWARD_CONTROLS" > "$R/c.tmp" && mv "$R/c.tmp" "$DEVWARD_CONTROLS"
+  jq 'map(if .id == "OV-PX-01" then .urgent = true | .not_urgent_if = "No accepted baseline yet" else . end)' "$FORTKEEP_CONTROLS" > "$R/c.tmp" && mv "$R/c.tmp" "$FORTKEEP_CONTROLS"
   "$REPO/summary/build.sh" --name "Test Person"
   A="$R/posture-summary.md"; H="$R/posture-summary.html"
   [ "$(line OV-PX-01 "$A")" -lt "$(line BL-OS-02 "$A")" ]
@@ -80,28 +80,28 @@ line() { grep -n -e "$1" "$2" | head -n 1 | cut -d: -f1; }  # PATTERN FILE — t
   done
 }
 
-@test "the summary names the devward release, its commit and a hash of the controls file" {
+@test "the summary names the fortkeep release, its commit and a hash of the controls file" {
   D="$BATS_TEST_TMPDIR/dw"; release_tree "$D" summary checks/lib templates
-  run env DEVWARD_REPO="$D" "$D/summary/build.sh" --name "Test Person"
+  run env FORTKEEP_REPO="$D" "$D/summary/build.sh" --name "Test Person"
   [ "$status" -eq 0 ]
   A="$R/posture-summary.md"; H="$R/posture-summary.html"
-  sha="$(git -C "$D" rev-parse HEAD)"; ctl="$(shasum -a 256 "$DEVWARD_CONTROLS" | cut -d' ' -f1)"
-  grep -q '| devward version | v0.1.0 |' "$A"
-  grep -q "| devward commit | $sha |" "$A"
+  sha="$(git -C "$D" rev-parse HEAD)"; ctl="$(shasum -a 256 "$FORTKEEP_CONTROLS" | cut -d' ' -f1)"
+  grep -q '| fortkeep version | v0.1.0 |' "$A"
+  grep -q "| fortkeep commit | $sha |" "$A"
   grep -q "| Controls (SHA-256) | $ctl |" "$A"
   grep -q "$sha" "$H"; grep -q "$ctl" "$H"; grep -q 'v0.1.0' "$H"
   echo '# edited' >> "$D/summary/name.sh"
-  env DEVWARD_REPO="$D" "$D/summary/build.sh" --name "Test Person"
-  grep -q '| devward version | not a signed release: it has local changes to its files |' "$A"
+  env FORTKEEP_REPO="$D" "$D/summary/build.sh" --name "Test Person"
+  grep -q '| fortkeep version | not a signed release: it has local changes to its files |' "$A"
 }
 
 @test "the summary claims no release for a tag nobody signed" {
   D="$BATS_TEST_TMPDIR/dw"; mkdir -p "$D"; git -C "$D" init -q -b main
   cp -R "$REPO/summary" "$REPO/templates" "$D/"; mkdir -p "$D/checks"; cp -R "$REPO/checks/lib" "$D/checks/"
   commit "$D"; git -C "$D" tag v9.9.9
-  env DEVWARD_REPO="$D" "$D/summary/build.sh" --name "Test Person"
+  env FORTKEEP_REPO="$D" "$D/summary/build.sh" --name "Test Person"
   A="$R/posture-summary.md"
-  grep -q '| devward version | not a signed release: it is not on a signed release |' "$A"
+  grep -q '| fortkeep version | not a signed release: it is not on a signed release |' "$A"
   ! grep -q 'v9.9.9' "$A"
 }
 

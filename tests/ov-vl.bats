@@ -3,8 +3,8 @@ load helpers
 setup() {
   setup_env
   mkdir -p "$BATS_TEST_TMPDIR/c1"
-  C1="$(cd "$BATS_TEST_TMPDIR/c1" && pwd -P)"   # devward_claude_dirs returns physical paths
-  export DEVWARD_CLAUDE_DIRS="$C1"
+  C1="$(cd "$BATS_TEST_TMPDIR/c1" && pwd -P)"   # fortkeep_claude_dirs returns physical paths
+  export FORTKEEP_CLAUDE_DIRS="$C1"
   # The checks ask a login shell, where /etc/zprofile's path_helper puts /etc/paths.d entries (such as
   # /opt/homebrew/bin) first; ~/.zprofile runs after it, so the stubs win as they would on any Mac.
   printf 'export PATH="%s:/usr/bin:/bin:/usr/sbin:/sbin"\n' "$BATS_TEST_TMPDIR/bin" > "$HOME/.zprofile"
@@ -57,7 +57,7 @@ guard_in() {  # SETTINGS_FILE HOOK_COMMAND
   chk OV-VL-03; [ "$(field status)" = FAIL ]; [[ "$(field note)" == *"templates/agent-guard.sh"* ]]
   guard_in "$C1/settings.json" "$REPO/templates/agent-guard.sh"
   chk OV-VL-03; [ "$(field status)" = PASS ]; [[ "$(field evidence)" == *"1 of 1"* ]]
-  DEVWARD_CLAUDE_DIRS="$BATS_TEST_TMPDIR/none" chk OV-VL-03; [ "$(field status)" = NA ]
+  FORTKEEP_CLAUDE_DIRS="$BATS_TEST_TMPDIR/none" chk OV-VL-03; [ "$(field status)" = NA ]
 }
 @test "OV-VL-03 a guard that misses varlock, or refuses varlock run too → FAIL" {
   cat > "$BATS_TEST_TMPDIR/g" <<'G'
@@ -73,7 +73,7 @@ G
 }
 @test "OV-VL-03 a hook that outlasts the timeout → ERROR" {
   guard_in "$C1/settings.json" "sleep 5"
-  DEVWARD_HOOK_TIMEOUT=1 chk OV-VL-03; [ "$(field status)" = ERROR ]; [ -n "$(field evidence)" ]
+  FORTKEEP_HOOK_TIMEOUT=1 chk OV-VL-03; [ "$(field status)" = ERROR ]; [ -n "$(field evidence)" ]
 }
 @test "detect.sh suggests secrets-varlock when varlock is installed" {
   stub varlock 'exit 0'

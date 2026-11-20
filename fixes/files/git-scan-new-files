@@ -67,7 +67,7 @@
 #   forged commit dates — https://github.com/OpenSourceMalware/PolinRider
 #   text-direction characters in author names — https://github.com/orgs/community/discussions/197873
 #   editor extension folders — https://cursor.com/blog/claude-code-extension-security-notice, https://github.com/OpenSourceMalware/PolinRider
-"""Global git hook installed by devward BL-RC-02: scans the files a git operation just brought in.
+"""Global git hook installed by fortkeep BL-RC-02: scans the files a git operation just brought in.
 Read-only, no network, always exits 0. With --sweep (GD-RC-01) it scans whole repos already on disk instead. Follows the PolinRider / BeaverTail indicator pack; marker strings are
 fragments so this file does not contain them (antivirus tools would quarantine it)."""
 import os, re, sys, json, subprocess, time, datetime, errno, collections, unicodedata

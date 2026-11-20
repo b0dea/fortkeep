@@ -5,7 +5,7 @@ setup() {
   R="$BATS_TEST_TMPDIR/repo"; mkdir -p "$R/docs"
   export CLAUDE_PROJECT_DIR="$R"
   export CLAUDE_CONFIG_DIR="$BATS_TEST_TMPDIR/ccd"; mkdir -p "$CLAUDE_CONFIG_DIR/projects/p/memory" "$CLAUDE_CONFIG_DIR/plans"
-  export DEVWARD_DEV=1  # a development session: the repo's own files are editable (the default is reports/ only)
+  export FORTKEEP_DEV=1  # a development session: the repo's own files are editable (the default is reports/ only)
 }
 W="$BATS_TEST_DIRNAME/../.claude/hooks/write-guard.sh"
 edit() { jq -cn --arg p "$1" --arg w "${2:-$R}" '{tool_name:"Edit", cwd:$w, tool_input:{file_path:$p, old_string:"a", new_string:"b"}}' | "$W"; }
@@ -86,10 +86,10 @@ P() { printf '*** Begin Patch\n%s\n*** End Patch\n' "$1"; }
   run patch "just text"; [ "$status" -eq 2 ]
 }
 @test "outside a development session nothing in the repo is writable, reports/ included" {
-  unset DEVWARD_DEV
+  unset FORTKEEP_DEV
   run edit "$R/reports/config.json"; [ "$status" -eq 2 ]; [[ "$output" == *"checks/configure.sh"* ]]
   run edit "$R/reports/latest/results.json"; [ "$status" -eq 2 ]
-  run edit "$R/docs/a.md"; [ "$status" -eq 2 ]; [[ "$output" == *"DEVWARD_DEV=1"* ]]
+  run edit "$R/docs/a.md"; [ "$status" -eq 2 ]; [[ "$output" == *"FORTKEEP_DEV=1"* ]]
   run edit "$R/.claude/settings.local.json"; [ "$status" -eq 2 ]
   run patch "$(P '*** Update File: checks/run.sh')"; [ "$status" -eq 2 ]
   run edit "$R/reports/.approvals/BL-RC-01.apply"; [ "$status" -eq 2 ]

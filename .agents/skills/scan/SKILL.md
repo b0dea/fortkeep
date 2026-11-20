@@ -11,7 +11,7 @@ metadata:
    full path: in Finder, they can drag the folder into this chat, or right-click it with Option held and choose
    "Copy … as Pathname". The path must start with `/` or `~/`. Scan one project folder at a time; the script refuses
    `/`, the home folder and the folders above it. A path with letters beyond ASCII can't be passed from here: the
-   person types `devward scan "<path>"` in the Terminal app and pastes you the output.
+   person types `fortkeep scan "<path>"` in the Terminal app and pastes you the output.
 2. **Before it runs**, tell the person in a sentence: it only reads the folder, runs nothing from it, and can take
    up to two and a half minutes.
 3. Run `checks/scan.sh "<path>"`, with the path in double quotes, and let it run for 3 minutes: in Claude Code, give

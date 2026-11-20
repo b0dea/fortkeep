@@ -6,11 +6,11 @@
 # Read-only.
 SELF="$(cd "$(dirname "$0")/.." && pwd)"
 . "$SELF/checks/lib/repo.sh"
-devward_release_gate "$SELF" || exit 4
+fortkeep_release_gate "$SELF" || exit 4
 . "$(dirname "$0")/lib/common.sh"
 . "$(dirname "$0")/lib/agents.sh"
 release_file() {  # PATH — the file as the release has it; the working tree only in a development session
-  if [ -n "${DEVWARD_RELEASE_TAG:-}" ]; then devward_git "$SELF" cat-file blob "$DEVWARD_RELEASE_TAG:$1"
+  if [ -n "${FORTKEEP_RELEASE_TAG:-}" ]; then fortkeep_git "$SELF" cat-file blob "$FORTKEEP_RELEASE_TAG:$1"
   else cat "$SELF/$1"; fi
 }
 case "${1:-}" in
@@ -19,6 +19,6 @@ case "${1:-}" in
   *) echo "usage: $0 [guard]" >&2; exit 2 ;;
 esac
 home="$( (cd "$HOME/.claude" 2>/dev/null && pwd -P) || true)"
-extra="$(devward_claude_dirs | while IFS= read -r d; do [ "$d" = "$home" ] || printf 'Edit(/%s/settings.json)\n' "$d"; done)"
+extra="$(fortkeep_claude_dirs | while IFS= read -r d; do [ "$d" = "$home" ] || printf 'Edit(/%s/settings.json)\n' "$d"; done)"
 template="$(release_file templates/managed-settings.json)" || { echo "could not read templates/managed-settings.json" >&2; exit 1; }
 jq --arg x "$extra" '.permissions.deny += ($x | split("\n") | map(select(. != "")))' <<<"$template"

@@ -13,7 +13,7 @@ const UNGUARDED = new Set(["question", "todowrite", "todoread", "skill", "invali
 
 type Question = { question?: string; options?: { label?: string; description?: string }[]; multiple?: boolean }
 
-export const Devward = async ({ directory, worktree }: { directory: string; worktree: string }) => {
+export const Fortkeep = async ({ directory, worktree }: { directory: string; worktree: string }) => {
   const run = (script: Script, event: Record<string, unknown>) =>
     spawnSync("/bin/bash", [join(worktree, ".claude", "hooks", `${script}.sh`)], {
       input: JSON.stringify(event),
@@ -23,7 +23,7 @@ export const Devward = async ({ directory, worktree }: { directory: string; work
     })
   const guard = (tool_name: string, tool_input: Record<string, unknown>, cwd = directory) => {
     const r = run("guard", { hook_event_name: "PreToolUse", tool_name, tool_input, cwd })
-    if (r.status !== 0) throw new Error(r.stderr?.trim() || `devward: guard did not run (status ${r.status}, ${r.error ?? "no error"})`)
+    if (r.status !== 0) throw new Error(r.stderr?.trim() || `fortkeep: guard did not run (status ${r.status}, ${r.error ?? "no error"})`)
   }
   // The question tool's arguments, by call, for the approval recorder (older OpenCode passes no args after a call).
   const asked = new Map<string, { questions?: Question[] }>()
@@ -34,7 +34,7 @@ export const Devward = async ({ directory, worktree }: { directory: string; work
   try {
     message = JSON.parse(start.stdout).hookSpecificOutput.additionalContext
   } catch {
-    message = `WARNING: devward's session-start check did not run (status ${start.status}): ${start.stderr?.trim() || "no output"}. Don't run fixes until it runs.`
+    message = `WARNING: fortkeep's session-start check did not run (status ${start.status}): ${start.stderr?.trim() || "no output"}. Don't run fixes until it runs.`
   }
 
   return {
@@ -81,7 +81,7 @@ export const Devward = async ({ directory, worktree }: { directory: string; work
           break
         default:
           if (!UNGUARDED.has(input.tool))
-            throw new Error(`devward: the ${input.tool} tool has no guard here, so it is refused. ` +
+            throw new Error(`fortkeep: the ${input.tool} tool has no guard here, so it is refused. ` +
               "Use bash, read, grep, glob or list instead.")
       }
     },
@@ -103,7 +103,7 @@ export const Devward = async ({ directory, worktree }: { directory: string; work
         tool_input: { questions: questions.map((q) => ({ ...q, multiSelect: q.multiple ?? false })) },
         tool_response: { answers },
       })
-      if (r.status !== 0) throw new Error(`devward: approval-recorder failed (status ${r.status}): ${r.stderr?.trim()}`)
+      if (r.status !== 0) throw new Error(`fortkeep: approval-recorder failed (status ${r.status}): ${r.stderr?.trim()}`)
     },
   }
 }

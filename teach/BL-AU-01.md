@@ -6,7 +6,7 @@
 
 **Check it yourself:** `launchctl list | grep -i weekly` shows your job, and its log shows a recent run.
 
-**How to fix:** devward's own weekly security check (BL-AU-02) doesn't count here: it runs `brew update` and tells you when a formula has a vulnerability with a released fix, but it never upgrades anything. This control needs a job that runs `brew upgrade` itself.
+**How to fix:** fortkeep's own weekly security check (BL-AU-02) doesn't count here: it runs `brew update` and tells you when a formula has a vulnerability with a released fix, but it never upgrades anything. This control needs a job that runs `brew upgrade` itself.
 
 Save this as `~/.local/bin/weekly-update.sh` and make it executable (`chmod +x`):
 
@@ -16,4 +16,4 @@ Save this as `~/.local/bin/weekly-update.sh` and make it executable (`chmod +x`)
 
 Then create a LaunchAgent in `~/Library/LaunchAgents` that runs it every Monday (the agent can write the plist with you), and load it with `launchctl bootstrap gui/$(id -u) <plist>`.
 
-**What the agent is doing:** looking through your own LaunchAgents for a weekly job whose command or script runs `brew upgrade`, leaving out devward's own weekly check, and checking that it's loaded.
+**What the agent is doing:** looking through your own LaunchAgents for a weekly job whose command or script runs `brew upgrade`, leaving out fortkeep's own weekly check, and checking that it's loaded.

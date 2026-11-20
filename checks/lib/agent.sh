@@ -1,7 +1,7 @@
 #!/bin/bash
 # Source it, don't run it.
-# devward_agent_kind PSCMD PID — prints claude, codex or opencode when that process is one of these agents.
-devward_agent_kind() {
+# fortkeep_agent_kind PSCMD PID — prints claude, codex or opencode when that process is one of these agents.
+fortkeep_agent_kind() {
   local comm args
   comm="$("$1" -o comm= -p "$2" 2>/dev/null)"
   case "${comm:-x}" in
@@ -19,16 +19,16 @@ devward_agent_kind() {
   esac
 }
 
-# devward_agent_runs PSCMD — prints how many agents are ancestors of this shell. An npm launcher and the agent it
+# fortkeep_agent_runs PSCMD — prints how many agents are ancestors of this shell. An npm launcher and the agent it
 # starts are one agent (the same kind, parent and child); an agent that starts another through a shell makes two.
 # The caller passes the ps command; no environment variable may choose it.
-devward_agent_runs() {
+fortkeep_agent_runs() {
   local ps="$1" pid=$$ n=0 kind prev="" runs=0
   while [ "$n" -lt 40 ]; do
     pid="$("$ps" -o ppid= -p "$pid" 2>/dev/null)"; pid="${pid//[[:space:]]/}"
     case "$pid" in ''|*[!0-9]*) break ;; esac
     [ "$pid" -gt 1 ] || break
-    kind="$(devward_agent_kind "$ps" "$pid")" || kind=""
+    kind="$(fortkeep_agent_kind "$ps" "$pid")" || kind=""
     [ -z "$kind" ] || [ "$kind" = "$prev" ] || runs=$((runs + 1))
     prev="$kind"
     n=$((n + 1))
@@ -36,13 +36,13 @@ devward_agent_runs() {
   echo "$runs"
 }
 
-# devward_agent_ancestor PSCMD — true when an agent (claude, codex, opencode) is a parent, grandparent, ... of this shell.
-devward_agent_ancestor() { [ "$(devward_agent_runs "$1")" -gt 0 ]; }
+# fortkeep_agent_ancestor PSCMD — true when an agent (claude, codex, opencode) is a parent, grandparent, ... of this shell.
+fortkeep_agent_ancestor() { [ "$(fortkeep_agent_runs "$1")" -gt 0 ]; }
 
-# devward_terminal_ancestor PSCMD [HOME] — true when a terminal app or sshd is an ancestor of this shell.
+# fortkeep_terminal_ancestor PSCMD [HOME] — true when a terminal app or sshd is an ancestor of this shell.
 # A tripwire, not a boundary: ucomm is only the executable's file name (16 characters), so a renamed or
 # self-built binary still passes. Home is from the directory service; the HOME argument is for tests only.
-devward_terminal_ancestor() {
+fortkeep_terminal_ancestor() {
   local ps="$1" pid=$$ n=0 comm ucomm home="${2:-}" app
   if [ -z "$home" ]; then
     home="$(/usr/bin/dscl . -read "/Users/$(/usr/bin/id -un)" NFSHomeDirectory 2>/dev/null)"
@@ -78,15 +78,15 @@ devward_terminal_ancestor() {
   return 1
 }
 
-# devward_is_person PSCMD — true when a person started this from a terminal app or over ssh, outside any agent.
+# fortkeep_is_person PSCMD — true when a person started this from a terminal app or over ssh, outside any agent.
 # The caller passes the ps command; no environment variable may choose it.
-devward_is_person() {
-  [ -z "${CLAUDECODE:-}" ] && [ -t 0 ] && [ -t 1 ] && ! devward_agent_ancestor "$1" && devward_terminal_ancestor "$1"
+fortkeep_is_person() {
+  [ -z "${CLAUDECODE:-}" ] && [ -t 0 ] && [ -t 1 ] && ! fortkeep_agent_ancestor "$1" && fortkeep_terminal_ancestor "$1"
 }
 
-# devward_require_person PSCMD — exits 4 unless devward_is_person.
-devward_require_person() {
-  if ! devward_is_person "$1"; then
+# fortkeep_require_person PSCMD — exits 4 unless fortkeep_is_person.
+fortkeep_require_person() {
+  if ! fortkeep_is_person "$1"; then
     echo "refused: run this yourself in a terminal app (Terminal, iTerm2, Ghostty, WezTerm, kitty, Alacritty or Warp) or over ssh, not through an agent" >&2
     exit 4
   fi

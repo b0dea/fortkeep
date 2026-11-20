@@ -1,6 +1,6 @@
 # Agents
 
-devward runs in Claude Code, Codex and OpenCode. All three read the same instructions and skills and run the
+fortkeep runs in Claude Code, Codex and OpenCode. All three read the same instructions and skills and run the
 same guard scripts; only the wiring differs.
 
 | | Claude Code | Codex | OpenCode |
@@ -8,7 +8,7 @@ same guard scripts; only the wiring differs.
 | Instructions | `CLAUDE.md` (imports `AGENTS.md`) | `AGENTS.md` | `AGENTS.md` |
 | Skills | `.claude/skills` → `.agents/skills` | `.agents/skills` | `.agents/skills` and `.claude/skills` (same files) |
 | Start a skill | `/posture` | `$posture` (or `/skills`) | `/posture` |
-| Guards wired in | `.claude/settings.json` | `.codex/hooks.json`, `.codex/rules/`, `.codex/config.toml` | `.opencode/plugins/devward.ts`, `opencode.json` |
+| Guards wired in | `.claude/settings.json` | `.codex/hooks.json`, `.codex/rules/`, `.codex/config.toml` | `.opencode/plugins/fortkeep.ts`, `opencode.json` |
 | Guards start | after "trust this folder" | after trusting the folder **and** its hooks | by themselves |
 | How `Apply <ID>` is given | picked in AskUserQuestion | typed as the whole message | picked in the `question` tool |
 
@@ -18,7 +18,7 @@ shape natively and the OpenCode plugin translates to it.
 A session the person starts is allow-listed. `guard.sh` sees every tool call (Claude Code runs it for every tool,
 Codex for every local tool, the OpenCode plugin for the tools it maps). Codex's hosted web search and `write_stdin`
 never reach a hook; `.codex/config.toml` turns the web search off.
-- Shell: exactly one of devward's own scripts with arguments of the right kind, from the repo folder, in the one
+- Shell: exactly one of fortkeep's own scripts with arguments of the right kind, from the repo folder, in the one
   spelling the skills use. The list is `.claude/hooks/allow-list`. Any other program, a pipe, redirection, variable,
   substitution, glob, newline or backslash is refused, and so is a character beyond ASCII, except letters and
   punctuation inside quotes in a name or reason. A fix is also refused while the agent is in bypass, auto or
@@ -37,21 +37,21 @@ never reach a hook; `.codex/config.toml` turns the web search off.
   OpenCode plugin keeps the same set, refuses every tool it doesn't map, and checks its folder-listing tool as a
   search of that folder. Subagents and MCP tools are refused: their calls are not known to pass through the guards.
 
-A development session (`DEVWARD_DEV=1` and the marker `~/.config/devward/dev`, see CONTRIBUTING.md) keeps the
+A development session (`FORTKEEP_DEV=1` and the marker `~/.config/fortkeep/dev`, see CONTRIBUTING.md) keeps the
 deny-list guards, with names folded as APFS compares them (NFC, upper case, lower case, NFC), so a look-alike letter
 such as `ſ` can't stand in for `s`:
 - `bash-guard.sh`: no `sudo`, no download piped into a shell, no forged approvals or tampered fix runs.
 - `write-guard.sh`: edits stay in the repo and the agent's own folders, never in the approval tokens or KnockKnock
   scans; a patch is checked file by file.
 - `private-guard.sh` (in a person's session too): never reads, lists or searches a folder from `private-paths`, or the
-  fix backups in `~/.local/state/devward/backups`.
+  fix backups in `~/.local/state/fortkeep/backups`.
 
 The others:
 - `session-start.sh`: the opening message. It warns unless this copy is exactly a signed release with nothing changed
   (ignored files where agents load config, git hooks and local git settings that run commands count), when the
-  release is older than one this Mac ran before (`~/.config/devward/highest-release`), and when the agent's mode would
+  release is older than one this Mac ran before (`~/.config/fortkeep/highest-release`), and when the agent's mode would
   skip the person's prompts. A release counts only when a key this Mac trusts signed it: the signers of the first
-  release it ran, then those each newer release names (`~/.config/devward/release-signers`), so a commit can't add
+  release it ran, then those each newer release names (`~/.config/fortkeep/release-signers`), so a commit can't add
   its own signer. The fix library and the scripts a person runs (`checks/baseline.sh accept`,
   `checks/private.sh remove`, `checks/managed-settings.sh`, `checks/update.sh`) refuse such a copy before they source
   anything else.
@@ -89,7 +89,7 @@ another agent started (`codex exec` inside a Claude Code session: the hook finds
 
 Codex runs the guard for every local tool, MCP tools, subagents and `view_image` included; in a person's session it
 refuses MCP tools and subagents. Its hosted web search and `write_stdin` reach no hook; `.codex/config.toml` turns the
-web search off (start Codex with `-c web_search=live` to use it while developing devward).
+web search off (start Codex with `-c web_search=live` to use it while developing fortkeep).
 
 ## Other agents
 

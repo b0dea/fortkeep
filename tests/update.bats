@@ -20,7 +20,7 @@ tag_as() {  # KEY ARGS... — git tag in origin, signing (when ARGS ask for it) 
   git -C "$O" -c user.name=t -c user.email="$k@example.com" -c gpg.format=ssh -c user.signingkey="$K/$k" tag "$@"
 }
 release() {  # TAG KEY — a new commit on origin, tagged TAG as a release and signed with KEY
-  echo "$1" > "$O/version"; commit "$O"; tag_as "$2" -s -m "$DEVWARD_RELEASE_NAME $1" "$1"
+  echo "$1" > "$O/version"; commit "$O"; tag_as "$2" -s -m "$FORTKEEP_RELEASE_NAME $1" "$1"
 }
 # update.sh allows only https and ssh remotes; this throwaway "GitHub" is a local folder, so the tests run a copy that
 # also allows git's file transport. The last tests run the real script.
@@ -31,7 +31,7 @@ update() {
     sed -i '' 's/-c protocol.allow=never/& -c protocol.file.allow=always/' "$U/checks/update.sh"
     grep -q 'protocol.file.allow=always' "$U/checks/update.sh"
   fi
-  DEVWARD_REPO="$T" run "$U/checks/update.sh"
+  FORTKEEP_REPO="$T" run "$U/checks/update.sh"
 }
 on() { [ "$(git -C "$T" rev-parse HEAD)" = "$(git -C "$O" rev-parse "$1^{commit}")" ]; }  # TAG — the clone is on it
 detached() { ! git -C "$T" symbolic-ref -q HEAD; }
@@ -46,11 +46,11 @@ detached() { ! git -C "$T" symbolic-ref -q HEAD; }
   release v1.1.0 a
   echo evil > "$O/version"; commit "$O"
   tag_as a v2.0.0                                                        # no tag object at all
-  tag_as a -a -m "$DEVWARD_RELEASE_NAME v2.1.0" v2.1.0                         # a tag object without a signature
+  tag_as a -a -m "$FORTKEEP_RELEASE_NAME v2.1.0" v2.1.0                         # a tag object without a signature
   git -C "$O" update-ref refs/tags/v2.2.0 "$(git -C "$O" rev-parse refs/tags/v1.0.0)"  # an old release, renamed
   tag_as a -s -m "another/repo v2.3.0" v2.3.0                            # signed by a maintainer, for another repo
   signers a b; commit "$O"
-  tag_as b -s -m "$DEVWARD_RELEASE_NAME v2.4.0" v2.4.0                         # signed by a key only its own tree lists
+  tag_as b -s -m "$FORTKEEP_RELEASE_NAME v2.4.0" v2.4.0                         # signed by a key only its own tree lists
   update; [ "$status" -eq 0 ]; on v1.1.0
   for t in v2.0.0 v2.1.0 v2.2.0 v2.3.0 v2.4.0; do [[ "$output" == *"$t"* ]]; done
 }
@@ -73,12 +73,12 @@ detached() { ! git -C "$T" symbolic-ref -q HEAD; }
   signers b; release v1.1.0 a                    # from v1.1.0 on, only b signs
   update; [ "$status" -eq 0 ]; on v1.1.0
   git -C "$O" checkout -q v1.0.0
-  echo old > "$O/version"; commit "$O"; tag_as b -s -m "$DEVWARD_RELEASE_NAME v1.5.0" v1.5.0   # newer name, older line
+  echo old > "$O/version"; commit "$O"; tag_as b -s -m "$FORTKEEP_RELEASE_NAME v1.5.0" v1.5.0   # newer name, older line
   update; [ "$status" -eq 0 ]; on v1.1.0
 }
 @test "update.sh records the highest release this Mac has run (A11)" {
   release v1.1.0 a
-  update; [ "$status" -eq 0 ]; [ "$(cat "$HOME/.config/devward/highest-release")" = v1.1.0 ]
+  update; [ "$status" -eq 0 ]; [ "$(cat "$HOME/.config/fortkeep/highest-release")" = v1.1.0 ]
 }
 @test "update.sh refuses a copy with an ignored plugin, a git hook or a local setting that runs a command (A5, A11)" {
   release v1.1.0 a
@@ -96,11 +96,11 @@ detached() { ! git -C "$T" symbolic-ref -q HEAD; }
 }
 @test "update.sh records where it fetched from at the first verified install, then refuses any other origin (A18)" {
   release v1.1.0 a
-  update; [ "$status" -eq 0 ]; on v1.1.0; [ "$(cat "$HOME/.config/devward/origin")" = "$O" ]
+  update; [ "$status" -eq 0 ]; on v1.1.0; [ "$(cat "$HOME/.config/fortkeep/origin")" = "$O" ]
   release v1.2.0 a
   M="$BATS_TEST_TMPDIR/mirror"; git clone -q --mirror "$O" "$M"
   git -C "$T" remote set-url origin "$M"
-  update; [ "$status" -eq 1 ]; [[ "$output" == *"~/.config/devward/origin"* ]]; [[ "$output" != *"$M"* ]]; on v1.1.0
+  update; [ "$status" -eq 1 ]; [[ "$output" == *"~/.config/fortkeep/origin"* ]]; [[ "$output" != *"$M"* ]]; on v1.1.0
   git -C "$T" remote set-url origin "$O"; git -C "$T" config --add remote.origin.url "$M"   # a second place to fetch from
   update; [ "$status" -eq 1 ]; on v1.1.0
   git -C "$T" config --unset-all remote.origin.url; git -C "$T" config remote.origin.url "$O"
@@ -122,22 +122,22 @@ detached() { ! git -C "$T" symbolic-ref -q HEAD; }
 @test "A23: outside the suite, what update.sh records lives under the account's own home, whatever HOME says" {
   acct="$(/usr/bin/perl -e 'print +(getpwuid($<))[7]')"
   run env -u BATS_TEST_TMPDIR HOME="$BATS_TEST_TMPDIR/elsewhere" /bin/bash -c \
-    '. "$1"; devward_origin_file; devward_highest_file; devward_trusted_signers_file' _ "$REPO/checks/lib/repo.sh"
+    '. "$1"; fortkeep_origin_file; fortkeep_highest_file; fortkeep_trusted_signers_file' _ "$REPO/checks/lib/repo.sh"
   [ "$status" -eq 0 ]
-  [ "$output" = "$acct/.config/devward/origin"$'\n'"$acct/.config/devward/highest-release"$'\n'"$acct/.config/devward/release-signers" ]
+  [ "$output" = "$acct/.config/fortkeep/origin"$'\n'"$acct/.config/fortkeep/highest-release"$'\n'"$acct/.config/fortkeep/release-signers" ]
 }
 @test "the real update.sh fetches over https or ssh only: an ext:: or local remote runs nothing (A11)" {
   release v1.1.0 a
   git -C "$T" remote set-url origin "ext::sh -c touch% $BATS_TEST_TMPDIR/ran"
-  DEVWARD_REPO="$T" run "$REPO/checks/update.sh"; [ "$status" -eq 1 ]; [ ! -e "$BATS_TEST_TMPDIR/ran" ]; on v1.0.0
+  FORTKEEP_REPO="$T" run "$REPO/checks/update.sh"; [ "$status" -eq 1 ]; [ ! -e "$BATS_TEST_TMPDIR/ran" ]; on v1.0.0
   git -C "$T" remote set-url origin "$O"
-  DEVWARD_REPO="$T" run "$REPO/checks/update.sh"; [ "$status" -eq 1 ]; on v1.0.0
+  FORTKEEP_REPO="$T" run "$REPO/checks/update.sh"; [ "$status" -eq 1 ]; on v1.0.0
 }
 
 # make release's tagging step, in a throwaway repo whose own config holds the maintainer's signing key.
 @test "release.sh keeps a tag only when copies on the last release and fresh clones would both accept it" {
   git -C "$O" config gpg.format ssh; git -C "$O" config user.name t; git -C "$O" config user.email t@example.com
-  tag_it() { DEVWARD_REPO="$O" run "$REPO/ci/release.sh" v1.1.0; }
+  tag_it() { FORTKEEP_REPO="$O" run "$REPO/ci/release.sh" v1.1.0; }
   refused() { [ "$status" -eq 1 ]; ! git -C "$O" rev-parse -q --verify refs/tags/v1.1.0; }
   signers a b; echo next > "$O/version"; commit "$O"
   git -C "$O" config user.signingkey "$K/b"; tag_it; refused   # b is listed on main, but not in v1.0.0
@@ -150,10 +150,10 @@ detached() { ! git -C "$T" symbolic-ref -q HEAD; }
 @test "release.sh, run in development mode, still refuses local changes and files or git settings that change what runs (A18)" {
   git -C "$O" config gpg.format ssh; git -C "$O" config user.name t; git -C "$O" config user.email t@example.com
   git -C "$O" config user.signingkey "$K/a"
-  tag_it() { DEVWARD_REPO="$O" run "$REPO/ci/release.sh" v1.1.0; }
+  tag_it() { FORTKEEP_REPO="$O" run "$REPO/ci/release.sh" v1.1.0; }
   refused() { [ "$status" -eq 1 ]; ! git -C "$O" rev-parse -q --verify refs/tags/v1.1.0; }
   echo next > "$O/version"; commit "$O"
-  devward_dev_session   # a maintainer's Mac: DEVWARD_DEV=1 and the marker
+  fortkeep_dev_session   # a maintainer's Mac: FORTKEEP_DEV=1 and the marker
   echo x >> "$O/version"; tag_it; refused; git -C "$O" checkout -q version
   mkdir -p "$O/.opencode/plugin"; echo x > "$O/.opencode/plugin/evil.ts"; echo .opencode/ >> "$O/.git/info/exclude"
   tag_it; refused; [[ "$output" == *".opencode/plugin/evil.ts"* ]]; rm -r "$O/.opencode"
@@ -168,8 +168,8 @@ detached() { ! git -C "$T" symbolic-ref -q HEAD; }
   H="$O/.git/hooks/reference-transaction"
   printf '#!/bin/sh\ntouch "%s/ran"\n' "$BATS_TEST_TMPDIR" > "$H"; chmod +x "$H"
   git -C "$O" config user.signingkey "$K/b"   # not a listed signer: the tag is made, then removed
-  DEVWARD_REPO="$O" run "$REPO/ci/release.sh" v1.1.0; [ "$status" -eq 1 ]; ! git -C "$O" rev-parse -q --verify refs/tags/v1.1.0
+  FORTKEEP_REPO="$O" run "$REPO/ci/release.sh" v1.1.0; [ "$status" -eq 1 ]; ! git -C "$O" rev-parse -q --verify refs/tags/v1.1.0
   git -C "$O" config user.signingkey "$K/a"
-  DEVWARD_REPO="$O" run "$REPO/ci/release.sh" v1.1.0; [ "$status" -eq 0 ]
+  FORTKEEP_REPO="$O" run "$REPO/ci/release.sh" v1.1.0; [ "$status" -eq 0 ]
   [ ! -e "$BATS_TEST_TMPDIR/ran" ]
 }

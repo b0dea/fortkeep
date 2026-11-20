@@ -18,7 +18,7 @@ proof.
 4. Show the person its contents, in the order the summary uses: any urgent FAIL first, then MUST, SHOULD, NICE, and
    within each FAIL, ERROR, ACCEPTED, NA, PASS. Explain:
    - it lists control ids, titles, levels and statuses, the reason the person wrote for each ACCEPTED item, the
-     devward version and commit, and a fingerprint (SHA-256 hash) of the controls file, with no file names, paths
+     fortkeep version and commit, and a fingerprint (SHA-256 hash) of the controls file, with no file names, paths
      or machine details;
    - it is a self-report: anyone with this Mac's account could change it before sending, so it is not
      tamper-evident. The reader is trusting the person, not the file;
@@ -26,7 +26,7 @@ proof.
 5. Ask whether they want it as a private web page they can share.
    - Claude Code with the Artifact tool: publish `posture-summary.html` as it is: title "Posture Summary
      (self-reported)", icon `shield`, description "Self-reported pass/fail summary of a Mac's security checks
-     against devward's baseline.". Never edit or redesign the file; the design lives in
+     against fortkeep's baseline.". Never edit or redesign the file; the design lives in
      `templates/posture-summary.html`. Tell them it stays private until they share it from the page's Share menu.
    - Codex, OpenCode, or no Artifact tool: there is no page to publish. Give them the full path of
      `posture-summary.html` (in the folder step 3 printed) and tell them to open it in their browser: in

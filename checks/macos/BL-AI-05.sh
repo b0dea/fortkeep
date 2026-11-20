@@ -28,16 +28,16 @@ def pinned($k): (if $k == "npm" then test("^(@[^/@]+/)?[^@]+@[0-9]+\\.[0-9]+\\.[
 [(.mcpServers // {}), (.projects // {} | .[]? | .mcpServers // {})] | map(to_entries[]) | .[]
 | (.value | if type == "object" then runner else null end) as $a
 | (if $a == null then "other" elif ($a | pkg | pinned($a.k)) then "pinned" else "unpinned" end) + "\t" + .key'
-srcs="$(devward_claude_states)"
-mm="$(dirname "$(devward_managed_settings)")/managed-mcp.json"; [ -f "$mm" ] && srcs="$srcs"$'\n'"$mm"
+srcs="$(fortkeep_claude_states)"
+mm="$(dirname "$(fortkeep_managed_settings)")/managed-mcp.json"; [ -f "$mm" ] && srcs="$srcs"$'\n'"$mm"
 priv=""; c="$HOME/.cursor/mcp.json"
-if devward_is_private "$c"; then priv=" (a private folder was excluded)"
+if fortkeep_is_private "$c"; then priv=" (a private folder was excluded)"
 elif [ -f "$c" ]; then srcs="$srcs"$'\n'"$c"; fi
-pnote() { local n; n="$(devward_claude_note "$1")"; case "$n" in *"private folder was excluded"*) ;; *) n="$n$priv" ;; esac; printf '%s' "${n# }"; }
+pnote() { local n; n="$(fortkeep_claude_note "$1")"; case "$n" in *"private folder was excluded"*) ;; *) n="$n$priv" ;; esac; printf '%s' "${n# }"; }
 rows=""; unread=""
 while IFS= read -r f; do
   [ -n "$f" ] || continue
-  r="$(jq -r "$classify" "$f" 2>/dev/null)" || { unread="$unread $(devward_tilde "$f")"; continue; }
+  r="$(jq -r "$classify" "$f" 2>/dev/null)" || { unread="$unread $(fortkeep_tilde "$f")"; continue; }
   [ -n "$r" ] && rows="$rows$r"$'\n'
 done <<EOF
 $srcs
@@ -48,10 +48,10 @@ all="$(printf '%s' "$rows" | grep -c .)"
 names="$(printf '%s' "$rows" | awk -F'\t' '$1 == "unpinned" && !s[$2]++ {print $2}' | paste -sd, - | sed 's/,/, /g')"
 if [ "$nu" -gt 0 ]; then
   note="Not pinned: $names"; [ -z "$unread" ] || note="$note. Could not read:$unread"
-  devward_result "$ID" FAIL "$np of $((np + nu)) package-run MCP servers are pinned to a version" "$(pnote "$note")"
-elif [ -n "$unread" ]; then devward_result "$ID" ERROR "Could not read:$unread" "$(pnote "")"
-elif [ "$all" -eq 0 ] && devward_claude_private_skipped; then devward_claude_excluded_error "$ID"
-elif [ "$all" -eq 0 ] && [ -n "$priv" ]; then devward_result "$ID" ERROR "Could not check Cursor's MCP servers" "a private folder was excluded"
-elif [ "$all" -eq 0 ]; then devward_result "$ID" NA "No MCP servers configured"
-elif [ "$np" -eq 0 ]; then devward_result "$ID" PASS "$all MCP server(s), none started from a package registry" "$(pnote "")"
-else devward_result "$ID" PASS "All $np package-run MCP servers are pinned to a version" "$(pnote "")"; fi
+  fortkeep_result "$ID" FAIL "$np of $((np + nu)) package-run MCP servers are pinned to a version" "$(pnote "$note")"
+elif [ -n "$unread" ]; then fortkeep_result "$ID" ERROR "Could not read:$unread" "$(pnote "")"
+elif [ "$all" -eq 0 ] && fortkeep_claude_private_skipped; then fortkeep_claude_excluded_error "$ID"
+elif [ "$all" -eq 0 ] && [ -n "$priv" ]; then fortkeep_result "$ID" ERROR "Could not check Cursor's MCP servers" "a private folder was excluded"
+elif [ "$all" -eq 0 ]; then fortkeep_result "$ID" NA "No MCP servers configured"
+elif [ "$np" -eq 0 ]; then fortkeep_result "$ID" PASS "$all MCP server(s), none started from a package registry" "$(pnote "")"
+else fortkeep_result "$ID" PASS "All $np package-run MCP servers are pinned to a version" "$(pnote "")"; fi

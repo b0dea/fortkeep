@@ -1,44 +1,44 @@
 #!/bin/bash -p
-# devward: the person's command. A thin dispatcher over the scripts in the checkout it lives in; it decides nothing
+# fortkeep: the person's command. A thin dispatcher over the scripts in the checkout it lives in; it decides nothing
 # itself. Run with no argument for the commands and this copy's status.
-# Started as `bash devward`: start again in privileged mode, which ignores BASH_ENV, ENV and exported functions.
+# Started as `bash fortkeep`: start again in privileged mode, which ignores BASH_ENV, ENV and exported functions.
 case $- in *p*) ;; *) exec /usr/bin/env -u BASH_ENV -u ENV /bin/bash -p "$0" "$@" ;; esac
 
-# Its own checkout, through any chain of symlinks (~/.local/bin/devward): readlink without -f.
+# Its own checkout, through any chain of symlinks (~/.local/bin/fortkeep): readlink without -f.
 self="$0"
 while [ -L "$self" ]; do
   link="$(readlink "$self")"
   case "$link" in /*) self="$link" ;; *) self="${self%/*}/$link" ;; esac
 done
-SELF="$(cd "${self%/*}/.." && pwd -P)" || { echo "devward: could not find its own folder" >&2; exit 2; }
+SELF="$(cd "${self%/*}/.." && pwd -P)" || { echo "fortkeep: could not find its own folder" >&2; exit 2; }
 
 . "$SELF/checks/lib/common.sh"
-devward_clean_start "$SELF/bin/devward" "$@"
+fortkeep_clean_start "$SELF/bin/fortkeep" "$@"
 . "$SELF/checks/lib/repo.sh"
-CONTROLS="${DEVWARD_CONTROLS:-$SELF/controls/controls.json}"
-LATEST="$DEVWARD_REPORTS/latest/results.json"
+CONTROLS="${FORTKEEP_CONTROLS:-$SELF/controls/controls.json}"
+LATEST="$FORTKEEP_REPORTS/latest/results.json"
 
-die() { echo "devward: $1" >&2; exit "${2:-2}"; }
+die() { echo "fortkeep: $1" >&2; exit "${2:-2}"; }
 
 help() {
   cat <<'EOF'
-devward: a security checkup for this Mac, run with your coding agent.
+fortkeep: a security checkup for this Mac, run with your coding agent.
 
 Commands
-  devward                                   this help, with the last check and what to do next
-  devward check [--only ID]... [--json]     check this Mac (read-only); exit 1 when something fails
-  devward explain ID                        the short lesson for one control
-  devward scan FOLDER                       is this repo safe to open? scans it, or the repos in it (read-only)
-  devward agent [claude|codex|opencode]     start your coding agent here, then type /posture
-  devward summary [--name NAME]             a posture summary you can share
-  devward update                            move to the newest signed release
-  devward version [--json]                  which release this is, and where
-  devward accept ID "reason" | --remove ID  keep a failed control as it is, with your reason
-  devward private add|remove|count          folders every check skips
-  devward baseline accept                   accept what is on this Mac now as your baseline
-  devward uninstall                         remove devward's state, once its fixes are undone
+  fortkeep                                   this help, with the last check and what to do next
+  fortkeep check [--only ID]... [--json]     check this Mac (read-only); exit 1 when something fails
+  fortkeep explain ID                        the short lesson for one control
+  fortkeep scan FOLDER                       is this repo safe to open? scans it, or the repos in it (read-only)
+  fortkeep agent [claude|codex|opencode]     start your coding agent here, then type /posture
+  fortkeep summary [--name NAME]             a posture summary you can share
+  fortkeep update                            move to the newest signed release
+  fortkeep version [--json]                  which release this is, and where
+  fortkeep accept ID "reason" | --remove ID  keep a failed control as it is, with your reason
+  fortkeep private add|remove|count          folders every check skips
+  fortkeep baseline accept                   accept what is on this Mac now as your baseline
+  fortkeep uninstall                         remove fortkeep's state, once its fixes are undone
 
-Fixes run only inside your agent's session (devward agent, then /fix), one at a time, after your answer.
+Fixes run only inside your agent's session (fortkeep agent, then /fix), one at a time, after your answer.
 EOF
 }
 
@@ -49,18 +49,18 @@ when() {  # RUN_ID (20261119T140200Z) — "2026-11-19 14:02 UTC"
 # jq with checks/lib/results.jq loaded (the urgent rule, the order, the tally) and $ctl, the controls by id.
 rjq() {  # FILTER [jq arguments...] — raw output
   local f="$1"; shift
-  jq -r -L "$DEVWARD_LIB_DIR" --slurpfile c "$CONTROLS" "include \"results\"; (\$c[0] | controls_by_id) as \$ctl | $f" "$@"
+  jq -r -L "$FORTKEEP_LIB_DIR" --slurpfile c "$CONTROLS" "include \"results\"; (\$c[0] | controls_by_id) as \$ctl | $f" "$@"
 }
 # The results of the controls given as jq's positional arguments (--args), or all of them when none is given.
 PICK='$ARGS.positional as $only | [.results[] | select(($only | length) == 0 or (.id as $i | $only | index($i)))]'
 
 status() {
   local copy signed="" last="none yet" next old facts urgent="" failing="" run tally
-  if devward_verify_release "$SELF"; then
-    signed=1; copy="$DEVWARD_RELEASE_TAG, a signed release"
-    if old="$(devward_downgrade_from "$DEVWARD_RELEASE_TAG")"; then copy="$copy, older than $old, which this Mac ran before"; fi
+  if fortkeep_verify_release "$SELF"; then
+    signed=1; copy="$FORTKEEP_RELEASE_TAG, a signed release"
+    if old="$(fortkeep_downgrade_from "$FORTKEEP_RELEASE_TAG")"; then copy="$copy, older than $old, which this Mac ran before"; fi
   else
-    copy="not a signed release: $DEVWARD_RELEASE_PROBLEM"
+    copy="not a signed release: $FORTKEEP_RELEASE_PROBLEM"
   fi
   if [ -f "$LATEST" ]; then
     facts="$(rjq '[any(.results[]; urgent($ctl)), any(.results[]; .status == "FAIL" or .status == "ERROR"), .run,
@@ -74,11 +74,11 @@ status() {
   elif [ -z "$signed" ]; then
     next="don't run fixes from this copy: reinstall a signed release unless you changed it yourself"
   elif [ ! -f "$LATEST" ]; then
-    next="devward agent, then type /posture (in Codex, \$posture); or devward check on its own"
+    next="fortkeep agent, then type /posture (in Codex, \$posture); or fortkeep check on its own"
   elif [ "$failing" = true ]; then
-    next="devward agent, then type /fix (in Codex, \$fix)"
+    next="fortkeep agent, then type /fix (in Codex, \$fix)"
   else
-    next="nothing to fix; check again now and then with devward check"
+    next="nothing to fix; check again now and then with fortkeep check"
   fi
   printf 'This copy    %s\nLast check   %s\nNext         %s\n' "$copy" "$last" "$next"
 }
@@ -100,7 +100,7 @@ table() {  # RESULTS_JSON [ID...] — the readable results; only those IDs when 
 
 check() {
   local json="" ids=() id facts failing urgent run macos tally rc=0 out
-  local usage="usage: devward check [--only ID]... [--json]"
+  local usage="usage: fortkeep check [--only ID]... [--json]"
   while [ $# -gt 0 ]; do
     case "$1" in
       --json) json=1; shift ;;
@@ -112,7 +112,7 @@ check() {
   # run.sh's own summary would mix with the table or the JSON: all of its output goes to stderr, with its progress.
   # It starts with the person's PATH, as the agent's /posture does: the checks inspect that PATH (which pip3 or
   # python3 comes first), and run.sh puts the system folders first for its own commands.
-  PATH="$DEVWARD_USER_PATH" "$SELF/checks/run.sh" "$@" >&2 || die "the check did not finish (its message is above)"
+  PATH="$FORTKEEP_USER_PATH" "$SELF/checks/run.sh" "$@" >&2 || die "the check did not finish (its message is above)"
   [ -f "$LATEST" ] || die "the check wrote no results"
   facts="$(rjq "$PICK"' as $p | [any($p[]; .status == "FAIL" or .status == "ERROR"), any($p[]; urgent($ctl)), .run, .macos,
     (.results | tally_text)] | @tsv' --args ${ids[@]+"${ids[@]}"} < "$LATEST")" || die "could not read the results"
@@ -120,17 +120,17 @@ check() {
   [ "$failing" = false ] || rc=1
   if [ -n "$json" ]; then cat "$LATEST"; exit "$rc"; fi
   out="$(table "$LATEST" ${ids[@]+"${ids[@]}"})" || die "could not read the results"
-  printf 'devward check: %s, macOS %s\n\n%s\n\n%s\n' "$(when "$run")" "$macos" "$out" "$tally"
+  printf 'fortkeep check: %s, macOS %s\n\n%s\n\n%s\n' "$(when "$run")" "$macos" "$out" "$tally"
   if [ "$urgent" = true ]; then
     echo "Urgent: this may mean the Mac is compromised now. Read $SELF/docs/if-red.md before anything else, or type /if-red in your agent."
   elif [ "$rc" -eq 1 ]; then
-    echo "Next: devward agent, then type /fix (in Codex, \$fix). Why one matters: devward explain ID."
+    echo "Next: fortkeep agent, then type /fix (in Codex, \$fix). Why one matters: fortkeep explain ID."
   fi
   exit "$rc"
 }
 
 explain() {
-  [ $# -eq 1 ] || die "usage: devward explain ID"
+  [ $# -eq 1 ] || die "usage: fortkeep explain ID"
   case "$1" in [A-Z][A-Z]-[A-Z][A-Z]-[0-9][0-9]) ;; *) die "not a control id: $1 (for example BL-OS-01)" ;; esac
   [ -f "$SELF/teach/$1.md" ] || die "no lesson for $1"
   cat "$SELF/teach/$1.md"
@@ -138,11 +138,11 @@ explain() {
 
 agent() {
   local name="${1:-}" bin="" a
-  case "$#:$name" in 0:|1:claude|1:codex|1:opencode) ;; *) die "usage: devward agent [claude|codex|opencode]" ;; esac
+  case "$#:$name" in 0:|1:claude|1:codex|1:opencode) ;; *) die "usage: fortkeep agent [claude|codex|opencode]" ;; esac
   for a in ${name:-claude codex opencode}; do
-    if bin="$(PATH="$DEVWARD_USER_PATH" command -v "$a")"; then name="$a"; break; fi
+    if bin="$(PATH="$FORTKEEP_USER_PATH" command -v "$a")"; then name="$a"; break; fi
   done
-  [ -n "$bin" ] || die "${name:-no coding agent (claude, codex or opencode)} is not installed. $SELF/docs/agents.md says how each one works with devward."
+  [ -n "$bin" ] || die "${name:-no coding agent (claude, codex or opencode)} is not installed. $SELF/docs/agents.md says how each one works with fortkeep."
   echo "Starting $name in $SELF."
   case "$name" in
     claude) echo "Accept \"trust this folder\", then type /posture." ;;
@@ -150,25 +150,25 @@ agent() {
     opencode) echo "Its guard plugin loads by itself. Type /posture." ;;
   esac
   cd "$SELF" || die "could not open $SELF"
-  PATH="$DEVWARD_USER_PATH" exec "$bin"
+  PATH="$FORTKEEP_USER_PATH" exec "$bin"
 }
 
 summary() {
   local name="" def run age out
   while [ $# -gt 0 ]; do
     case "$1" in
-      --name) [ $# -ge 2 ] || die "usage: devward summary [--name NAME]"; name="$2"; shift 2 ;;
-      *) die "usage: devward summary [--name NAME]" ;;
+      --name) [ $# -ge 2 ] || die "usage: fortkeep summary [--name NAME]"; name="$2"; shift 2 ;;
+      *) die "usage: fortkeep summary [--name NAME]" ;;
     esac
   done
-  [ -f "$LATEST" ] || die "no results yet: run devward check first"
+  [ -f "$LATEST" ] || die "no results yet: run fortkeep check first"
   run="$(jq -r .run "$LATEST")"
   if age="$(date -j -u -f '%Y%m%dT%H%M%SZ' "$run" +%s 2>/dev/null)"; then
     age=$(( ($(date -u +%s) - age) / 86400 ))
-    [ "$age" -le 7 ] || echo "The last check is $age days old: run devward check first for a current summary." >&2
+    [ "$age" -le 7 ] || echo "The last check is $age days old: run fortkeep check first for a current summary." >&2
   fi
   if [ -z "$name" ]; then
-    [ -t 0 ] || die "give the name to show on the summary: devward summary --name \"Your Name\""
+    [ -t 0 ] || die "give the name to show on the summary: fortkeep summary --name \"Your Name\""
     def="$("$SELF/summary/name.sh" 2>/dev/null)"
     printf 'Name to show on the summary [%s]: ' "$def"
     IFS= read -r name || name=""
@@ -183,16 +183,16 @@ summary() {
 
 version() {
   local json="" tag="" problem="" commit changes=false
-  case "${1:-}" in --json) json=1 ;; '') ;; *) die "usage: devward version [--json]" ;; esac
-  commit="$(devward_git "$SELF" rev-parse -q --verify 'HEAD^{commit}' 2>/dev/null)" || commit=""
-  devward_verify_release "$SELF"
-  case $? in 0) tag="$DEVWARD_RELEASE_TAG" ;; 2) changes=true; problem="$DEVWARD_RELEASE_PROBLEM" ;; *) problem="$DEVWARD_RELEASE_PROBLEM" ;; esac
+  case "${1:-}" in --json) json=1 ;; '') ;; *) die "usage: fortkeep version [--json]" ;; esac
+  commit="$(fortkeep_git "$SELF" rev-parse -q --verify 'HEAD^{commit}' 2>/dev/null)" || commit=""
+  fortkeep_verify_release "$SELF"
+  case $? in 0) tag="$FORTKEEP_RELEASE_TAG" ;; 2) changes=true; problem="$FORTKEEP_RELEASE_PROBLEM" ;; *) problem="$FORTKEEP_RELEASE_PROBLEM" ;; esac
   if [ -n "$json" ]; then
     jq -n --arg v "$tag" --arg c "$commit" --argjson l "$changes" --arg p "$SELF" \
       '{version: (if $v == "" then null else $v end), commit: (if $c == "" then null else $c end), local_changes: $l, path: $p}'
     return
   fi
-  if [ -n "$tag" ]; then echo "devward $tag, a signed release"; else echo "devward: not a release ($problem)"; fi
+  if [ -n "$tag" ]; then echo "fortkeep $tag, a signed release"; else echo "fortkeep: not a release ($problem)"; fi
   echo "commit         ${commit:-none}"
   if [ "$changes" = true ]; then echo "local changes  yes"; else echo "local changes  none"; fi
   echo "folder         $SELF"
@@ -200,7 +200,7 @@ version() {
 
 uninstall() {
   local id kind what blocks="" stays="" answer d c dirs=() link ours=""
-  [ $# -eq 0 ] || die "usage: devward uninstall"
+  [ $# -eq 0 ] || die "usage: fortkeep uninstall"
   . "$SELF/fixes/lib/applied.sh"
   while IFS=$'\t' read -r id kind what; do
     [ -n "$id" ] || continue
@@ -209,47 +209,47 @@ uninstall() {
 $(fx_applied)
 EOF
   if [ -n "$blocks" ]; then
-    echo "These fixes are still applied, and what they installed needs devward:"
+    echo "These fixes are still applied, and what they installed needs fortkeep:"
     printf '%s' "$blocks"
     echo
-    echo "Undo each one first: devward agent, ask it to undo the fix, and answer Undo <ID>. Its backup puts your files back."
-    echo "Then run devward uninstall again. Nothing was removed."
+    echo "Undo each one first: fortkeep agent, ask it to undo the fix, and answer Undo <ID>. Its backup puts your files back."
+    echo "Then run fortkeep uninstall again. Nothing was removed."
     exit 1
   fi
-  echo "devward never runs sudo. These admin changes from its lessons don't need devward and keep protecting this Mac."
-  echo "To remove them anyway, type them yourself in the Terminal app, only those you made from a devward lesson:"
+  echo "fortkeep never runs sudo. These admin changes from its lessons don't need fortkeep and keep protecting this Mac."
+  echo "To remove them anyway, type them yourself in the Terminal app, only those you made from a fortkeep lesson:"
   echo
-  awk '/<!-- devward-uninstall-admin:end -->/ { on = 0 } on && !/```/ { sub(/^   /, "  "); print }
-       /<!-- devward-uninstall-admin:start -->/ { on = 1 }' "$SELF/docs/what-devward-touches.md"
+  awk '/<!-- fortkeep-uninstall-admin:end -->/ { on = 0 } on && !/```/ { sub(/^   /, "  "); print }
+       /<!-- fortkeep-uninstall-admin:start -->/ { on = 1 }' "$SELF/docs/what-fortkeep-touches.md"
   echo
-  echo "Everything devward writes: $SELF/docs/what-devward-touches.md"
+  echo "Everything fortkeep writes: $SELF/docs/what-fortkeep-touches.md"
   echo
-  [ -z "$stays" ] || { echo "Kept, as they work without devward:$stays. Their backups go with the state folder."; echo; }
-  # devward's own folders, named once, from the helpers that name them: the settings (devward_state_file, in the
-  # account's own home folder, which devward_clean_start also made HOME) and the backups' folder. The baselines
-  # (devward_baseline_dir) live in the settings folder.
-  c="$(devward_state_file x)" || die "could not read your home folder from your account"
-  dirs=("${c%/*}" "${DEVWARD_BACKUPS%/*}")
-  for d in "${dirs[@]}"; do case "$d" in /?*/devward) ;; *) die "won't remove $d: it is not one of devward's folders" ;; esac; done
-  link="$(devward_home)/.local/bin/devward" || die "could not read your home folder from your account"
-  [ -L "$link" ] && [ "$(devward_realpath "$link")" = "$SELF/bin/devward" ] && ours=1
-  echo "devward's own files outside this folder:"
+  [ -z "$stays" ] || { echo "Kept, as they work without fortkeep:$stays. Their backups go with the state folder."; echo; }
+  # fortkeep's own folders, named once, from the helpers that name them: the settings (fortkeep_state_file, in the
+  # account's own home folder, which fortkeep_clean_start also made HOME) and the backups' folder. The baselines
+  # (fortkeep_baseline_dir) live in the settings folder.
+  c="$(fortkeep_state_file x)" || die "could not read your home folder from your account"
+  dirs=("${c%/*}" "${FORTKEEP_BACKUPS%/*}")
+  for d in "${dirs[@]}"; do case "$d" in /?*/fortkeep) ;; *) die "won't remove $d: it is not one of fortkeep's folders" ;; esac; done
+  link="$(fortkeep_home)/.local/bin/fortkeep" || die "could not read your home folder from your account"
+  [ -L "$link" ] && [ "$(fortkeep_realpath "$link")" = "$SELF/bin/fortkeep" ] && ours=1
+  echo "fortkeep's own files outside this folder:"
   for d in "${dirs[@]}"; do
-    [ -d "$d" ] && echo "  $(devward_tilde "$d")  ($(find "$d" -mindepth 1 -maxdepth 1 | sed 's#.*/##' | sort | paste -sd, - | sed 's/,/, /g'))"
+    [ -d "$d" ] && echo "  $(fortkeep_tilde "$d")  ($(find "$d" -mindepth 1 -maxdepth 1 | sed 's#.*/##' | sort | paste -sd, - | sed 's/,/, /g'))"
   done
-  [ -z "$ours" ] || echo "  $(devward_tilde "$link")  (the link to this copy)"
+  [ -z "$ours" ] || echo "  $(fortkeep_tilde "$link")  (the link to this copy)"
   # They hold the release signers this Mac trusts: only the person, typing in a terminal, removes them; never an
   # agent or a piped yes. /bin/ps is fixed here on purpose: no environment variable may switch the check off.
   . "$SELF/checks/lib/agent.sh"
-  devward_require_person /bin/ps
+  fortkeep_require_person /bin/ps
   printf 'Remove them? Type yes to remove: '
   IFS= read -r answer || answer=""
   echo
   [ "$answer" = yes ] || { echo "Nothing was removed."; exit 1; }
   rm -rf "${dirs[@]}" || die "could not remove every state folder" 1
-  [ -z "$ours" ] || rm -f "$link" || die "could not remove $(devward_tilde "$link")" 1
+  [ -z "$ours" ] || rm -f "$link" || die "could not remove $(fortkeep_tilde "$link")" 1
   echo "Removed. The last step is yours: close your coding agent, then delete this folder: $SELF"
-  echo "If you installed devward with Homebrew, also type: brew uninstall devward"
+  echo "If you installed fortkeep with Homebrew, also type: brew uninstall fortkeep"
 }
 
 case "${1:-}" in

@@ -1,7 +1,7 @@
 #!/bin/bash
 # Browser profiles and extensions: Chromium family and Firefox. Safari is left out on purpose:
 # its passwords live in the Keychain, and reading its settings needs Full Disk Access.
-DEVWARD_CHROMIUM='Google/Chrome|Chrome
+FORTKEEP_CHROMIUM='Google/Chrome|Chrome
 Google/Chrome Beta|Chrome Beta
 Google/Chrome Dev|Chrome Dev
 Google/Chrome Canary|Chrome Canary
@@ -16,24 +16,24 @@ Arc/User Data|Arc
 Chromium|Chromium
 Vivaldi|Vivaldi'
 
-devward_chromium_profiles() {  # Browser<TAB>profile dir, for each profile with a Preferences file that isn't private
+fortkeep_chromium_profiles() {  # Browser<TAB>profile dir, for each profile with a Preferences file that isn't private
   # With an argument, prints "!skipped" for each private browser or profile folder instead.
   local base name d p
   while IFS='|' read -r base name; do
     d="$HOME/Library/Application Support/$base"
     [ -d "$d" ] || continue
-    if devward_is_private "$d"; then [ -z "${1:-}" ] || echo '!skipped'; continue; fi  # never listed
+    if fortkeep_is_private "$d"; then [ -z "${1:-}" ] || echo '!skipped'; continue; fi  # never listed
     for p in "$d/Default" "$d"/Profile\ *; do
-      if devward_is_private "$p"; then [ -z "${1:-}" ] || echo '!skipped'; continue; fi
+      if fortkeep_is_private "$p"; then [ -z "${1:-}" ] || echo '!skipped'; continue; fi
       [ -z "${1:-}" ] && [ -f "$p/Preferences" ] && printf '%s\t%s\n' "$name" "$p"
     done
   done <<EOF
-$DEVWARD_CHROMIUM
+$FORTKEEP_CHROMIUM
 EOF
   return 0
 }
 
-devward_firefox_dirs() {  # the folder of each profiles.ini entry, whether it exists or not
+fortkeep_firefox_dirs() {  # the folder of each profiles.ini entry, whether it exists or not
   local base="$HOME/Library/Application Support/Firefox" rel p
   [ -f "$base/profiles.ini" ] || return 0
   awk -F= '
@@ -45,24 +45,24 @@ devward_firefox_dirs() {  # the folder of each profiles.ini entry, whether it ex
     done
 }
 
-devward_firefox_profiles() {  # Firefox<TAB>profile dir, for each existing profile folder that isn't private
+fortkeep_firefox_profiles() {  # Firefox<TAB>profile dir, for each existing profile folder that isn't private
   local d
-  devward_firefox_dirs | while IFS= read -r d; do
-    devward_is_private "$d" && continue
+  fortkeep_firefox_dirs | while IFS= read -r d; do
+    fortkeep_is_private "$d" && continue
     [ -d "$d" ] && printf 'Firefox\t%s\n' "$d"
   done
 }
 
-devward_profiles_note() {  # prints " (a private folder was excluded)" when a profile was skipped as private
+fortkeep_profiles_note() {  # prints " (a private folder was excluded)" when a profile was skipped as private
   local d
-  { devward_chromium_profiles skipped; devward_firefox_dirs | while IFS= read -r d; do devward_is_private "$d" && echo '!skipped'; done; } \
+  { fortkeep_chromium_profiles skipped; fortkeep_firefox_dirs | while IFS= read -r d; do fortkeep_is_private "$d" && echo '!skipped'; done; } \
     | grep -qx '!skipped' && printf ' (a private folder was excluded)'
   return 0
 }
 
-devward_profiles() { devward_chromium_profiles; devward_firefox_profiles; }
+fortkeep_profiles() { fortkeep_chromium_profiles; fortkeep_firefox_profiles; }
 
-devward_extensions() {  # BROWSER PROFILE_DIR — id<TAB>name of each installed extension
+fortkeep_extensions() {  # BROWSER PROFILE_DIR — id<TAB>name of each installed extension
   local e id v m n k d
   if [ "$1" = Firefox ]; then
     jq -r '.addons // [] | .[] | select(.type == "extension" and .location == "app-profile")
@@ -84,7 +84,7 @@ devward_extensions() {  # BROWSER PROFILE_DIR — id<TAB>name of each installed 
   done
 }
 
-devward_enabled_extensions() {  # BROWSER PROFILE_DIR — devward_extensions without the ones turned off
+fortkeep_enabled_extensions() {  # BROWSER PROFILE_DIR — fortkeep_extensions without the ones turned off
   local off="" f
   if [ "$1" = Firefox ]; then
     off="$(jq -r '.addons // [] | .[] | select(.userDisabled == true or .active == false) | .id' "$2/extensions.json" 2>/dev/null)"
@@ -96,10 +96,10 @@ devward_enabled_extensions() {  # BROWSER PROFILE_DIR — devward_extensions wit
         | select(.value | objects | .disable_reasons | (type == "array" and length > 0) or (type == "number" and . != 0)) | .key' "$f" 2>/dev/null)"
     done
   fi
-  devward_extensions "$1" "$2" | OFF="$off" awk -F '\t' 'BEGIN { n = split(ENVIRON["OFF"], a, "\n"); for (i = 1; i <= n; i++) skip[a[i]] = 1 } !($1 in skip)'
+  fortkeep_extensions "$1" "$2" | OFF="$off" awk -F '\t' 'BEGIN { n = split(ENVIRON["OFF"], a, "\n"); for (i = 1; i <= n; i++) skip[a[i]] = 1 } !($1 in skip)'
 }
 
-devward_extensions_readable() {  # BROWSER PROFILE_DIR — fails when the extension list exists but cannot be read
+fortkeep_extensions_readable() {  # BROWSER PROFILE_DIR — fails when the extension list exists but cannot be read
   if [ "$1" = Firefox ]; then
     [ ! -e "$2/extensions.json" ] || jq -e . "$2/extensions.json" >/dev/null 2>&1
   else

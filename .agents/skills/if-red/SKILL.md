@@ -20,7 +20,7 @@ it (in Codex: `checks/show.sh docs/if-red.md`) and follow it. Stay calm, short a
    If they don't recognise a change, did any of those things, or aren't sure, go on.
 2. **Everything up front.** Step 1 of the page takes the Mac off the network, which ends this conversation. So before
    it, give the person the whole page in a few short lines: go offline, stop using this Mac, rotate from a clean
-   device, get help, don't wipe yet, report. Tell them the full page is the file `docs/if-red.md` in the devward
+   device, get help, don't wipe yet, report. Tell them the full page is the file `docs/if-red.md` in the fortkeep
    folder, and that it opens without the internet.
 3. **Then step 1:** ask them to turn off Wi-Fi and unplug any network cable now.
 
@@ -28,4 +28,4 @@ Rules:
 - Never tell them to rotate credentials, sign in or type passwords on this Mac: always from a clean device.
 - On a work Mac, their employer's IT or security team decides; say so.
 - Never open, run, decode or upload the suspicious file yourself.
-- A flaw in devward itself goes to SECURITY.md (private vulnerability reporting).
+- A flaw in fortkeep itself goes to SECURITY.md (private vulnerability reporting).

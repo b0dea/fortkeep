@@ -1,6 +1,6 @@
 ---
 name: posture
-description: Review this Mac's security posture against devward's baseline (baseline, gold and optional overlays), explain the results and offer fixes. Use when the person types /posture, asks to check, review or audit their Mac, or opens this repo for the first time.
+description: Review this Mac's security posture against fortkeep's baseline (baseline, gold and optional overlays), explain the results and offer fixes. Use when the person types /posture, asks to check, review or audit their Mac, or opens this repo for the first time.
 metadata:
   internal: "true"
 ---
@@ -27,8 +27,8 @@ If `reports/config.json` exists and the person hasn't asked to change their sett
    prints (in Codex, the person types `Add private folder <path>` or `Don't add` as their whole message). On
    `Add private folder`, run `checks/private.sh add "<path>"` straight away, with the same folder, and say only
    "Added. It will be skipped." If the question script refuses the folder (`/`, the home folder, a folder above it, or
-   devward's own folder), the person adds it themselves, if at all, by typing `devward private add "<path>"` in the
-   Terminal app. Taking a folder off the list is theirs too: `devward private remove "<path>"`, in the Terminal app.
+   fortkeep's own folder), the person adds it themselves, if at all, by typing `fortkeep private add "<path>"` in the
+   Terminal app. Taking a folder off the list is theirs too: `fortkeep private remove "<path>"`, in the Terminal app.
 
 ### New overlays (a config already exists)
 
@@ -53,10 +53,10 @@ If `reports/config.json` exists and the person hasn't asked to change their sett
 1. If the session started with a WARNING about local changes, repeat it. Before the run, tell the person, briefly:
    - it reads settings and files and changes nothing. It can take several minutes and prints its progress. It uses the
      network only for a few tests, such as one DNS lookup that shows whether DNS filtering works and Safe Chain's
-     own test install (`docs/what-devward-touches.md` lists them);
-   - macOS may ask whether devward's checks may open the Desktop, Documents or Downloads folder: two checks look
+     own test install (`docs/what-fortkeep-touches.md` lists them);
+   - macOS may ask whether fortkeep's checks may open the Desktop, Documents or Downloads folder: two checks look
      there for key files and cloned repos. Allowing it is fine; declining makes those checks ERROR;
-   - a security tool on the Mac may stop a check; that check then says "Something outside devward stopped this
+   - a security tool on the Mac may stop a check; that check then says "Something outside fortkeep stopped this
      check". It is not a failure of the Mac: the person asks whoever manages that tool for an exclusion, and never
      turns the tool off.
    Then `checks/run.sh`, read `reports/latest/results.json` and run `checks/diff.sh`.

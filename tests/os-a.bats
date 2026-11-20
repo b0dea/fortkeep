@@ -17,7 +17,7 @@ chk() { run /bin/bash "$REPO/checks/macos/$1.sh"; }
 }
 
 fw() {
-  export DEVWARD_SOCKETFILTERFW="$BATS_TEST_TMPDIR/bin/socketfilterfw"
+  export FORTKEEP_SOCKETFILTERFW="$BATS_TEST_TMPDIR/bin/socketfilterfw"
   stub socketfilterfw "case \"\$1\" in --getglobalstate) echo '$1';; --getstealthmode) echo '$2';; esac"
 }
 @test "BL-OS-02 firewall + stealth on → PASS" {
@@ -45,7 +45,7 @@ fw() {
   chk BL-OS-02; [ "$(field status)" = ERROR ]; [ -n "$(field evidence)" ]
 }
 @test "BL-OS-02 tool missing → ERROR" {
-  export DEVWARD_SOCKETFILTERFW=/nonexistent
+  export FORTKEEP_SOCKETFILTERFW=/nonexistent
   chk BL-OS-02; [ "$(field status)" = ERROR ]
 }
 

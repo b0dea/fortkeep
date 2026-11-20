@@ -3,11 +3,11 @@ load helpers
 setup() {
   setup_env
   mkdir -p "$BATS_TEST_TMPDIR/c1"
-  C1="$(cd "$BATS_TEST_TMPDIR/c1" && pwd -P)"   # devward_claude_dirs returns physical paths
-  export DEVWARD_CLAUDE_DIRS="$C1"
+  C1="$(cd "$BATS_TEST_TMPDIR/c1" && pwd -P)"   # fortkeep_claude_dirs returns physical paths
+  export FORTKEEP_CLAUDE_DIRS="$C1"
   # A guard gets 5 s per probe; a Mac running several test files at once can overrun that, which the checks rightly
   # report as undecided. Tests that aren't about the timeout give it room; the timeout test sets its own.
-  export DEVWARD_HOOK_TIMEOUT=30
+  export FORTKEEP_HOOK_TIMEOUT=30
 }
 chk() { run env PATH="$BATS_TEST_TMPDIR/bin:/usr/bin:/bin:/usr/sbin:/sbin" /bin/bash "$REPO/checks/macos/$1.sh"; }
 guard_in() {  # SETTINGS_FILE HOOK_COMMAND
@@ -22,7 +22,7 @@ guard_in() {  # SETTINGS_FILE HOOK_COMMAND
   chk BL-AI-01; [ "$(field status)" = FAIL ]
 }
 @test "BL-AI-02 no Claude config → NA" {
-  DEVWARD_CLAUDE_DIRS="$BATS_TEST_TMPDIR/none" chk BL-AI-02; [ "$(field status)" = NA ]
+  FORTKEEP_CLAUDE_DIRS="$BATS_TEST_TMPDIR/none" chk BL-AI-02; [ "$(field status)" = NA ]
 }
 @test "BL-AI-02 no guard → FAIL" {
   chk BL-AI-02; [ "$(field status)" = FAIL ]
@@ -53,10 +53,10 @@ EOF
 @test "BL-AI-02 the weakest folder decides; managed settings count for every folder" {
   C2="$BATS_TEST_TMPDIR/c2"; mkdir -p "$C2"
   guard_in "$C1/settings.json" "$REPO/templates/agent-guard.sh"
-  DEVWARD_CLAUDE_DIRS="$C1:$C2" chk BL-AI-02; [ "$(field status)" = FAIL ]; [[ "$(field note)" == *c2* ]]
-  M="$DEVWARD_SYSROOT/Library/Application Support/ClaudeCode"; mkdir -p "$M"
+  FORTKEEP_CLAUDE_DIRS="$C1:$C2" chk BL-AI-02; [ "$(field status)" = FAIL ]; [[ "$(field note)" == *c2* ]]
+  M="$FORTKEEP_SYSROOT/Library/Application Support/ClaudeCode"; mkdir -p "$M"
   guard_in "$M/managed-settings.json" "$REPO/templates/agent-guard.sh"
-  DEVWARD_CLAUDE_DIRS="$C1:$C2" chk BL-AI-02; [ "$(field status)" = PASS ]
+  FORTKEEP_CLAUDE_DIRS="$C1:$C2" chk BL-AI-02; [ "$(field status)" = PASS ]
 }
 @test "BL-AI-02 settings that aren't valid JSON → ERROR" {
   echo '{oops' > "$C1/settings.json"
@@ -82,13 +82,13 @@ EOF
   chmod +x "$BATS_TEST_TMPDIR/picky"
 }
 @test "BL-AI-02 Codex alone is probed, never NA: no hooks → FAIL; a guard on Bash and apply_patch → PASS" {
-  DEVWARD_CLAUDE_DIRS="$BATS_TEST_TMPDIR/none"; stub codex 'exit 0'
-  DEVWARD_CLAUDE_DIRS="$BATS_TEST_TMPDIR/none" chk BL-AI-02; [ "$(field status)" = FAIL ]; [[ "$(field note)" == *"without a hooks.json in: ~/.codex"* ]]
+  FORTKEEP_CLAUDE_DIRS="$BATS_TEST_TMPDIR/none"; stub codex 'exit 0'
+  FORTKEEP_CLAUDE_DIRS="$BATS_TEST_TMPDIR/none" chk BL-AI-02; [ "$(field status)" = FAIL ]; [[ "$(field note)" == *"without a hooks.json in: ~/.codex"* ]]
   picky; codex_guard "$BATS_TEST_TMPDIR/picky"
-  DEVWARD_CLAUDE_DIRS="$BATS_TEST_TMPDIR/none" chk BL-AI-02; [ "$(field status)" = PASS ]; [[ "$(field evidence)" == *"1 of 1"* ]]
+  FORTKEEP_CLAUDE_DIRS="$BATS_TEST_TMPDIR/none" chk BL-AI-02; [ "$(field status)" = PASS ]; [[ "$(field evidence)" == *"1 of 1"* ]]
 }
 @test "BL-AI-02 and BL-AI-03 pass for Codex alone with the ready-made guard on Bash and apply_patch" {
-  export DEVWARD_CLAUDE_DIRS="$BATS_TEST_TMPDIR/none"; stub codex 'exit 0'
+  export FORTKEEP_CLAUDE_DIRS="$BATS_TEST_TMPDIR/none"; stub codex 'exit 0'
   codex_guard "$REPO/templates/agent-guard.sh"
   chk BL-AI-02; [ "$(field status)" = PASS ]
   mkdir -p "$HOME/.codex/rules"; touch "$HOME/.codex/rules/x.rules" "$HOME/.zshrc"
@@ -108,7 +108,7 @@ EOF
   chk BL-AI-02; [ "$(field status)" = ERROR ]; [[ "$(field note)" == *Could\ not\ decide* ]]
 }
 @test "BL-AI-02 managed settings that aren't valid JSON → ERROR" {
-  M="$DEVWARD_SYSROOT/Library/Application Support/ClaudeCode"; mkdir -p "$M"
+  M="$FORTKEEP_SYSROOT/Library/Application Support/ClaudeCode"; mkdir -p "$M"
   echo '{oops' > "$M/managed-settings.json"
   guard_in "$C1/settings.json" "$REPO/templates/agent-guard.sh"
   chk BL-AI-02; [ "$(field status)" = ERROR ]; [[ "$(field note)" == *managed* ]]
@@ -116,12 +116,12 @@ EOF
 @test "BL-AI-02 a hook that outlasts the timeout → ERROR" {
   printf '#!/bin/sh\nsleep 5\n' > "$BATS_TEST_TMPDIR/slow"; chmod +x "$BATS_TEST_TMPDIR/slow"
   guard_in "$C1/settings.json" "$BATS_TEST_TMPDIR/slow"
-  DEVWARD_HOOK_TIMEOUT=1 chk BL-AI-02; [ "$(field status)" = ERROR ]
+  FORTKEEP_HOOK_TIMEOUT=1 chk BL-AI-02; [ "$(field status)" = ERROR ]
 }
 @test "BL-AI-02 FAIL outranks ERROR but the note names both folders" {
   C2="$BATS_TEST_TMPDIR/c2"; mkdir -p "$C2"; C3="$BATS_TEST_TMPDIR/c3"; mkdir -p "$C3"
   guard_in "$C1/settings.json" "$REPO/templates/agent-guard.sh"; echo '{oops' > "$C3/settings.json"
-  DEVWARD_CLAUDE_DIRS="$C1:$C2:$C3" chk BL-AI-02
+  FORTKEEP_CLAUDE_DIRS="$C1:$C2:$C3" chk BL-AI-02
   [ "$(field status)" = FAIL ]; [[ "$(field note)" == *c2* ]]; [[ "$(field note)" == *c3* ]]
 }
 @test "BL-AI-03 settings that aren't valid JSON → ERROR" {
@@ -129,7 +129,7 @@ EOF
   chk BL-AI-03; [ "$(field status)" = ERROR ]
 }
 @test "BL-AI-03 managed settings that aren't valid JSON → ERROR" {
-  M="$DEVWARD_SYSROOT/Library/Application Support/ClaudeCode"; mkdir -p "$M"
+  M="$FORTKEEP_SYSROOT/Library/Application Support/ClaudeCode"; mkdir -p "$M"
   echo '{oops' > "$M/managed-settings.json"
   jq -n '{permissions:{deny:["Edit(/settings.json)"]}}' > "$C1/settings.json"
   chk BL-AI-03; [ "$(field status)" = ERROR ]; [[ "$(field note)" == *managed* ]]
@@ -169,7 +169,7 @@ EOF
   chk BL-AI-03; [ "$(field status)" = FAIL ]; [[ "$(field note)" == *g.sh* ]]
 }
 
-managed() { M="$DEVWARD_SYSROOT/Library/Application Support/ClaudeCode"; mkdir -p "$M"; printf '%s\n' "$M/managed-settings.json"; }
+managed() { M="$FORTKEEP_SYSROOT/Library/Application Support/ClaudeCode"; mkdir -p "$M"; printf '%s\n' "$M/managed-settings.json"; }
 root_stat() {  # STAT_OWNER/STAT_PERM apply to every path; STAT_ME_PATH names one path owned by "me"
   stub stat 'f=""; for a in "$@"; do case "$a" in %Su|%Sp) f="$a" ;; esac; done
 for a in "$@"; do p="$a"; done
@@ -180,7 +180,7 @@ case "$f" in
 esac'
 }
 good_managed() {
-  g="$DEVWARD_SYSROOT/usr/local/lib/safe-chain-agent/agent-guard.sh"; mkdir -p "$(dirname "$g")"; cp "$REPO/templates/agent-guard.sh" "$g"
+  g="$FORTKEEP_SYSROOT/usr/local/lib/safe-chain-agent/agent-guard.sh"; mkdir -p "$(dirname "$g")"; cp "$REPO/templates/agent-guard.sh" "$g"
   jq --arg g "$g" '.hooks.PreToolUse[0].hooks[0].command = $g' "$REPO/templates/managed-settings.json" > "$(managed)"
 }
 
@@ -193,7 +193,7 @@ good_managed() {
 }
 @test "BL-AI-04 a hook command of bash plus a quoted root-owned guard path → PASS" {
   root_stat; good_managed
-  g="$DEVWARD_SYSROOT/usr/local/lib/safe-chain-agent/agent-guard.sh"
+  g="$FORTKEEP_SYSROOT/usr/local/lib/safe-chain-agent/agent-guard.sh"
   jq --arg g "bash \"$g\"" '.hooks.PreToolUse[0].hooks[0].command = $g' "$(managed)" > "$BATS_TEST_TMPDIR/m"; mv "$BATS_TEST_TMPDIR/m" "$(managed)"
   chk BL-AI-04; [ "$(field status)" = PASS ]
 }
@@ -209,9 +209,9 @@ good_managed() {
 @test "BL-AI-04 a folder you own anywhere above the guard or the managed settings → FAIL (Homebrew's /usr/local on Intel)" {
   root_stat; good_managed
   chk BL-AI-04; [ "$(field status)" = PASS ]
-  STAT_ME_PATH="$(cd "$DEVWARD_SYSROOT/usr/local" && pwd -P)" chk BL-AI-04
+  STAT_ME_PATH="$(cd "$FORTKEEP_SYSROOT/usr/local" && pwd -P)" chk BL-AI-04
   [ "$(field status)" = FAIL ]; [[ "$(field note)" == *"A hook script, or a folder above it"* ]]
-  STAT_ME_PATH="$(cd "$DEVWARD_SYSROOT/Library" && pwd -P)" chk BL-AI-04
+  STAT_ME_PATH="$(cd "$FORTKEEP_SYSROOT/Library" && pwd -P)" chk BL-AI-04
   [ "$(field status)" = FAIL ]; [[ "$(field note)" == *"a folder above it isn't root-owned"* ]]
 }
 @test "BL-AI-04 a hook matcher that is not a valid regex → ERROR" {
@@ -221,7 +221,7 @@ good_managed() {
 }
 @test "BL-AI-05 a private ~/.cursor is never read: ERROR when nothing else was checked, a note otherwise" {
   mkdir -p "$HOME/.cursor"; jq -n '{mcpServers:{"hidden-srv":{command:"npx", args:["-y","x"]}}}' > "$HOME/.cursor/mcp.json"
-  echo '~/.cursor' > "$DEVWARD_PRIVATE_PATHS"
+  echo '~/.cursor' > "$FORTKEEP_PRIVATE_PATHS"
   chk BL-AI-05; [ "$(field status)" = ERROR ]; [ "$(field note)" = "a private folder was excluded" ]; [[ "$output" != *hidden-srv* ]]
   jq -n '{mcpServers:{p:{command:"npx", args:["pkg@1.0.0"]}}}' > "$HOME/.claude.json"
   chk BL-AI-05; [ "$(field status)" = PASS ]; [ "$(field note)" = "(a private folder was excluded)" ]
@@ -272,7 +272,7 @@ good_managed() {
   chk BL-AI-06; [ "$(field status)" = FAIL ]
   mkdir -p "$BATS_TEST_TMPDIR/c2"; C2="$(cd "$BATS_TEST_TMPDIR/c2" && pwd -P)"
   echo '{oops' > "$C1/settings.json"; echo '{}' > "$C2/settings.json"
-  DEVWARD_CLAUDE_DIRS="$C1:$C2" chk BL-AI-06; [ "$(field status)" = FAIL ]; [[ "$(field note)" == *"Could not read"* ]]
+  FORTKEEP_CLAUDE_DIRS="$C1:$C2" chk BL-AI-06; [ "$(field status)" = FAIL ]; [[ "$(field note)" == *"Could not read"* ]]
 }
 @test "BL-AI-04 group-writable or other-writable managed settings → FAIL" {
   root_stat; good_managed
@@ -281,22 +281,22 @@ good_managed() {
 }
 @test "BL-AI-04 a guard whose folder is not root-owned → FAIL" {
   root_stat; good_managed
-  STAT_ME_PATH="$DEVWARD_SYSROOT/usr/local/lib/safe-chain-agent" chk BL-AI-04
+  STAT_ME_PATH="$FORTKEEP_SYSROOT/usr/local/lib/safe-chain-agent" chk BL-AI-04
   [ "$(field status)" = FAIL ]; [[ "$(field note)" == *"hook script"* ]]
 }
 @test "BL-AI-04 Codex alone is checked, never NA: its root-owned requirements decide, with no Claude Code managed settings asked for" {
-  export DEVWARD_CLAUDE_DIRS="$BATS_TEST_TMPDIR/none"
+  export FORTKEEP_CLAUDE_DIRS="$BATS_TEST_TMPDIR/none"
   chk BL-AI-04; [ "$(field status)" = NA ]
   root_stat; stub codex 'exit 0'
   chk BL-AI-04; [ "$(field status)" = FAIL ]; [[ "$(field note)" == *"without a root-owned /etc/codex/requirements.toml"* ]]
   [[ "$(field note)" != *managed* ]]
-  R="$DEVWARD_SYSROOT/etc/codex/requirements.toml"; mkdir -p "$(dirname "$R")"
+  R="$FORTKEEP_SYSROOT/etc/codex/requirements.toml"; mkdir -p "$(dirname "$R")"
   printf 'allowed_sandbox_modes = ["read-only", "workspace-write"]\n' > "$R"
   chk BL-AI-04; [ "$(field status)" = PASS ]; [[ "$(field evidence)" == *requirements.toml* ]]
 }
 @test "BL-AI-04 Codex requirements must limit the sandbox modes: missing, under a table, or allowing danger-full-access → FAIL" {
   root_stat; good_managed; stub codex 'exit 0'
-  R="$DEVWARD_SYSROOT/etc/codex/requirements.toml"; mkdir -p "$(dirname "$R")"
+  R="$FORTKEEP_SYSROOT/etc/codex/requirements.toml"; mkdir -p "$(dirname "$R")"
   printf '[rules]\nprefix_rules = []\n' > "$R"
   chk BL-AI-04; [ "$(field status)" = FAIL ]; [[ "$(field note)" == *"doesn't set allowed_sandbox_modes"* ]]
   printf '[rules]\nallowed_sandbox_modes = ["read-only"]\n' > "$R"
@@ -308,7 +308,7 @@ good_managed() {
 }
 @test "BL-AI-04 a root-owned guard that differs from your copy of the same name, with no template of that name → FAIL: compare first" {
   root_stat; good_managed
-  g="$DEVWARD_SYSROOT/usr/local/lib/safe-chain-agent/agent-guard"; printf 'print("v1")\n' > "$g"
+  g="$FORTKEEP_SYSROOT/usr/local/lib/safe-chain-agent/agent-guard"; printf 'print("v1")\n' > "$g"
   jq --arg g "/usr/bin/python3 $g || exit 2" '.hooks.PreToolUse[0].hooks[0].command = $g' "$(managed)" > "$BATS_TEST_TMPDIR/m"; mv "$BATS_TEST_TMPDIR/m" "$(managed)"
   mkdir -p "$HOME/.local/bin"; printf 'print("v2")\n' > "$HOME/.local/bin/agent-guard"
   guard_in "$C1/settings.json" "/usr/bin/python3 $HOME/.local/bin/agent-guard || exit 2"
@@ -326,8 +326,8 @@ good_managed() {
 }
 @test "BL-AI-04 with this repo's template of the same name, the template is the source, never your copy" {
   root_stat; good_managed
-  export DEVWARD_REPO="$BATS_TEST_TMPDIR/repo"; mkdir -p "$DEVWARD_REPO/templates"; T="$DEVWARD_REPO/templates/agent-guard"
-  g="$DEVWARD_SYSROOT/usr/local/lib/safe-chain-agent/agent-guard"
+  export FORTKEEP_REPO="$BATS_TEST_TMPDIR/repo"; mkdir -p "$FORTKEEP_REPO/templates"; T="$FORTKEEP_REPO/templates/agent-guard"
+  g="$FORTKEEP_SYSROOT/usr/local/lib/safe-chain-agent/agent-guard"
   jq --arg g "/usr/bin/python3 $g || exit 2" '.hooks.PreToolUse[0].hooks[0].command = $g' "$(managed)" > "$BATS_TEST_TMPDIR/m"; mv "$BATS_TEST_TMPDIR/m" "$(managed)"
   mkdir -p "$HOME/.local/bin"; guard_in "$C1/settings.json" "/usr/bin/python3 $HOME/.local/bin/agent-guard || exit 2"
   # Root copy matches the template: only your copy is replaced, no sudo.
@@ -345,7 +345,7 @@ good_managed() {
   [[ "$(field note)" == *"sudo install -o root -g wheel -m 755 $T /usr/local/lib/safe-chain-agent/agent-guard" ]]; [[ "$(field note)" != *"update your copy"* ]]
 }
 @test "BL-AI-06 managed sandbox off with no config folders → FAIL; invalid managed file → ERROR; string true is off" {
-  export DEVWARD_CLAUDE_DIRS="$BATS_TEST_TMPDIR/none"; M="$(dirname "$(managed)")"
+  export FORTKEEP_CLAUDE_DIRS="$BATS_TEST_TMPDIR/none"; M="$(dirname "$(managed)")"
   echo '{}' > "$(managed)"
   chk BL-AI-06; [ "$(field status)" = FAIL ]; [[ "$(field note)" == *"managed settings"* ]]
   echo '{"sandbox":{"enabled":"true"}}' > "$(managed)"
@@ -387,9 +387,9 @@ good_managed() {
 @test "BL-AI-03 the PATH file BL-SC-02 installs must be protected when it exists" {
   jq -n '{permissions:{deny:["Edit(/settings.json)"]}}' > "$C1/settings.json"
   chk BL-AI-03; [ "$(field status)" = PASS ]
-  mkdir -p "$HOME/.config/devward"; touch "$HOME/.config/devward/path-front.sh"
-  chk BL-AI-03; [ "$(field status)" = FAIL ]; [[ "$(field note)" == *"~/.config/devward/path-front.sh"* ]]
-  jq -n '{permissions:{deny:["Edit(/settings.json)", "Edit(~/.config/devward/**)"]}}' > "$C1/settings.json"
+  mkdir -p "$HOME/.config/fortkeep"; touch "$HOME/.config/fortkeep/path-front.sh"
+  chk BL-AI-03; [ "$(field status)" = FAIL ]; [[ "$(field note)" == *"~/.config/fortkeep/path-front.sh"* ]]
+  jq -n '{permissions:{deny:["Edit(/settings.json)", "Edit(~/.config/fortkeep/**)"]}}' > "$C1/settings.json"
   chk BL-AI-03; [ "$(field status)" = PASS ]
 }
 @test "BL-AI-02 a guard on Bash only misses the Write probe → FAIL" {
@@ -449,13 +449,13 @@ G
 }
 @test "managed-settings.sh with only ~/.claude prints the template's rules unchanged" {
   mkdir -p "$HOME/.claude"
-  DEVWARD_CLAUDE_DIRS="$HOME/.claude" run /bin/bash "$REPO/checks/managed-settings.sh"; [ "$status" -eq 0 ]
+  FORTKEEP_CLAUDE_DIRS="$HOME/.claude" run /bin/bash "$REPO/checks/managed-settings.sh"; [ "$status" -eq 0 ]
   [ "$(jq -S . <<<"$output")" = "$(jq -S . "$REPO/templates/managed-settings.json")" ]
 }
 @test "managed-settings.sh changes nothing on disk" {
-  before="$(find "$HOME" "$DEVWARD_SYSROOT" "$REPO/templates" -exec stat -f '%N %m %z' {} + | shasum)"
+  before="$(find "$HOME" "$FORTKEEP_SYSROOT" "$REPO/templates" -exec stat -f '%N %m %z' {} + | shasum)"
   run /bin/bash "$REPO/checks/managed-settings.sh"; [ "$status" -eq 0 ]
-  [ "$(find "$HOME" "$DEVWARD_SYSROOT" "$REPO/templates" -exec stat -f '%N %m %z' {} + | shasum)" = "$before" ]
+  [ "$(find "$HOME" "$FORTKEEP_SYSROOT" "$REPO/templates" -exec stat -f '%N %m %z' {} + | shasum)" = "$before" ]
 }
 @test "the managed-settings template denies edits to every kind of file the guard template protects" {
   rules="$(jq -r '.permissions.deny[] | select(startswith("Edit(")) | .[5:-1] | gsub("\\*\\*"; "*")' "$REPO/templates/managed-settings.json")"
@@ -463,7 +463,7 @@ G
     '~/.claude/settings.json' '~/.claude/settings.local.json' '~/.claude.json' \
     '//Library/Application Support/ClaudeCode/managed-settings.json' '//usr/local/lib/safe-chain-agent/agent-guard.sh' \
     '~/Library/LaunchAgents/x.plist' '~/.safe-chain/shims/npm' '~/.codex/hooks.json' '~/.codex/rules/x.rules' \
-    '~/.config/devward/path-front.sh' '~/.claude/plugins/cache/m/p/hooks/hooks.json' '~/.claude/plugins/installed_plugins.json'; do
+    '~/.config/fortkeep/path-front.sh' '~/.claude/plugins/cache/m/p/hooks/hooks.json' '~/.claude/plugins/installed_plugins.json'; do
     case "$p" in '~/'*) f="$HOME/${p#\~/}" ;; *) f="${p#/}" ;; esac
     jq -cn --arg p "$f" '{tool_name:"Write", tool_input:{file_path:$p, content:"x"}}' | "$REPO/templates/agent-guard.sh" 2>/dev/null && false
     hit=0
@@ -499,7 +499,7 @@ G
   run env TMPDIR="$BATS_TEST_TMPDIR" /bin/bash -c "cd '$REPO'; $tmp; $gen; $check"; [ "$status" -eq 0 ]; [ "$output" = true ]
 }
 @test "BL-AI-03 Codex alone is probed, never NA: its apply_patch guard must refuse edits to each file that controls it" {
-  export DEVWARD_CLAUDE_DIRS="$BATS_TEST_TMPDIR/none"; stub codex 'exit 0'
+  export FORTKEEP_CLAUDE_DIRS="$BATS_TEST_TMPDIR/none"; stub codex 'exit 0'
   chk BL-AI-03; [ "$(field status)" = FAIL ]; [[ "$(field note)" == *"refuse edits to: ~/.codex/hooks.json, ~/.codex/config.toml"* ]]
   picky; codex_guard "$BATS_TEST_TMPDIR/picky"; mkdir -p "$HOME/.codex/rules"; touch "$HOME/.codex/rules/x.rules" "$HOME/.zshrc"
   chk BL-AI-03; [ "$(field status)" = PASS ]; [ "$(field evidence)" = "5 of 5 agent control files are protected from agent edits" ]
@@ -509,7 +509,7 @@ G
 @test "BL-AI-03 a symlinked config folder is matched by its real path" {
   mkdir -p "$BATS_TEST_TMPDIR/real-claude"; ln -s "$BATS_TEST_TMPDIR/real-claude" "$HOME/.claude"
   jq -n '{permissions:{deny:["Edit(~/.claude/settings.json)"]}}' > "$BATS_TEST_TMPDIR/real-claude/settings.json"
-  DEVWARD_CLAUDE_DIRS="$HOME/.claude" chk BL-AI-03; [ "$(field status)" = PASS ]
+  FORTKEEP_CLAUDE_DIRS="$HOME/.claude" chk BL-AI-03; [ "$(field status)" = PASS ]
 }
 @test "BL-AI-05 flags that take a value are skipped; --from, --spec and -p name the package" {
   jq -n '{mcpServers:{
@@ -523,7 +523,7 @@ G
 }
 
 @test "managed-settings.sh adds a deny rule for every aimux profile Claude has used" {
-  unset DEVWARD_CLAUDE_DIRS
+  unset FORTKEEP_CLAUDE_DIRS
   P="$HOME/.aimux/profiles"; mkdir -p "$HOME/.claude" "$P/a/projects" "$P/b" "$P/c"; echo '{}' > "$P/b/settings.json"
   Pp="$(cd "$P" && pwd -P)"
   run /bin/bash "$REPO/checks/managed-settings.sh"; [ "$status" -eq 0 ]
@@ -532,7 +532,7 @@ G
   [ "$(jq '.permissions.deny | length' <<<"$output")" -eq "$(( $(jq '.permissions.deny | length' "$REPO/templates/managed-settings.json") + 2 ))" ]
 }
 @test "BL-AI-02 counts an aimux profile: a profile without the guard fails the control" {
-  unset DEVWARD_CLAUDE_DIRS
+  unset FORTKEEP_CLAUDE_DIRS
   mkdir -p "$HOME/.claude" "$HOME/.aimux/profiles/p/projects"
   guard_in "$HOME/.claude/settings.json" "$REPO/templates/agent-guard.sh"
   chk BL-AI-02; [ "$(field status)" = FAIL ]; [[ "$(field note)" == *"aimux/profiles/p"* ]]
@@ -540,37 +540,37 @@ G
 
 @test "BL-AI-02 a private folder left out of the others: the result keeps its verdict and notes the exclusion, never the path" {
   mkdir -p "$BATS_TEST_TMPDIR/secret"; S1="$(cd "$BATS_TEST_TMPDIR/secret" && pwd -P)"
-  export DEVWARD_CLAUDE_DIRS="$C1:$S1"; printf '%s\n' "$S1" > "$DEVWARD_PRIVATE_PATHS"
+  export FORTKEEP_CLAUDE_DIRS="$C1:$S1"; printf '%s\n' "$S1" > "$FORTKEEP_PRIVATE_PATHS"
   guard_in "$C1/settings.json" "$REPO/templates/agent-guard.sh"
   chk BL-AI-02; [ "$(field status)" = PASS ]; [[ "$(field note)" == *"a private folder was excluded"* ]]; [[ "$output" != *secret* ]]
   rm "$C1/settings.json"
   chk BL-AI-02; [ "$(field status)" = FAIL ]; [[ "$(field note)" == *"a private folder was excluded)" ]]; [[ "$output" != *secret* ]]
 }
 @test "BL-AI-02 and BL-AI-03: every folder private → ERROR, not 'not set up'" {
-  printf '%s\n' "$C1" > "$DEVWARD_PRIVATE_PATHS"
+  printf '%s\n' "$C1" > "$FORTKEEP_PRIVATE_PATHS"
   for id in BL-AI-02 BL-AI-03; do
     chk $id; [ "$(field status)" = ERROR ]; [[ "$(field evidence)" == *"Could not check every Claude Code folder"* ]]
     [ "$(field note)" = "a private folder was excluded" ]; [[ "$output" != *c1* ]]
   done
 }
 @test "BL-AI-05 no servers but a private folder was left out → ERROR, not NA" {
-  printf '%s\n' "$C1" > "$DEVWARD_PRIVATE_PATHS"
+  printf '%s\n' "$C1" > "$FORTKEEP_PRIVATE_PATHS"
   chk BL-AI-05; [ "$(field status)" = ERROR ]; [[ "$(field evidence)" == *"Could not check every Claude Code folder"* ]]
   [ "$(field note)" = "a private folder was excluded" ]
 }
 @test "BL-AI-06 Codex alone is checked, never NA: sandboxed by default, off only with sandbox_mode danger-full-access" {
-  export DEVWARD_CLAUDE_DIRS="$BATS_TEST_TMPDIR/none"; stub codex 'exit 0'; mkdir -p "$HOME/.codex"
+  export FORTKEEP_CLAUDE_DIRS="$BATS_TEST_TMPDIR/none"; stub codex 'exit 0'; mkdir -p "$HOME/.codex"
   chk BL-AI-06; [ "$(field status)" = PASS ]; [[ "$(field evidence)" == *Codex* ]]
   printf '# sandbox_mode = "danger-full-access"\nsandbox_mode = "workspace-write"\n[profiles.x]\nsandbox_mode = "danger-full-access"\n' > "$HOME/.codex/config.toml"
   chk BL-AI-06; [ "$(field status)" = PASS ]
   printf 'model = "x"\nsandbox_mode = "danger-full-access"\n' > "$HOME/.codex/config.toml"
   chk BL-AI-06; [ "$(field status)" = FAIL ]; [[ "$(field note)" == *"~/.codex/config.toml"* ]]
   echo '{"sandbox":{"enabled":true}}' > "$C1/settings.json"
-  DEVWARD_CLAUDE_DIRS="$C1" chk BL-AI-06; [ "$(field status)" = FAIL ]; [[ "$(field note)" == *"~/.codex/config.toml"* ]]
-  echo '~/.codex' > "$DEVWARD_PRIVATE_PATHS"
+  FORTKEEP_CLAUDE_DIRS="$C1" chk BL-AI-06; [ "$(field status)" = FAIL ]; [[ "$(field note)" == *"~/.codex/config.toml"* ]]
+  echo '~/.codex' > "$FORTKEEP_PRIVATE_PATHS"
   chk BL-AI-06; [ "$(field status)" = ERROR ]; [ "$(field note)" = "a private folder was excluded" ]
 }
 @test "BL-AI-06 nothing found and a private folder left out → ERROR, not NA" {
-  printf '%s\n' "$C1" > "$DEVWARD_PRIVATE_PATHS"
+  printf '%s\n' "$C1" > "$FORTKEEP_PRIVATE_PATHS"
   chk BL-AI-06; [ "$(field status)" = ERROR ]; [ "$(field note)" = "a private folder was excluded" ]
 }

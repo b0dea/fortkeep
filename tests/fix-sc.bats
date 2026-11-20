@@ -7,7 +7,7 @@ setup() {
   printf '#!/bin/sh\necho OK\n' > "$HOME/.safe-chain/shims/npm"; chmod +x "$HOME/.safe-chain/shims/npm"
 }
 fix() { run /bin/bash "$T/fixes/macos/BL-SC-02.sh" "$1"; }
-approve() { date +%s > "$DEVWARD_REPORTS/.approvals/BL-SC-02.$1"; }
+approve() { date +%s > "$FORTKEEP_REPORTS/.approvals/BL-SC-02.$1"; }
 status_of() { /bin/bash "$REPO/checks/macos/$1.sh" | jq -r .status; }
 
 @test "refuses without approval and changes nothing" {
@@ -22,17 +22,17 @@ status_of() { /bin/bash "$REPO/checks/macos/$1.sh" | jq -r .status; }
 @test "apply on a fresh home makes BL-SC-02 and BL-SC-04 pass, logs, and undo removes everything" {
   approve apply; fix apply; [ "$status" -eq 0 ]
   [ "$(status_of BL-SC-02)" = PASS ]; [ "$(status_of BL-SC-04)" = PASS ]
-  grep -q '| BL-SC-02 | apply |' "$DEVWARD_REPORTS/change-log.md"
-  [ -n "$(find "$DEVWARD_BACKUPS/BL-SC-02" -name sealed.tsv)" ]
+  grep -q '| BL-SC-02 | apply |' "$FORTKEEP_REPORTS/change-log.md"
+  [ -n "$(find "$FORTKEEP_BACKUPS/BL-SC-02" -name sealed.tsv)" ]
   approve undo; fix undo; [ "$status" -eq 0 ]
   [ ! -e "$HOME/.zshenv" ]; [ ! -e "$HOME/.zshrc" ]; [ ! -e "$HOME/.zlogin" ]
-  [ ! -e "$HOME/.config/devward/path-front.sh" ]
+  [ ! -e "$HOME/.config/fortkeep/path-front.sh" ]
 }
 @test "existing start-up files keep their content and get the line once" {
   printf 'alias ll="ls -l"\n' > "$HOME/.zshrc"
   approve apply; fix apply; [ "$status" -eq 0 ]
   approve apply; fix apply; [ "$status" -eq 0 ]; [[ "$output" == *"nothing to change"* ]]
-  [ "$(grep -c 'devward BL-SC-02' "$HOME/.zshrc")" -eq 1 ]
+  [ "$(grep -c 'fortkeep BL-SC-02' "$HOME/.zshrc")" -eq 1 ]
   head -1 "$HOME/.zshrc" | grep -q 'alias ll'
   approve undo; fix undo
   [ "$(cat "$HOME/.zshrc")" = 'alias ll="ls -l"' ]
@@ -40,7 +40,7 @@ status_of() { /bin/bash "$REPO/checks/macos/$1.sh" | jq -r .status; }
 @test "bash start-up files get the line only if they exist" {
   touch "$HOME/.bashrc" "$HOME/.bash_profile"
   approve apply; fix apply; [ "$status" -eq 0 ]
-  grep -q 'devward BL-SC-02' "$HOME/.bash_profile"
+  grep -q 'fortkeep BL-SC-02' "$HOME/.bash_profile"
   [ ! -e "$HOME/.profile" ]
   [ "$(status_of BL-SC-02)" = PASS ]
 }
@@ -54,10 +54,10 @@ status_of() { /bin/bash "$REPO/checks/macos/$1.sh" | jq -r .status; }
   [ "$(/bin/zsh -c 'echo $SAFE_CHAIN_MINIMUM_PACKAGE_AGE_HOURS')" = 200 ]
 }
 @test "the path-front file keeps PATH entries in order and removes duplicates of the shims" {
-  mkdir -p "$HOME/.config/devward"; cp "$REPO/fixes/files/path-front.sh" "$HOME/.config/devward/"
-  out="$(PATH="/a:$HOME/.safe-chain/shims:/b" /bin/zsh -fc ". $HOME/.config/devward/path-front.sh; echo \$PATH")"
+  mkdir -p "$HOME/.config/fortkeep"; cp "$REPO/fixes/files/path-front.sh" "$HOME/.config/fortkeep/"
+  out="$(PATH="/a:$HOME/.safe-chain/shims:/b" /bin/zsh -fc ". $HOME/.config/fortkeep/path-front.sh; echo \$PATH")"
   [ "$out" = "$HOME/.safe-chain/shims:$HOME/.safe-chain/bin:/a:/b" ]
-  out="$(PATH="/a:/b" /bin/bash -c ". $HOME/.config/devward/path-front.sh; . $HOME/.config/devward/path-front.sh; echo \$PATH")"
+  out="$(PATH="/a:/b" /bin/bash -c ". $HOME/.config/fortkeep/path-front.sh; . $HOME/.config/fortkeep/path-front.sh; echo \$PATH")"
   [ "$out" = "$HOME/.safe-chain/shims:$HOME/.safe-chain/bin:/a:/b" ]
 }
 @test "a dangling symlink start-up file is refused as MANUAL and left alone" {
@@ -66,25 +66,25 @@ status_of() { /bin/bash "$REPO/checks/macos/$1.sh" | jq -r .status; }
   [ -L "$HOME/.zshrc" ]; [ ! -e "$HOME/elsewhere/target" ]
 }
 @test "a backup that cannot be made stops with MANUAL before any file is changed" {
-  B="$(dirname "$DEVWARD_BACKUPS")"; mkdir -p "$B"
+  B="$(dirname "$FORTKEEP_BACKUPS")"; mkdir -p "$B"
   approve apply; chmod 500 "$B"
   fix apply; chmod 700 "$B"
   [ "$status" -eq 3 ]; [[ "$output" == *"back up"* ]]
-  [ ! -e "$HOME/.zshenv" ]; [ ! -e "$HOME/.config/devward/path-front.sh" ]
+  [ ! -e "$HOME/.zshenv" ]; [ ! -e "$HOME/.config/fortkeep/path-front.sh" ]
 }
 @test "a symlink to a real file gets the line in the target and undo restores it" {
   printf 'alias ll="ls -l"\n' > "$HOME/real-rc"; ln -s "$HOME/real-rc" "$HOME/.zshrc"
   approve apply; fix apply; [ "$status" -eq 0 ]
-  [ -L "$HOME/.zshrc" ]; grep -q 'devward BL-SC-02' "$HOME/real-rc"
+  [ -L "$HOME/.zshrc" ]; grep -q 'fortkeep BL-SC-02' "$HOME/real-rc"
   approve undo; fix undo; [ "$status" -eq 0 ]
   [ -L "$HOME/.zshrc" ]; [ "$(cat "$HOME/real-rc")" = 'alias ll="ls -l"' ]
 }
 
 @test "fx_latest_backup picks the newest folder not yet undone" {
   . "$T/fixes/lib/fix.sh"
-  mkdir -p "$DEVWARD_BACKUPS/X/20260101T000000Z-1" "$DEVWARD_BACKUPS/X/20260102T000000Z-1"
-  touch "$DEVWARD_BACKUPS/X/20260101T000000Z-1/manifest.tsv" "$DEVWARD_BACKUPS/X/20260102T000000Z-1/manifest.restored.tsv"
-  [ "$(fx_latest_backup X)" = "$DEVWARD_BACKUPS/X/20260101T000000Z-1" ]
+  mkdir -p "$FORTKEEP_BACKUPS/X/20260101T000000Z-1" "$FORTKEEP_BACKUPS/X/20260102T000000Z-1"
+  touch "$FORTKEEP_BACKUPS/X/20260101T000000Z-1/manifest.tsv" "$FORTKEEP_BACKUPS/X/20260102T000000Z-1/manifest.restored.tsv"
+  [ "$(fx_latest_backup X)" = "$FORTKEEP_BACKUPS/X/20260101T000000Z-1" ]
   run fx_latest_backup Y; [ "$status" -eq 1 ]
 }
 @test "undo removes only the marked line and keeps edits made after apply" {
@@ -93,21 +93,21 @@ status_of() { /bin/bash "$REPO/checks/macos/$1.sh" | jq -r .status; }
   printf 'alias gs="git status"\n' >> "$HOME/.zshrc"
   approve undo; fix undo; [ "$status" -eq 0 ]
   [ "$(cat "$HOME/.zshrc")" = "$(printf 'alias ll="ls -l"\nalias gs="git status"')" ]
-  [ ! -e "$HOME/.zshenv" ]; [ ! -e "$HOME/.config/devward/path-front.sh" ]
-  grep -q '| BL-SC-02 | undo |' "$DEVWARD_REPORTS/change-log.md"
+  [ ! -e "$HOME/.zshenv" ]; [ ! -e "$HOME/.config/fortkeep/path-front.sh" ]
+  grep -q '| BL-SC-02 | undo |' "$FORTKEEP_REPORTS/change-log.md"
 }
 @test "undo removes the marked line from between two others without joining them" {
   printf 'export A=1\n' > "$HOME/.zshrc"
   approve apply; fix apply; [ "$status" -eq 0 ]
-  printf 'export A=1\n%s\nexport B=2\n' "$(grep -F 'devward BL-SC-02' "$HOME/.zshrc")" > "$HOME/.zshrc"
+  printf 'export A=1\n%s\nexport B=2\n' "$(grep -F 'fortkeep BL-SC-02' "$HOME/.zshrc")" > "$HOME/.zshrc"
   approve undo; fix undo; [ "$status" -eq 0 ]
   [ "$(cat "$HOME/.zshrc")" = "$(printf 'export A=1\nexport B=2')" ]
 }
 @test "undo leaves an edited PATH file alone, says why, and still removes the lines" {
   approve apply; fix apply; [ "$status" -eq 0 ]
-  echo '# mine' >> "$HOME/.config/devward/path-front.sh"
+  echo '# mine' >> "$HOME/.config/fortkeep/path-front.sh"
   approve undo; fix undo; [ "$status" -eq 6 ]; [[ "$output" == *"your later edits stopped the undo"* ]]
-  grep -q '# mine' "$HOME/.config/devward/path-front.sh"
+  grep -q '# mine' "$HOME/.config/fortkeep/path-front.sh"
   [ ! -e "$HOME/.zshenv" ]
   approve undo; fix undo; [ "$status" -eq 5 ]
 }
@@ -118,7 +118,7 @@ status_of() { /bin/bash "$REPO/checks/macos/$1.sh" | jq -r .status; }
   stub perl 'printf partial; exit 1'
   approve undo; fix undo; [ "$status" -eq 6 ]; [[ "$output" == *"undo incomplete"* ]]
   [ "$(shasum -a 256 < "$HOME/.zshrc")" = "$before" ]
-  [ -f "$HOME/.config/devward/path-front.sh" ]
+  [ -f "$HOME/.config/fortkeep/path-front.sh" ]
 }
 @test "an unreadable start-up file is never written by undo" {
   [ "$(id -u)" -ne 0 ] || skip "root can read any file"
@@ -131,7 +131,7 @@ status_of() { /bin/bash "$REPO/checks/macos/$1.sh" | jq -r .status; }
 }
 @test "fx_unchanged, fx_restore_file, fx_was_absent and fx_drop_blank_created act on one file each" {
   . "$T/fixes/lib/fix.sh"
-  printf 'old\n' > "$HOME/a"; B="$DEVWARD_BACKUPS/X/$FX_STAMP"
+  printf 'old\n' > "$HOME/a"; B="$FORTKEEP_BACKUPS/X/$FX_STAMP"
   { fx_backup X "$HOME/a"; fx_backup X "$HOME/b"; fx_backup X "$HOME/c"; } || :  # its grep -c trips bats' errexit
   [ "$(grep -c . "$B/manifest.tsv")" -eq 3 ]
   printf 'new\n' > "$HOME/a"; printf ' \n\n' > "$HOME/b"; printf 'kept\n' > "$HOME/c"; fx_seal X

@@ -3,7 +3,7 @@
 ID=BL-SC-03
 SHIMS="$HOME/.safe-chain/shims"
 STD=/usr/bin:/bin:/usr/sbin:/sbin
-CONF="$(devward_path /private/var/db/com.apple.xpc.launchd/config/user.plist)"
+CONF="$(fortkeep_path /private/var/db/com.apple.xpc.launchd/config/user.plist)"
 # What your running apps got: only the PATH word of each one's environment is read, inside the
 # pipeline; no other variable is kept. Apps whose PATH is neither shims-first nor launchd's are left out.
 me="$(id -u)"; good=""; bad=""; shown=""; ng=0; nb=0; listed=1
@@ -54,16 +54,16 @@ trim() { printf '%s' "${1# }"; }
 case "$conf" in
   active)
     if [ "$ng" -gt 0 ]; then
-      devward_result "$ID" PASS "launchd's user PATH starts with the Safe Chain shims, and $ng of $((ng + nb)) running apps that show their PATH have them" "$(trim "$apps")"
+      fortkeep_result "$ID" PASS "launchd's user PATH starts with the Safe Chain shims, and $ng of $((ng + nb)) running apps that show their PATH have them" "$(trim "$apps")"
     elif [ "$nb" -gt 0 ]; then
-      devward_result "$ID" FAIL "launchd's user PATH starts with the Safe Chain shims, but no running app has them: the setting isn't taking effect" "$(trim "$apps")"
+      fortkeep_result "$ID" FAIL "launchd's user PATH starts with the Safe Chain shims, but no running app has them: the setting isn't taking effect" "$(trim "$apps")"
     elif [ "$listed" -eq 1 ]; then
-      devward_result "$ID" PASS "launchd's user PATH starts with the Safe Chain shims (set before the last restart); no running app showed its PATH to confirm" ""
+      fortkeep_result "$ID" PASS "launchd's user PATH starts with the Safe Chain shims (set before the last restart); no running app showed its PATH to confirm" ""
     else
-      devward_result "$ID" ERROR "launchd's user PATH starts with the Safe Chain shims, but the running apps couldn't be listed to confirm" "Run the check again."
+      fortkeep_result "$ID" ERROR "launchd's user PATH starts with the Safe Chain shims, but the running apps couldn't be listed to confirm" "Run the check again."
     fi ;;
-  pending) devward_result "$ID" FAIL "launchd's user PATH starts with the Safe Chain shims, but only after a restart" "Restart the Mac to apply it.$apps$unlisted" ;;
-  unreadable) devward_result "$ID" ERROR "Couldn't read launchd's user config, which decides this control" "Run the check again.$unlisted" ;;
-  noboot) devward_result "$ID" ERROR "launchd's user PATH starts with the Safe Chain shims, but couldn't tell whether it was set before the last restart" "The Mac's boot time or the config's time couldn't be read.$unlisted" ;;
-  *) devward_result "$ID" FAIL "launchd's user PATH doesn't start with the Safe Chain shims" "$(trim "$apps Set launchd's user PATH with the admin command in the lesson, then restart.$unlisted")" ;;
+  pending) fortkeep_result "$ID" FAIL "launchd's user PATH starts with the Safe Chain shims, but only after a restart" "Restart the Mac to apply it.$apps$unlisted" ;;
+  unreadable) fortkeep_result "$ID" ERROR "Couldn't read launchd's user config, which decides this control" "Run the check again.$unlisted" ;;
+  noboot) fortkeep_result "$ID" ERROR "launchd's user PATH starts with the Safe Chain shims, but couldn't tell whether it was set before the last restart" "The Mac's boot time or the config's time couldn't be read.$unlisted" ;;
+  *) fortkeep_result "$ID" FAIL "launchd's user PATH doesn't start with the Safe Chain shims" "$(trim "$apps Set launchd's user PATH with the admin command in the lesson, then restart.$unlisted")" ;;
 esac

@@ -6,7 +6,7 @@ setup() {
   mkdir -p "$T/checks/fake"
   cp -R "$REPO/checks/lib" "$T/checks/"
   cp "$REPO"/checks/*.sh "$T/checks/"
-  export DEVWARD_REPO="$T" DEVWARD_CONTROLS="$T/controls.json"
+  export FORTKEEP_REPO="$T" FORTKEEP_CONTROLS="$T/controls.json"
   stub sw_vers 'echo 15.7.9'
   mk() { printf '#!/bin/bash\n%s\n' "$2" > "$T/checks/fake/$1.sh"; }
   mk ok   'echo "{\"id\":\"BL-OS-01\",\"status\":\"PASS\",\"evidence\":\"fine\",\"note\":\"\"}"'
@@ -16,7 +16,7 @@ setup() {
   mk ok6  'echo "{\"id\":\"BL-OS-06\",\"status\":\"PASS\",\"evidence\":\"x\",\"note\":\"\"}"'
   mk rd   'cat >/dev/null; echo "{\"id\":\"BL-OS-05\",\"status\":\"PASS\",\"evidence\":\"r\",\"note\":\"\"}"'
   mk ov   'echo "{\"id\":\"OV-PX-01\",\"status\":\"PASS\",\"evidence\":\"x\",\"note\":\"\"}"'
-  cat > "$DEVWARD_CONTROLS" <<'EOF'
+  cat > "$FORTKEEP_CONTROLS" <<'EOF'
 [
  {"id":"BL-OS-01","title":"One","layer":"baseline","level":"MUST","source":"§1","check":"checks/fake/ok.sh"},
  {"id":"BL-OS-02","title":"Two","layer":"baseline","level":"MUST","source":"§1","check":"checks/fake/bad.sh"},
@@ -29,7 +29,7 @@ setup() {
 EOF
 }
 
-res() { jq -r --arg id "$1" '.results[] | select(.id==$id) | .'"$2" "$DEVWARD_REPORTS/latest/results.json"; }
+res() { jq -r --arg id "$1" '.results[] | select(.id==$id) | .'"$2" "$FORTKEEP_REPORTS/latest/results.json"; }
 
 @test "runs checks and records PASS, FAIL, timeout and junk as ERROR" {
   run "$T/checks/run.sh"
@@ -40,7 +40,7 @@ res() { jq -r --arg id "$1" '.results[] | select(.id==$id) | .'"$2" "$DEVWARD_RE
   [[ "$(res BL-OS-03 evidence)" == *"timed out"* ]]
   [ "$(res BL-OS-04 status)" = ERROR ]
   [ "$(res BL-OS-02 title)" = Two ]
-  [ "$(jq -r .macos "$DEVWARD_REPORTS/latest/results.json")" = 15.7.9 ]
+  [ "$(jq -r .macos "$FORTKEEP_REPORTS/latest/results.json")" = 15.7.9 ]
 }
 
 @test "overlay controls run only when configured" {
@@ -79,7 +79,7 @@ said_accept() { mkdir -p "$T/reports/.approvals"; printf '%s\n' "$2" > "$T/repor
   run "$T/checks/accept.sh" BL-OS-02 "x"; [ "$status" -eq 4 ]; [[ "$output" == *expired* ]]
   said_accept BL-OS-01 x
   run "$T/checks/accept.sh" BL-OS-02 "x"; [ "$status" -eq 4 ]
-  [ "$(jq 'has("BL-OS-02")' "$DEVWARD_ACCEPTED")" = false ]
+  [ "$(jq 'has("BL-OS-02")' "$FORTKEEP_ACCEPTED")" = false ]
   said_accept BL-OS-02 x
   run "$T/checks/accept.sh" BL-OS-02 "x"; [ "$status" -eq 0 ]; [ ! -e "$T/reports/.approvals/BL-OS-02.accept" ]
   run "$T/checks/accept.sh" --remove BL-OS-02; [ "$status" -eq 0 ]
@@ -88,7 +88,7 @@ said_accept() { mkdir -p "$T/reports/.approvals"; printf '%s\n' "$2" > "$T/repor
 @test "an Accept answer counts only for the reason its question named: the agent can't swap in its own words" {
   said_accept BL-OS-02 "I use another firewall"
   run "$T/checks/accept.sh" BL-OS-02 "the person said it is fine"; [ "$status" -eq 4 ]; [[ "$output" == *"another reason"* ]]
-  [ "$(jq 'has("BL-OS-02")' "$DEVWARD_ACCEPTED")" = false ]
+  [ "$(jq 'has("BL-OS-02")' "$FORTKEEP_ACCEPTED")" = false ]
   [ ! -e "$T/reports/.approvals/BL-OS-02.accept" ]   # a mismatch uses the answer up
   run "$T/checks/ask.sh" BL-OS-02 accept "I use another firewall"; [ "$status" -eq 0 ]
   [[ "$(field question)" == *'"I use another firewall"'* ]]
@@ -103,7 +103,7 @@ said_accept() { mkdir -p "$T/reports/.approvals"; printf '%s\n' "$2" > "$T/repor
     run "$T/checks/accept.sh" BL-OS-02 "$r"; [ "$status" -eq 2 ]
     run "$T/checks/ask.sh" BL-OS-02 accept "$r"; [ "$status" -eq 2 ]
   done
-  [ "$(jq 'has("BL-OS-02")' "$DEVWARD_ACCEPTED")" = false ]
+  [ "$(jq 'has("BL-OS-02")' "$FORTKEEP_ACCEPTED")" = false ]
   said_accept BL-OS-02 "${long%x}"
   run "$T/checks/accept.sh" BL-OS-02 "${long%x}"; [ "$status" -eq 0 ]
 }
@@ -112,9 +112,9 @@ said_accept() { mkdir -p "$T/reports/.approvals"; printf '%s\n' "$2" > "$T/repor
   "$T/checks/run.sh"
   sleep 1
   "$T/checks/run.sh" --only BL-OS-01
-  run jq '.results | length' "$DEVWARD_REPORTS/latest/results.json"
+  run jq '.results | length' "$FORTKEEP_REPORTS/latest/results.json"
   [ "$output" -eq 6 ]
-  [ "$(jq -c .rechecked "$DEVWARD_REPORTS/latest/results.json")" = '["BL-OS-01"]' ]
+  [ "$(jq -c .rechecked "$FORTKEEP_REPORTS/latest/results.json")" = '["BL-OS-01"]' ]
 }
 
 @test "--only keeps the full results, updates the rechecked row, and diff shows it" {
@@ -123,31 +123,31 @@ said_accept() { mkdir -p "$T/reports/.approvals"; printf '%s\n' "$2" > "$T/repor
   mk bad 'echo "{\"id\":\"BL-OS-02\",\"status\":\"PASS\",\"evidence\":\"on\",\"note\":\"\"}"'
   run "$T/checks/run.sh" --only BL-OS-02
   [ "$status" -eq 0 ]
-  [ "$(jq '.results | length' "$DEVWARD_REPORTS/latest/results.json")" -eq 6 ]
+  [ "$(jq '.results | length' "$FORTKEEP_REPORTS/latest/results.json")" -eq 6 ]
   [ "$(res BL-OS-02 status)" = PASS ]
   [ "$(res BL-OS-01 status)" = PASS ]
   [ "$(res BL-OS-03 status)" = ERROR ]
   [ "$(res BL-OS-02 title)" = Two ]
-  [ "$(jq -c .rechecked "$DEVWARD_REPORTS/latest/results.json")" = '["BL-OS-02"]' ]
+  [ "$(jq -c .rechecked "$FORTKEEP_REPORTS/latest/results.json")" = '["BL-OS-02"]' ]
   run "$T/checks/diff.sh"
   [[ "$output" == *"BL-OS-02: FAIL → PASS"* ]]
 }
 
 @test "--only with an unknown control exits 2 and keeps latest" {
   "$T/checks/run.sh"
-  before="$(readlink "$DEVWARD_REPORTS/latest")"
+  before="$(readlink "$FORTKEEP_REPORTS/latest")"
   sleep 1
   run "$T/checks/run.sh" --only BL-XX-99
   [ "$status" -eq 2 ]
   [[ "$output" == *"unknown control: BL-XX-99"* ]]
-  [ "$(readlink "$DEVWARD_REPORTS/latest")" = "$before" ]
+  [ "$(readlink "$FORTKEEP_REPORTS/latest")" = "$before" ]
 }
 
 @test "--only without a previous full run exits 2" {
   run "$T/checks/run.sh" --only BL-OS-01
   [ "$status" -eq 2 ]
   [[ "$output" == *"run a full review first"* ]]
-  [ ! -e "$DEVWARD_REPORTS/latest" ]
+  [ ! -e "$FORTKEEP_REPORTS/latest" ]
 }
 
 # the hook recorded "Add private folder" to the question naming FOLDER (absolute, as checks/ask.sh prints it)
@@ -155,28 +155,28 @@ said_private() { mkdir -p "$T/reports/.approvals"; printf '%s\n' "$1" > "$T/repo
 
 @test "A15: private.sh add needs the person: without their recorded answer it refuses and adds nothing; an answer is used once" {
   run "$T/checks/private.sh" add "~/.ssh"; [ "$status" -eq 4 ]; [[ "$output" == *"no approval"* ]]
-  [ ! -e "$DEVWARD_PRIVATE_PATHS" ]
+  [ ! -e "$FORTKEEP_PRIVATE_PATHS" ]
   said_private "$HOME/.ssh"; touch -t 202001010000 "$T/reports/.approvals/private.add"
   run "$T/checks/private.sh" add "~/.ssh"; [ "$status" -eq 4 ]; [[ "$output" == *expired* ]]
   said_private "$HOME/Private"
   run "$T/checks/private.sh" add "~/Private"; [ "$status" -eq 0 ]; [ ! -e "$T/reports/.approvals/private.add" ]
   run "$T/checks/private.sh" add "~/.ssh"; [ "$status" -eq 4 ]
-  [ "$(cat "$DEVWARD_PRIVATE_PATHS")" = "$HOME/Private" ]
+  [ "$(cat "$FORTKEEP_PRIVATE_PATHS")" = "$HOME/Private" ]
 }
 
 @test "A21: an answer adds only the folder its question named, and never a path spelled with . or .." {
   said_private "$HOME/One"
   run "$T/checks/private.sh" add "~/Two"; [ "$status" -eq 4 ]; [[ "$output" == *"another folder"* ]]
   [[ "$output" != *One* ]]; [[ "$output" != *Two* ]]
-  [ ! -e "$T/reports/.approvals/private.add" ]; [ ! -e "$DEVWARD_PRIVATE_PATHS" ]   # a mismatch uses the answer up
+  [ ! -e "$T/reports/.approvals/private.add" ]; [ ! -e "$FORTKEEP_PRIVATE_PATHS" ]   # a mismatch uses the answer up
   said_private "$HOME/One"
   run "$T/checks/private.sh" add "~/One/x/.."; [ "$status" -eq 2 ]
   run "$T/checks/private.sh" add "$HOME//One"; [ "$status" -eq 2 ]
   run "$T/checks/private.sh" add "~/One/"; [ "$status" -eq 0 ]
-  [ "$(cat "$DEVWARD_PRIVATE_PATHS")" = "$HOME/One" ]
+  [ "$(cat "$FORTKEEP_PRIVATE_PATHS")" = "$HOME/One" ]
 }
 
-@test "A21: /, the home folder, a folder above it and the devward folder or one above it are only for the person to add" {
+@test "A21: /, the home folder, a folder above it and the fortkeep folder or one above it are only for the person to add" {
   account="$(/usr/bin/perl -e 'print +(getpwuid($<))[7]')"
   mkdir -p "$HOME/Projects"; ln -s "$HOME" "$HOME/Projects/home-link"
   for p in / "~/" "$HOME" "$(dirname "$HOME")" "$account" "$(dirname "$account")" "$T" "$T/" "$(dirname "$T")" \
@@ -184,7 +184,7 @@ said_private() { mkdir -p "$T/reports/.approvals"; printf '%s\n' "$1" > "$T/repo
     said_private "$p"
     run "$T/checks/private.sh" add "$p"; [ "$status" -eq 4 ]; [[ "$output" == *"Terminal app"* ]]
   done
-  [ ! -e "$DEVWARD_PRIVATE_PATHS" ]
+  [ ! -e "$FORTKEEP_PRIVATE_PATHS" ]
   run "$REPO/checks/ask.sh" private add "$HOME"; [ "$status" -eq 2 ]; [[ "$output" == *"Terminal app"* ]]
 }
 
@@ -197,7 +197,7 @@ said_private() { mkdir -p "$T/reports/.approvals"; printf '%s\n' "$1" > "$T/repo
     run "$T/checks/private.sh" add "$p"; [ "$status" -eq 4 ]; [[ "$output" == *"Terminal app"* ]]
     run "$T/checks/ask.sh" private add "$p"; [ "$status" -eq 2 ]; [[ "$output" == *"Terminal app"* ]]
   done
-  [ ! -e "$DEVWARD_PRIVATE_PATHS" ]
+  [ ! -e "$FORTKEEP_PRIVATE_PATHS" ]
   mkdir -p "$HOME/Private"
   run "$REPO/checks/ask.sh" private add "$h/Private"; [ "$status" -eq 0 ]   # a folder inside home is still asked about
 }
@@ -215,7 +215,7 @@ said_private() { mkdir -p "$T/reports/.approvals"; printf '%s\n' "$1" > "$T/repo
   run "$T/checks/private.sh" add "~/Hidden Folder/"
   [ "$status" -eq 0 ]
   [[ "$output" != *Hidden* ]]
-  [ "$(cat "$DEVWARD_PRIVATE_PATHS")" = "$HOME/Hidden Folder" ]
+  [ "$(cat "$FORTKEEP_PRIVATE_PATHS")" = "$HOME/Hidden Folder" ]
   run "$T/checks/private.sh" count
   [ "$output" = "1 private path(s) configured" ]
 }
@@ -227,7 +227,7 @@ said_private() { mkdir -p "$T/reports/.approvals"; printf '%s\n' "$1" > "$T/repo
   [ "$status" -eq 0 ]; [[ "$output" == *"removed 1 private path(s) (1 total)"* ]]; [[ "$output" != *One* ]]
   run "$T/checks/private.sh" remove "$HOME/Two"; [ "$status" -eq 0 ]
   run "$T/checks/private.sh" remove "$HOME/Three"; [ "$status" -eq 1 ]; [[ "$output" != *Three* ]]
-  [ "$(stat -f %Lp "$DEVWARD_PRIVATE_PATHS")" = 600 ]
+  [ "$(stat -f %Lp "$FORTKEEP_PRIVATE_PATHS")" = 600 ]
 }
 
 @test "diff shows status changes between runs" {
@@ -252,48 +252,48 @@ said_private() { mkdir -p "$T/reports/.approvals"; printf '%s\n' "$1" > "$T/repo
 }
 
 @test "missing controls file exits 2 and writes no latest" {
-  DEVWARD_CONTROLS=/nonexistent run "$T/checks/run.sh"
+  FORTKEEP_CONTROLS=/nonexistent run "$T/checks/run.sh"
   [ "$status" -eq 2 ]
-  [ ! -e "$DEVWARD_REPORTS/latest" ]
+  [ ! -e "$FORTKEEP_REPORTS/latest" ]
 }
 
 @test "invalid config.json exits 2" {
-  echo '{bad' > "$DEVWARD_CONFIG"
+  echo '{bad' > "$FORTKEEP_CONFIG"
   run "$T/checks/run.sh"
   [ "$status" -eq 2 ]
-  [ ! -e "$DEVWARD_REPORTS/latest" ]
+  [ ! -e "$FORTKEEP_REPORTS/latest" ]
 }
 
 @test "accepted.json that is not an object of objects exits 2 and writes no latest" {
   for bad in '[]' '"x"' '{"BL-OS-02":"str"}'; do
-    printf '%s\n' "$bad" > "$DEVWARD_ACCEPTED"
+    printf '%s\n' "$bad" > "$FORTKEEP_ACCEPTED"
     run "$T/checks/run.sh"
     [ "$status" -eq 2 ]
-    [ ! -e "$DEVWARD_REPORTS/latest" ]
+    [ ! -e "$FORTKEEP_REPORTS/latest" ]
   done
 }
 
 @test "config overlays that are not a list of names exit 2" {
   for bad in '{"overlays":"tls-proxy"}' '{"overlays":[1]}'; do
-    printf '%s\n' "$bad" > "$DEVWARD_CONFIG"
+    printf '%s\n' "$bad" > "$FORTKEEP_CONFIG"
     run "$T/checks/run.sh"
     [ "$status" -eq 2 ]
-    [ ! -e "$DEVWARD_REPORTS/latest" ]
+    [ ! -e "$FORTKEEP_REPORTS/latest" ]
   done
 }
 
 @test "a row that fails to merge makes the run incomplete: exit 1, no run folder, latest kept" {
   "$T/checks/run.sh"
-  before="$(readlink "$DEVWARD_REPORTS/latest")"
+  before="$(readlink "$FORTKEEP_REPORTS/latest")"
   sleep 1
   mk n7 'echo "{\"id\":\"7\",\"status\":\"FAIL\",\"evidence\":\"\",\"note\":\"\"}"'
-  jq '. + [{"id":7,"title":"Num","layer":"baseline","level":"NICE","check":"checks/fake/n7.sh"}]' "$DEVWARD_CONTROLS" > "$T/c.json"
-  echo '{}' > "$DEVWARD_ACCEPTED"
-  DEVWARD_CONTROLS="$T/c.json" run "$T/checks/run.sh"
+  jq '. + [{"id":7,"title":"Num","layer":"baseline","level":"NICE","check":"checks/fake/n7.sh"}]' "$FORTKEEP_CONTROLS" > "$T/c.json"
+  echo '{}' > "$FORTKEEP_ACCEPTED"
+  FORTKEEP_CONTROLS="$T/c.json" run "$T/checks/run.sh"
   [ "$status" -eq 1 ]
   [[ "$output" == *"run incomplete"* ]]
-  [ "$(readlink "$DEVWARD_REPORTS/latest")" = "$before" ]
-  [ "$(ls -d "$DEVWARD_REPORTS"/2*/ | wc -l)" -eq 1 ]
+  [ "$(readlink "$FORTKEEP_REPORTS/latest")" = "$before" ]
+  [ "$(ls -d "$FORTKEEP_REPORTS"/2*/ | wc -l)" -eq 1 ]
 }
 
 @test "a check cannot override the control's id, title, layer or level" {
@@ -316,36 +316,36 @@ said_private() { mkdir -p "$T/reports/.approvals"; printf '%s\n' "$1" > "$T/repo
 }
 @test "a weekly run triples each time limit and gives shell probes 30 s, unless the caller set them" {
   mk slow2 'sleep 3; echo "{\"id\":\"BL-OS-07\",\"status\":\"PASS\",\"evidence\":\"x\",\"note\":\"\"}"'
-  mk st '. "$DEVWARD_REPO/checks/lib/shells.sh"; echo "{\"id\":\"BL-OS-08\",\"status\":\"PASS\",\"evidence\":\"$DEVWARD_SHELL_TIMEOUT\",\"note\":\"\"}"'
+  mk st '. "$FORTKEEP_REPO/checks/lib/shells.sh"; echo "{\"id\":\"BL-OS-08\",\"status\":\"PASS\",\"evidence\":\"$FORTKEEP_SHELL_TIMEOUT\",\"note\":\"\"}"'
   echo '[{"id":"BL-OS-07","title":"S","layer":"baseline","level":"NICE","source":"§1","check":"checks/fake/slow2.sh","timeout":2},
-         {"id":"BL-OS-08","title":"T","layer":"baseline","level":"NICE","source":"§1","check":"checks/fake/st.sh"}]' > "$DEVWARD_CONTROLS"
+         {"id":"BL-OS-08","title":"T","layer":"baseline","level":"NICE","source":"§1","check":"checks/fake/st.sh"}]' > "$FORTKEEP_CONTROLS"
   run "$T/checks/run.sh"; [ "$status" -eq 0 ]
   [ "$(res BL-OS-07 status)" = ERROR ]; [ "$(res BL-OS-08 evidence)" = 10 ]
   sleep 1; run "$T/checks/run.sh" --weekly; [ "$status" -eq 0 ]
   [ "$(res BL-OS-07 status)" = PASS ]; [ "$(res BL-OS-08 evidence)" = 30 ]
-  sleep 1; DEVWARD_SHELL_TIMEOUT=7 run "$T/checks/run.sh" --weekly; [ "$status" -eq 0 ]
+  sleep 1; FORTKEEP_SHELL_TIMEOUT=7 run "$T/checks/run.sh" --weekly; [ "$status" -eq 0 ]
   [ "$(res BL-OS-08 evidence)" = 7 ]
 }
 
 @test "progress goes to stderr, one line per check; stdout keeps only the summary and the report path" {
   "$T/checks/run.sh" > "$BATS_TEST_TMPDIR/out" 2> "$BATS_TEST_TMPDIR/err"
-  [ "$(grep -c '^devward: [0-9]*/6 BL-OS-0[1-6] ([0-9]*s so far)$' "$BATS_TEST_TMPDIR/err")" -eq 6 ]
-  grep -q '^devward: 1/6 BL-OS-01 (' "$BATS_TEST_TMPDIR/err"
+  [ "$(grep -c '^fortkeep: [0-9]*/6 BL-OS-0[1-6] ([0-9]*s so far)$' "$BATS_TEST_TMPDIR/err")" -eq 6 ]
+  grep -q '^fortkeep: 1/6 BL-OS-01 (' "$BATS_TEST_TMPDIR/err"
   [ "$(wc -l < "$BATS_TEST_TMPDIR/out" | tr -d ' ')" -eq 2 ]; grep -q '^report: reports/' "$BATS_TEST_TMPDIR/out"
   sleep 1; "$T/checks/run.sh" --only BL-OS-02 2> "$BATS_TEST_TMPDIR/err" >/dev/null
-  [[ "$(cat "$BATS_TEST_TMPDIR/err")" =~ ^devward:\ 1/1\ BL-OS-02\ \([0-9]+s\ so\ far\)$ ]]
+  [[ "$(cat "$BATS_TEST_TMPDIR/err")" =~ ^fortkeep:\ 1/1\ BL-OS-02\ \([0-9]+s\ so\ far\)$ ]]
 }
-@test "a check that a signal stops is an ERROR saying something outside devward stopped it" {
+@test "a check that a signal stops is an ERROR saying something outside fortkeep stopped it" {
   mk ok 'kill -KILL $$'
   run "$T/checks/run.sh"; [ "$status" -eq 0 ]
   [ "$(res BL-OS-01 status)" = ERROR ]
-  [[ "$(res BL-OS-01 evidence)" == "Something outside devward stopped this check (signal KILL)."*"never turn it off."* ]]
+  [[ "$(res BL-OS-01 evidence)" == "Something outside fortkeep stopped this check (signal KILL)."*"never turn it off."* ]]
   [[ "$(res BL-OS-03 evidence)" == *"timed out"* ]]
 }
 
 @test "a fake command earlier on the caller's PATH, an exported function or BASH_ENV can't answer for a system tool" {
   mkdir -p "$T/checks/macos" "$BATS_TEST_TMPDIR/evil"; cp "$REPO/checks/macos/BL-OS-01.sh" "$T/checks/macos/"
-  echo '[{"id":"BL-OS-01","title":"FV","layer":"baseline","level":"MUST","source":"§1","check":"checks/macos/BL-OS-01.sh"}]' > "$DEVWARD_CONTROLS"
+  echo '[{"id":"BL-OS-01","title":"FV","layer":"baseline","level":"MUST","source":"§1","check":"checks/macos/BL-OS-01.sh"}]' > "$FORTKEEP_CONTROLS"
   stub fdesetup 'echo false'   # the system's answer
   printf '#!/bin/sh\necho true\n' > "$BATS_TEST_TMPDIR/evil/fdesetup"; chmod +x "$BATS_TEST_TMPDIR/evil/fdesetup"
   PATH="$BATS_TEST_TMPDIR/evil:$PATH" run "$T/checks/run.sh"; [ "$status" -eq 0 ]; [ "$(res BL-OS-01 status)" = FAIL ]
@@ -358,20 +358,20 @@ said_private() { mkdir -p "$T/reports/.approvals"; printf '%s\n' "$1" > "$T/repo
   [ "$(res BL-OS-01 status)" = FAIL ]
 }
 
-@test "outside the test suite no DEVWARD_* setting or other HOME reaches a check, and one variable can't fake the suite" {
-  mk ok 'echo "{\"id\":\"BL-OS-01\",\"status\":\"PASS\",\"evidence\":\"${DEVWARD_SYSROOT-unset} ${DEVWARD_WEEKLY_RUN-unset} $HOME\",\"note\":\"\"}"'
-  echo '[{"id":"BL-OS-01","title":"One","layer":"baseline","level":"MUST","source":"§1","check":"checks/fake/ok.sh"}]' > "$DEVWARD_CONTROLS"
-  mkdir -p "$T/controls"; cp "$DEVWARD_CONTROLS" "$T/controls/controls.json"   # where a real run reads them
+@test "outside the test suite no FORTKEEP_* setting or other HOME reaches a check, and one variable can't fake the suite" {
+  mk ok 'echo "{\"id\":\"BL-OS-01\",\"status\":\"PASS\",\"evidence\":\"${FORTKEEP_SYSROOT-unset} ${FORTKEEP_WEEKLY_RUN-unset} $HOME\",\"note\":\"\"}"'
+  echo '[{"id":"BL-OS-01","title":"One","layer":"baseline","level":"MUST","source":"§1","check":"checks/fake/ok.sh"}]' > "$FORTKEEP_CONTROLS"
+  mkdir -p "$T/controls"; cp "$FORTKEEP_CONTROLS" "$T/controls/controls.json"   # where a real run reads them
   out() { jq -r '.results[0].evidence' "$1/latest/results.json"; }
-  DEVWARD_WEEKLY_RUN=1 run "$T/checks/run.sh"; [ "$status" -eq 0 ]
-  [ "$(out "$DEVWARD_REPORTS")" = "$DEVWARD_SYSROOT 1 $HOME" ]                # the suite: honoured
-  rm "$BATS_TEST_TMPDIR/.devward-test"                                         # a person's Mac
-  DEVWARD_WEEKLY_RUN=1 run "$T/checks/run.sh"; [ "$status" -eq 0 ]
+  FORTKEEP_WEEKLY_RUN=1 run "$T/checks/run.sh"; [ "$status" -eq 0 ]
+  [ "$(out "$FORTKEEP_REPORTS")" = "$FORTKEEP_SYSROOT 1 $HOME" ]                # the suite: honoured
+  rm "$BATS_TEST_TMPDIR/.fortkeep-test"                                         # a person's Mac
+  FORTKEEP_WEEKLY_RUN=1 run "$T/checks/run.sh"; [ "$status" -eq 0 ]
   read -r s w h <<<"$(out "$T/reports")"
   [ "$s" = unset ]; [ "$w" = unset ]; [ -n "$h" ]; [ "$h" != "$HOME" ]
   sleep 1; run "$T/checks/run.sh" --weekly; [ "$status" -eq 0 ]
   read -r s w h <<<"$(out "$T/reports")"; [ "$w" = 1 ]
-  : > "$BATS_TEST_TMPDIR/.devward-test"; mkdir -p "$BATS_TEST_TMPDIR-elsewhere"  # the marker, but HOME outside it
+  : > "$BATS_TEST_TMPDIR/.fortkeep-test"; mkdir -p "$BATS_TEST_TMPDIR-elsewhere"  # the marker, but HOME outside it
   sleep 1; HOME="$BATS_TEST_TMPDIR-elsewhere" run "$T/checks/run.sh"; [ "$status" -eq 0 ]
   read -r s w h <<<"$(out "$T/reports")"
   [ "$s" = unset ]; [ "$h" != "$BATS_TEST_TMPDIR-elsewhere" ]
@@ -384,6 +384,6 @@ said_private() { mkdir -p "$T/reports/.approvals"; printf '%s\n' "$1" > "$T/repo
 }
 
 @test "a value that looks like an exported function's name doesn't make run.sh start again for ever" {
-  X=$'x\nBASH_FUNC_z%%=() { :; }' run /bin/bash -c '. "$1/checks/lib/common.sh"; devward_timeout 30 "$2"' _ "$REPO" "$T/checks/run.sh"
+  X=$'x\nBASH_FUNC_z%%=() { :; }' run /bin/bash -c '. "$1/checks/lib/common.sh"; fortkeep_timeout 30 "$2"' _ "$REPO" "$T/checks/run.sh"
   [ "$status" -eq 0 ]; [ "$(res BL-OS-01 status)" = PASS ]
 }

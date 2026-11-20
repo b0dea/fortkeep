@@ -315,7 +315,7 @@ protection is usually provided by your employer.
 
 ## Credits
 
-devward's malware indicators (the repo scanner, `fixes/files/git-scan-new-files`, and the live-malware check,
+fortkeep's malware indicators (the repo scanner, `fixes/files/git-scan-new-files`, and the live-malware check,
 `checks/macos/GD-RT-03.sh`) are built from public research. Each file's header maps every indicator family to its
 source; each lesson's "Real attack" line links its own. The main sources:
 
@@ -340,6 +340,6 @@ source; each lesson's "Real attack" line links its own. The main sources:
   [heisdeku/clean-injected-loader](https://github.com/heisdeku/clean-injected-loader), used as pointers to their
   own sources.
 
-Only facts are taken from these: indicator values, names and behaviour, written in devward's own words and code.
+Only facts are taken from these: indicator values, names and behaviour, written in fortkeep's own words and code.
 Nothing is copied from GPL-licensed tools, from CIS Benchmark text, or from repositories without a licence
 (the OpenSourceMalware repository has none): no code, rule files or prose.

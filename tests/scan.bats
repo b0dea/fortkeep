@@ -40,10 +40,10 @@ loader() {  # DIR — a postinstall script that pipes a download into a shell
 }
 @test "a private folder is never scanned or named, by either spelling, as the folder or inside it" {
   repo "$HOME/dev/secret"; loader "$HOME/dev/secret"
-  echo "$HOME/dev/secret" > "$DEVWARD_PRIVATE_PATHS"
+  echo "$HOME/dev/secret" > "$FORTKEEP_PRIVATE_PATHS"
   run "$S" "$HOME/dev/secret"
   [ "$status" -eq 4 ]; [ "$output" = "Verdict: not scanned. A private folder was excluded." ]
-  ln -s "$HOME/dev/secret" "$HOME/link"; echo "$HOME/link" > "$DEVWARD_PRIVATE_PATHS"
+  ln -s "$HOME/dev/secret" "$HOME/link"; echo "$HOME/link" > "$FORTKEEP_PRIVATE_PATHS"
   run "$S" "$HOME/dev/secret"
   [ "$status" -eq 4 ]; [ "$output" = "Verdict: not scanned. A private folder was excluded." ]
   repo "$HOME/dev/app"
@@ -73,7 +73,7 @@ loader() {  # DIR — a postinstall script that pipes a download into a shell
   run "$S" "$HOME/dev/plain"
   [ "$status" -eq 4 ]; [[ "$output" == *"No git repo in that folder"* ]]
   repo "$HOME/dev/app"
-  DEVWARD_SWEEP_TIMEOUT=1 run "$S" "$HOME/dev/app"
+  FORTKEEP_SWEEP_TIMEOUT=1 run "$S" "$HOME/dev/app"
   [ "$status" -eq 4 ]; [[ "${lines[${#lines[@]}-1]}" == "Verdict: incomplete. Scanned 0 of 1 repo(s)"* ]]
 }
 @test "without Apple's Command Line Tools it says so, and exits 4" {
@@ -102,25 +102,25 @@ loader() {  # DIR — a postinstall script that pipes a download into a shell
   printf '{"tasks":[{"runOptions":{"runOn":"folderOpen"},"command":"echo hi"}]}' > "$HOME/dev/app/.vscode/tasks.json"
   g="$(command -v git)"
   stub git "case \" \$* \" in *' log '*) sleep 30 ;; esac; exec '$g' \"\$@\""  # the history read hangs
-  DEVWARD_SWEEP_TIMEOUT=8 run "$S" "$HOME/dev/app"
+  FORTKEEP_SWEEP_TIMEOUT=8 run "$S" "$HOME/dev/app"
   [ "$status" -eq 1 ]; [[ "$output" == *"HIGH  ~/dev/app  package.json  lifecycle script postinstall"* ]]
   [[ "$output" == *"WARN  ~/dev/app  .vscode/tasks.json  "* ]]  # git waits no longer than the time left: the scanner ends the repo itself
   [[ "${lines[${#lines[@]}-1]}" == "Verdict: HIGH."* ]]
   stub git "case \" \$* \" in *' log '*) kill -STOP \$PPID; sleep 30 ;; esac; exec '$g' \"\$@\""  # the scanner itself hangs
-  DEVWARD_SWEEP_TIMEOUT=6 run "$S" "$HOME/dev/app"
+  FORTKEEP_SWEEP_TIMEOUT=6 run "$S" "$HOME/dev/app"
   [ "$status" -eq 1 ]; [[ "$output" == *"HIGH  ~/dev/app  package.json  lifecycle script postinstall"* ]]
   [[ "${lines[${#lines[@]}-1]}" == "Verdict: HIGH."*"The time ran out"* ]]
 }
 @test "a private folder is never scanned or named in another letter case, as the folder, above it or inside a repo" {
   repo "$HOME/work/secret"; loader "$HOME/work/secret"; repo "$HOME/work/app"
-  echo "$HOME/work/secret" > "$DEVWARD_PRIVATE_PATHS"
+  echo "$HOME/work/secret" > "$FORTKEEP_PRIVATE_PATHS"
   run "$S" "$HOME/Work/Secret"
   [ "$status" -eq 4 ]; [ "$output" = "Verdict: not scanned. A private folder was excluded." ]
   run "$S" "$HOME/WORK"
   [ "$status" -eq 0 ]; [[ "$output" != *[Ss]ecret* ]]
   [ "${lines[${#lines[@]}-1]}" = "Verdict: clean. 1 repo(s) scanned, nothing flagged. A private folder was excluded." ]
   repo "$HOME/dev/app"; mkdir -p "$HOME/dev/app/clients/c1"; loader "$HOME/dev/app/clients/c1"
-  echo "$HOME/dev/app/Clients" > "$DEVWARD_PRIVATE_PATHS"
+  echo "$HOME/dev/app/Clients" > "$FORTKEEP_PRIVATE_PATHS"
   run "$S" "$HOME/dev/app"
   [ "$status" -eq 0 ]; [[ "$output" != *lients* ]]
   [ "${lines[${#lines[@]}-1]}" = "Verdict: clean. 1 repo(s) scanned, nothing flagged. A private folder was excluded." ]

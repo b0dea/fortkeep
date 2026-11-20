@@ -1,7 +1,7 @@
-# If devward finds signs of malware
+# If fortkeep finds signs of malware
 
 Read this whole page first. Step 1 takes your Mac off the internet, and after that your coding agent can't help.
-It is written for anyone, and works without devward or an agent. Stay calm: going step by step matters more than
+It is written for anyone, and works without fortkeep or an agent. Stay calm: going step by step matters more than
 going fast.
 
 ## 1. Take the Mac off the network
@@ -45,12 +45,12 @@ you. Keep the suspicious file or project: don't delete it, don't open it.
 
 - The bad package to its registry's security team (npm or PyPI), and the repo or package to
   [OpenSourceMalware](https://opensourcemalware.com), so others are warned.
-- A flaw in devward itself (a check that missed something, or a false alarm you can reproduce): see
+- A flaw in fortkeep itself (a check that missed something, or a false alarm you can reproduce): see
   [SECURITY.md](../SECURITY.md).
 
 ## Was it a false alarm?
 
 One warning has an everyday cause: "agent control files changed since your baseline" also appears when you, or an
 app update, changed one of those files (such as `~/.zshrc`). If you recognise every change it lists, it is not an
-emergency: open the Terminal app, go to the devward folder and type `checks/baseline.sh accept`. If you don't
+emergency: open the Terminal app, go to the fortkeep folder and type `checks/baseline.sh accept`. If you don't
 recognise a change, treat it as real and start at step 1.

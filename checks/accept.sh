@@ -7,8 +7,8 @@
 . "$(dirname "$0")/lib/agent.sh"
 . "$(dirname "$0")/lib/approval.sh"
 APPROVALS="$(cd "$(dirname "$0")/.." && pwd -P)/reports/.approvals"  # from this file's place, never the environment
-CONTROLS="${DEVWARD_CONTROLS:-$DEVWARD_REPO/controls/controls.json}"
-ACCEPTED="${DEVWARD_ACCEPTED:-$DEVWARD_REPO/accepted.json}"
+CONTROLS="${FORTKEEP_CONTROLS:-$FORTKEEP_REPO/controls/controls.json}"
+ACCEPTED="${FORTKEEP_ACCEPTED:-$FORTKEEP_REPO/accepted.json}"
 usage() { echo "usage: $0 ID \"reason\" | --remove ID" >&2; exit 2; }
 known() { jq -e --arg id "$1" 'any(.[]; .id == $id)' "$CONTROLS" >/dev/null; }
 [ -f "$ACCEPTED" ] || echo '{}' > "$ACCEPTED"
@@ -21,10 +21,10 @@ case "${1:-}" in
   ''|-*) usage ;;
   *)
     [ -n "${2:-}" ] || usage
-    devward_accept_reason "$2" || { echo "give the reason as one line of at most 300 characters, without backslashes" >&2; exit 2; }
+    fortkeep_accept_reason "$2" || { echo "give the reason as one line of at most 300 characters, without backslashes" >&2; exit 2; }
     known "$1" || { echo "unknown control: $1" >&2; exit 2; }
     # /bin/ps is fixed here on purpose: no environment variable may switch the person check off.
-    devward_is_person /bin/ps || devward_take_approval "$APPROVALS" "$1" accept "$2" || exit 4
+    fortkeep_is_person /bin/ps || fortkeep_take_approval "$APPROVALS" "$1" accept "$2" || exit 4
     jq --arg id "$1" --arg r "$2" --arg d "$(date -u +%F)" '.[$id] = {reason: $r, date: $d}' "$ACCEPTED" > "$tmp" && mv "$tmp" "$ACCEPTED"
     echo "accepted $1" ;;
 esac

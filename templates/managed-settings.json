@@ -48,7 +48,7 @@
       "Edit(~/.kube/config)",
       "Edit(~/.docker/config.json)",
       "Edit(~/Library/LaunchAgents/**)",
-      "Edit(~/.config/devward/**)"
+      "Edit(~/.config/fortkeep/**)"
     ]
   },
   "hooks": {

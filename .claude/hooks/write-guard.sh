@@ -28,14 +28,14 @@ fi
 cwd="$(printf '%s' "$input" | jq -r '.cwd // empty')" || block "guard could not read the request"
 repo="$(real "$REPO")" || block "guard could not find this repo"
 # The repo's own guards, checks and fixes run later without a prompt, so they change only in a development session:
-# a maintainer starts the agent with DEVWARD_DEV=1 and the marker ~/.config/devward/dev (devward_dev_session).
-dev=""; devward_dev_session && dev=1
+# a maintainer starts the agent with FORTKEEP_DEV=1 and the marker ~/.config/fortkeep/dev (fortkeep_dev_session).
+dev=""; fortkeep_dev_session && dev=1
 if [ -n "$dev" ]; then allowed="$repo/"$'\n'"$(agent_dirs dev)"; else allowed="$(agent_dirs write)"; fi
 while IFS= read -r one; do
   [ -n "$dev" ] || ascii "$one" || block "non-ASCII characters are refused in a person's session"
   t="$(real "$one")" || block "guard could not read the request"
   if ! under "$t" "$allowed"; then
-    case "$t/" in "$repo/"*) block "a person's agent writes nothing in this repo: settings go through checks/configure.sh and results come only from checks/run.sh (a maintainer starts the agent with DEVWARD_DEV=1, after creating the file ~/.config/devward/dev, to change the repo)" ;; esac
+    case "$t/" in "$repo/"*) block "a person's agent writes nothing in this repo: settings go through checks/configure.sh and results come only from checks/run.sh (a maintainer starts the agent with FORTKEEP_DEV=1, after creating the file ~/.config/fortkeep/dev, to change the repo)" ;; esac
     block "edits outside this repo go through fix scripts after the person's answer"
   fi
   # Claude Code also denies these in .claude/settings.json; Codex and OpenCode rely on this check alone.

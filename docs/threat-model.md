@@ -1,6 +1,6 @@
 # Threat model
 
-devward guards one thing: a coding agent, in a session a person started to check their Mac, doing something the
+fortkeep guards one thing: a coding agent, in a session a person started to check their Mac, doing something the
 person didn't approve. It stops agent mistakes, and prompt injection that asks the agent for a guarded action: text in
 a repo, a web page or scan output telling it to run, read or change something.
 
@@ -8,19 +8,19 @@ It does not stop:
 
 - a malicious or modified agent program. The guards are hooks the agent program runs; a program that skips them
   skips them.
-- anything already running as the person's macOS user. That can change any file the user can, devward's included:
+- anything already running as the person's macOS user. That can change any file the user can, fortkeep's included:
   its guards, approvals, results and the start-up files its fixes edit.
 
-devward is not an antivirus and not a sandbox. Its checks report how the Mac is set up; they don't block anything.
+fortkeep is not an antivirus and not a sandbox. Its checks report how the Mac is set up; they don't block anything.
 
 ## A person's session
 
 A person's session is any session that isn't a [development session](#development-sessions). In it the agent is a
-guide: it runs devward's own scripts and reads devward's own files, and needs almost nothing else. So what it may do is
+guide: it runs fortkeep's own scripts and reads fortkeep's own files, and needs almost nothing else. So what it may do is
 a short allow-list (`.claude/hooks/allow-list`), not a list of bad commands.
 
-**Shell.** A command must be exactly one of devward's entry points, run from the repo folder, spelled as the skills
-write them, with arguments devward validates:
+**Shell.** A command must be exactly one of fortkeep's entry points, run from the repo folder, spelled as the skills
+write them, with arguments fortkeep validates:
 
 - the check runner and its helpers in `checks/`: `run.sh`, `diff.sh`, `configure.sh`, `detect.sh`, `overlays.sh`,
   and `show.sh`, which prints a file under the read rules below (Codex has no read tool);
@@ -36,15 +36,15 @@ write them, with arguments devward validates:
 Everything else is refused: any other program, pipes, redirections, variables, command substitutions, globs, several
 commands on one line, and characters beyond ASCII (except letters inside quotes in a name or a reason).
 
-**Read tools** work only inside the devward folder and the agent's own folders for this project (its scratch folder
+**Read tools** work only inside the fortkeep folder and the agent's own folders for this project (its scratch folder
 and Claude Code's project folder, with memory and saved tool output). They never read `private-paths`,
 `reports/.approvals` or `.git`, and a search may not start at a folder that holds them. Private folders are outside
-the devward folder, so read tools can't reach them at all: there is no name comparison left to fool. The Artifact tool
+the fortkeep folder, so read tools can't reach them at all: there is no name comparison left to fool. The Artifact tool
 may publish only files the read tools may read.
 
 **Write tools** work only in this project's scratch folder and the plan folder. The plan folder holds every
 project's plans, so it can't be read. Memory is never written: what lands there becomes standing instructions for
-every later session. Nothing in the devward folder is written either: `checks/configure.sh` saves the person's
+every later session. Nothing in the fortkeep folder is written either: `checks/configure.sh` saves the person's
 settings and `checks/run.sh` writes results.
 
 **Any other tool** is refused, in all three agents, except the ones that touch no file and run no command: the
@@ -59,8 +59,8 @@ approval; writing results by hand; and planting instructions in the agent's memo
 
 ## Development sessions
 
-Development sessions are for people changing devward. One needs both `DEVWARD_DEV=1` in the agent's environment and
-the file `~/.config/devward/dev`, which the person creates once in the Terminal app. The variable alone isn't enough:
+Development sessions are for people changing fortkeep. One needs both `FORTKEEP_DEV=1` in the agent's environment and
+the file `~/.config/fortkeep/dev`, which the person creates once in the Terminal app. The variable alone isn't enough:
 a planted agent config or launcher can set it for commands no guard sees. The marker is read from the account's own
 home folder, not `$HOME`, and no tool or script in a person's session writes there.
 
@@ -88,7 +88,7 @@ A fix runs only after the person answers `Apply <ID>` or `Undo <ID>`. Accepting 
 - **A private folder.** The question names the folder, in the one spelling `checks/private.sh` stores (absolute, no
   `.` or `..`), and the token holds that folder: `checks/private.sh add` takes only it. In Codex the typed answer
   names it (`Add private folder <path>`). `/`, the home folder (from `HOME` and from the account), a folder above
-  it, and the devward folder or a folder above it are never asked about or added from an agent's session, as spelled,
+  it, and the fortkeep folder or a folder above it are never asked about or added from an agent's session, as spelled,
   with symlinks resolved or by physical path (`/System/Volumes/Data/Users/…` included), in any letter case. Hiding one would blind every check; the person can still add it in
   a terminal app.
 
@@ -117,16 +117,16 @@ People's Macs run signed releases: version tags signed by a maintainer whose SSH
   `opencode.json`, `.mcp.json` and local instruction files), git hooks, `info/attributes`, and local git settings
   that run a command or change what git reads. A failed check warns at session start and refuses everywhere else.
 - **Who may sign.** A release counts only when a key this Mac trusts signed it: the signers of the first release it
-  ran, then those each newer release names (`~/.config/devward/release-signers`). A commit can't add its own signer.
-- **Downgrades.** The highest release this Mac ran is recorded in `~/.config/devward/highest-release`, so moving to an
+  ran, then those each newer release names (`~/.config/fortkeep/release-signers`). A commit can't add its own signer.
+- **Downgrades.** The highest release this Mac ran is recorded in `~/.config/fortkeep/highest-release`, so moving to an
   older one warns.
 - **Updates.** `checks/update.sh` fetches only over https or ssh, and only from the place recorded at the first
-  verified install (`~/.config/devward/origin`); it refuses a copy that names another place, or several, and a
+  verified install (`~/.config/fortkeep/origin`); it refuses a copy that names another place, or several, and a
   `url.<base>.insteadOf` or `pushInsteadOf` setting, in the copy's git config or the person's own, that rewrites
   that place. Its messages never print an address, which can carry a token. It moves only to a release a trusted key
   signed, and once on a release only forward.
 - **Where the record lives.** The origin, the trusted signers and the highest release are kept in the account's own
-  home folder, read from the directory service, so a changed `HOME` can't point devward at another record.
+  home folder, read from the directory service, so a changed `HOME` can't point fortkeep at another record.
 - **First install.** `install.sh` and the Homebrew formula pin one release by tag and commit. They refuse a clone whose
   tag isn't exactly that commit, check that before running anything from it, and refuse a tag that release's own
   signers didn't sign. That signature check adds little on its own: the pins are the trust root. They live on `main`
@@ -138,12 +138,12 @@ People's Macs run signed releases: version tags signed by a maintainer whose SSH
   hooks are allowed to be there, since `make install` puts lefthook's in place, but the tag is made and removed with
   no hook folder (`core.hooksPath=/dev/null`), so none runs, `reference-transaction` included. It keeps the tag only if copies on the last release and fresh clones
   would both accept it. It checks this directly, because a maintainer runs it in development mode.
-- **Not covered.** Files devward installs outside its folder, such as the git scan hook and the weekly job's
+- **Not covered.** Files fortkeep installs outside its folder, such as the git scan hook and the weekly job's
   launcher, are not part of the signature check.
 
 ## Admin steps
 
-- devward never runs `sudo`. It gives the person the exact command to type in the Terminal app.
+- fortkeep never runs `sudo`. It gives the person the exact command to type in the Terminal app.
 - Scripts the person runs around admin steps (`checks/baseline.sh accept`, `checks/managed-settings.sh`) verify the
   copy's integrity before they load anything else.
 - `checks/managed-settings.sh` prints the files BL-AI-04 installs as root from the verified release, not from the
@@ -154,7 +154,7 @@ People's Macs run signed releases: version tags signed by a maintainer whose SSH
 - The guards are hooks, not a sandbox. They hold only while the agent program runs them.
 - Codex runs them only after the person trusts the folder's hooks; OpenCode skips its plugin when started with
   `--pure`; other agents have none. Without them nothing is guarded, and no fix should run.
-- Anything running as the person's user can change devward's files, approvals and results.
+- Anything running as the person's user can change fortkeep's files, approvals and results.
 - A first install trusts the pins on `main` or in the tap repo; a plain clone trusts `main` as it is that day, until
   its first `checks/update.sh`.
 - A check reports only what it can read. A folder hidden by macOS privacy settings gives ERROR, not PASS.
@@ -179,13 +179,13 @@ People's Macs run signed releases: version tags signed by a maintainer whose SSH
   session refuses starting another agent.
 - **The test-suite switch** needs the environment the test helpers set, their marker file in the test's folder, and
   bats's test runner as an ancestor process. An agent config can set the variables and the agent's write tools can
-  make the marker, but neither can make a process tree: a person's agent runs only devward's scripts, which descend
+  make the marker, but neither can make a process tree: a person's agent runs only fortkeep's scripts, which descend
   from the agent. It is also refused in the folders that agent may write (`/private/tmp/claude-*`, any `plans`
   folder). The runner is recognised by its script's path, so a launcher that starts the agent under a program at
   that path gets past it; such a launcher is a local change that session start reports.
 - **Linked git hooks.** A file in a scanned repo's `.git/hooks` that links outside the repo is still read, to see
   whether it fetches or runs code. Only the rule it matched is printed, never its content.
-- **Private folders by spelling.** Some older callers of `devward_is_private`, `devward_walk` among them, compare
+- **Private folders by spelling.** Some older callers of `fortkeep_is_private`, `fortkeep_walk` among them, compare
   paths by spelling only, so a private folder reached through another spelling of its path may be read.
 - **The weekly run** happens while the Mac is busy: OV-TP-02 can time out there, and BL-RC-03 can't read zsh aliases
   there.

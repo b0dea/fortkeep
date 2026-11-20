@@ -10,6 +10,6 @@
 1. Shut down. On Apple silicon, press and hold the power button until "Loading startup options" appears, then choose Options. On Intel, restart holding ⌘R.
 2. Utilities → Terminal, type `csrutil enable`, press Return.
 3. Restart.
-4. To come back afterwards: open the Terminal app, type `cd` and a space followed by the devward folder, press Return, start your coding agent as before and type `/fix` (in Codex, `$fix`). It checks the Mac again first.
+4. To come back afterwards: open the Terminal app, type `cd` and a space followed by the fortkeep folder, press Return, start your coding agent as before and type `/fix` (in Codex, `$fix`). It checks the Mac again first.
 
 **What the agent is doing:** reading SIP's status. The agent can't reach Recovery; you do these steps yourself and tell the agent when you're back.

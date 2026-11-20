@@ -2,8 +2,8 @@
 # Saves run settings. Full setup: checks/configure.sh --overlays "a,b" --teach yes|no (every overlay counts as
 # offered). Later: checks/configure.sh --offered "a,b" --add-overlays "x" records overlays offered since then.
 . "$(dirname "$0")/lib/common.sh"
-CONTROLS="${DEVWARD_CONTROLS:-$DEVWARD_REPO/controls/controls.json}"
-CONFIG="${DEVWARD_CONFIG:-$DEVWARD_REPORTS/config.json}"
+CONTROLS="${FORTKEEP_CONTROLS:-$FORTKEEP_REPO/controls/controls.json}"
+CONFIG="${FORTKEEP_CONFIG:-$FORTKEEP_REPORTS/config.json}"
 usage() { echo "usage: $0 --overlays \"a,b\" --teach yes|no   or   $0 --offered \"a,b\" --add-overlays \"x\"" >&2; exit 2; }
 overlays=""; teach=""; offered=""; add=""; full=0; merge=0
 while [ $# -gt 0 ]; do

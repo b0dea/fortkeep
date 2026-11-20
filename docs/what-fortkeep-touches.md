@@ -1,6 +1,6 @@
-# What devward touches
+# What fortkeep touches
 
-Everything devward reads, writes and sends over the network, and what a run may ask of macOS. It is for anyone
+Everything fortkeep reads, writes and sends over the network, and what a run may ask of macOS. It is for anyone
 deciding whether to run it, and for anyone removing it.
 
 ## What it reads
@@ -25,66 +25,66 @@ looks at. In short:
   passwords saved in it (a count; no password is opened).
 - **Folders that may hold leaked keys or cloned repos:** the top of your home folder, and `~/Desktop`,
   `~/Documents` and `~/Downloads` (BL-SE-03, GD-RC-01), plus your code folders (GD-RC-01 lists them).
-- **A folder you ask about:** `/scan` and `devward scan` read the git repos in the one folder you name: their
+- **A folder you ask about:** `/scan` and `fortkeep scan` read the git repos in the one folder you name: their
   files (tracked or not, except node_modules), git hooks and commit history. Nothing from them runs.
-- **devward's own state:** everything listed under "What it writes" below.
+- **fortkeep's own state:** everything listed under "What it writes" below.
 
 Folders in `private-paths` are never read, listed or searched, by the checks or by the agent. When one is skipped,
 the result says only "a private folder was excluded".
 
 ## What it writes
 
-The installer (`install.sh`, or Homebrew's `devward` on first run) puts the devward folder at
-`~/.local/share/devward`, links `~/.local/bin/devward` to its command when `~/.local/bin` exists, and records the
-release it installed under `~/.config/devward/`. A review (`checks/run.sh`) writes only inside devward's own folders:
+The installer (`install.sh`, or Homebrew's `fortkeep` on first run) puts the fortkeep folder at
+`~/.local/share/fortkeep`, links `~/.local/bin/fortkeep` to its command when `~/.local/bin` exists, and records the
+release it installed under `~/.config/fortkeep/`. A review (`checks/run.sh`) writes only inside fortkeep's own folders:
 
 | Where | What |
 |---|---|
-| `reports/` in the devward folder | settings (`config.json`), each run's `results.json`, the `latest` link, the posture summary, the KnockKnock scan, `weekly-last`, and `change-log.md` with every change a fix made |
+| `reports/` in the fortkeep folder | settings (`config.json`), each run's `results.json`, the `latest` link, the posture summary, the KnockKnock scan, `weekly-last`, and `change-log.md` with every change a fix made |
 | `reports/.approvals/` | the agent hooks' record of each `Apply`, `Undo` or `Accept` answer; never touched by hand |
-| `accepted.json` and `private-paths` in the devward folder | your accepted decisions and your private folders |
-| `~/.config/devward/` | accepted baselines (`baseline/`), the repo sweep's last result, and which signed release this Mac last ran and trusts |
-| `~/.local/state/devward/backups/` | a copy of each file a fix changed, so it can be undone |
+| `accepted.json` and `private-paths` in the fortkeep folder | your accepted decisions and your private folders |
+| `~/.config/fortkeep/` | accepted baselines (`baseline/`), the repo sweep's last result, and which signed release this Mac last ran and trusts |
+| `~/.local/state/fortkeep/backups/` | a copy of each file a fix changed, so it can be undone |
 
 A fix writes only after you answer `Apply <ID>`, and logs what it did in `reports/change-log.md` with its undo:
 
 | Fix | What it writes |
 |---|---|
-| BL-SC-02 | `~/.config/devward/path-front.sh`, and one marked line in `~/.zshenv`, `~/.zshrc`, `~/.zlogin` and your bash start-up files |
+| BL-SC-02 | `~/.config/fortkeep/path-front.sh`, and one marked line in `~/.zshenv`, `~/.zshrc`, `~/.zlogin` and your bash start-up files |
 | BL-RC-01 | `"task.allowAutomaticTasks": "off"` in each VS Code-family editor's `settings.json` |
 | BL-RC-02 | the scan hook at `~/.local/bin/git-scan-new-files`, hook entries in `~/.gitconfig`; the hook logs to `~/.local/var/log/git-scan.log` |
 | BL-SE-06 | a gitleaks pre-commit hook entry in `~/.gitconfig` |
-| BL-AU-02 | the weekly LaunchAgent `~/Library/LaunchAgents/io.github.b0dea.devward.weekly.plist`, logging to `~/Library/Logs/devward-weekly.log` |
+| BL-AU-02 | the weekly LaunchAgent `~/Library/LaunchAgents/io.github.b0dea.fortkeep.weekly.plist`, logging to `~/Library/Logs/fortkeep-weekly.log` |
 
 Admin changes are typed by you in the Terminal app, never by the agent. The lessons give them: for example the
 root-owned agent guard in `/usr/local/lib/safe-chain-agent/`, Claude Code's managed settings, Codex's
 `/etc/codex/requirements.toml`, `/etc/pam.d/sudo_local`, launchd's user PATH, the firewall and Gatekeeper.
 
-## Removing devward
+## Removing fortkeep
 
-`devward uninstall` does it in order, and never runs `sudo` or deletes the devward folder itself:
+`fortkeep uninstall` does it in order, and never runs `sudo` or deletes the fortkeep folder itself:
 
 1. It refuses while a fix that installed something is still applied: the scan hook, the gitleaks hook, the Safe
-   Chain start-up lines or the weekly job. Undo each in your agent first (`devward agent`, then ask it to undo the
+   Chain start-up lines or the weekly job. Undo each in your agent first (`fortkeep agent`, then ask it to undo the
    fix and answer `Undo <ID>`), so the backup puts your files back. The editor setting from BL-RC-01 may stay: it
-   works without devward.
-2. It prints the admin changes below. They don't need devward and keep protecting the Mac without it. To remove
-   them anyway, type them yourself in the Terminal app, and only those you made from a devward lesson, not ones your
+   works without fortkeep.
+2. It prints the admin changes below. They don't need fortkeep and keep protecting the Mac without it. To remove
+   them anyway, type them yourself in the Terminal app, and only those you made from a fortkeep lesson, not ones your
    organisation installed:
 
-   <!-- devward-uninstall-admin:start -->
+   <!-- fortkeep-uninstall-admin:start -->
    ```sh
    sudo rm -f /usr/local/lib/safe-chain-agent/agent-guard.sh "/Library/Application Support/ClaudeCode/managed-settings.json"
    sudo rm -f /etc/codex/requirements.toml
    sudo launchctl config user path "/usr/bin:/bin:/usr/sbin:/sbin"   # then restart the Mac
    sudo -k
    ```
-   <!-- devward-uninstall-admin:end -->
+   <!-- fortkeep-uninstall-admin:end -->
 
-3. After you answer `yes`, it removes `~/.local/state/devward` (fix backups), `~/.config/devward` (baselines and
-   release records) and the `~/.local/bin/devward` link the installer made.
-4. You delete the devward folder yourself (by default `~/.local/share/devward`), and run `brew uninstall devward` if
-   you installed it with Homebrew. The logs `~/.local/var/log/git-scan.log` and `~/Library/Logs/devward-weekly.log`
+3. After you answer `yes`, it removes `~/.local/state/fortkeep` (fix backups), `~/.config/fortkeep` (baselines and
+   release records) and the `~/.local/bin/fortkeep` link the installer made.
+4. You delete the fortkeep folder yourself (by default `~/.local/share/fortkeep`), and run `brew uninstall fortkeep` if
+   you installed it with Homebrew. The logs `~/.local/var/log/git-scan.log` and `~/Library/Logs/fortkeep-weekly.log`
    are yours to keep or delete.
 
 ## What it sends over the network
@@ -99,8 +99,8 @@ Checks are meant not to use the network, so a run says nothing about you to anyo
   Safe Chain's malware feed, as any install through Safe Chain does.
 - **OV-TP-02 (only with the TLS-proxy set-up):** runs `safe-chain-verify` from a non-interactive shell, to see
   that it finishes behind your employer's proxy.
-- **The installer:** clones devward from GitHub (Homebrew also downloads the release's source archive).
-- **`checks/update.sh` (`devward update`):** fetches the release tags from devward's git remote, only when you run
+- **The installer:** clones fortkeep from GitHub (Homebrew also downloads the release's source archive).
+- **`checks/update.sh` (`fortkeep update`):** fetches the release tags from fortkeep's git remote, only when you run
   it.
 - **The weekly check (`checks/weekly.sh`):** `brew update`, then `brew vulns`, which use Homebrew's own servers.
   When KnockKnock is installed, its scan runs with VirusTotal turned off (`-skipVT`).
@@ -123,10 +123,10 @@ the weekly check; other reviews show its stored result.
 
 ## "Stopped from outside"
 
-A result that says "Something outside devward stopped this check" means another program ended the check before it
+A result that says "Something outside fortkeep stopped this check" means another program ended the check before it
 could answer. It is usually a security tool (antivirus or endpoint protection) mistaking a read-only check for
 malware. It is not a sign that the Mac is unsafe, and that check simply has no answer this time.
 
-What to do: on a work Mac, ask your IT or security team to add an exclusion for the devward folder. On your own Mac,
-look at the security tool's log or quarantine for devward's check, and allow it there. Never turn the security tool
+What to do: on a work Mac, ask your IT or security team to add an exclusion for the fortkeep folder. On your own Mac,
+look at the security tool's log or quarantine for fortkeep's check, and allow it there. Never turn the security tool
 off to make the check pass.

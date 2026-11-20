@@ -1,7 +1,7 @@
 # Changelog
 
 What changed in each release, for someone deciding whether to update. Each
-[GitHub release](https://github.com/b0dea/devward/releases) also lists the merged pull requests.
+[GitHub release](https://github.com/b0dea/fortkeep/releases) also lists the merged pull requests.
 
 ## Unreleased: 0.1.0
 
@@ -16,15 +16,15 @@ The first public release.
   a short lesson per control.
 - **Trust.** Guard hooks limit what the agent may do in your session, and copies update only to releases a
   maintainer signed. [docs/threat-model.md](docs/threat-model.md) says what that does and doesn't stop.
-- **The `devward` command.** Check the Mac from the Terminal without an agent (`devward check`, with `--json`), read
-  a control's lesson (`devward explain`), scan a repo for signs it is poisoned before you open it (`devward scan`, or
-  `/scan` in your agent), start your agent in the right folder (`devward agent`), make the posture summary, update,
+- **The `fortkeep` command.** Check the Mac from the Terminal without an agent (`fortkeep check`, with `--json`), read
+  a control's lesson (`fortkeep explain`), scan a repo for signs it is poisoned before you open it (`fortkeep scan`, or
+  `/scan` in your agent), start your agent in the right folder (`fortkeep agent`), make the posture summary, update,
   and uninstall once the fixes are undone.
 - **Install.** An installer you download and check before running, pinned to one release's tag and commit, and a
   Homebrew formula in the `b0dea/tap` tap that runs the same installer on first use. Both install to
-  `~/.local/share/devward`.
-- **A skill on skills.sh.** A read-only `devward` skill for any agent session: it runs the check, explains the
-  results and hands every fix to `devward agent`.
+  `~/.local/share/fortkeep`.
+- **A skill on skills.sh.** A read-only `fortkeep` skill for any agent session: it runs the check, explains the
+  results and hands every fix to `fortkeep agent`.
 
 Known not to work yet:
 

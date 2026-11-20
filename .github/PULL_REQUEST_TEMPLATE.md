@@ -11,7 +11,7 @@ level, or a new command. -->
 
 - [ ] A bug fix has a test that failed before the fix.
 - [ ] `make ci` passes; its last lines are pasted above.
-- [ ] A new control has its check, lesson and test, and a fix has its Codex rule in `.codex/rules/devward.rules`.
+- [ ] A new control has its check, lesson and test, and a fix has its Codex rule in `.codex/rules/fortkeep.rules`.
 - [ ] Nothing identifying: no employer or client names, real usernames, hostnames or paths, including in commit messages.
 - [ ] No whole malware marker in any file; markers are joined from fragments.
 - [ ] A new indicator has a public source link.

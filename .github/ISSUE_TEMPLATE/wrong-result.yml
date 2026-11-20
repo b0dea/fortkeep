@@ -6,7 +6,7 @@ body:
     attributes:
       value: |
         An indicator that flags something harmless belongs here too. Security problems do not; see
-        [SECURITY.md](https://github.com/b0dea/devward/blob/main/SECURITY.md).
+        [SECURITY.md](https://github.com/b0dea/fortkeep/blob/main/SECURITY.md).
         Never paste `results.json` as it is: it holds file and folder names from your Mac.
   - type: input
     id: control
@@ -45,7 +45,7 @@ body:
     attributes:
       label: Environment
       placeholder: |
-        devward version (older copies: git describe --tags, in the devward folder):
+        fortkeep version (older copies: git describe --tags, in the fortkeep folder):
         sw_vers -productVersion:
         uname -m:
         agent and its version (Claude Code, Codex, OpenCode):

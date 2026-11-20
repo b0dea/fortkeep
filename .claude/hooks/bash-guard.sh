@@ -36,13 +36,13 @@ q="'"; val="([^[:space:]${q}\"]|${q}[^${q}]*${q}|\"[^\"]*\")*"  # a word, or who
 start="(^|[;&|\`]|(^|[;&|(\`\$])[[:space:]]*\()"  # a ( counts only where a subshell starts, not in f(b=...)
 fx_run="${start}[[:space:]]*(([A-Za-z_][A-Za-z0-9_]*=$val|env([[:space:]]+-[^[:space:]]+)*)[[:space:]]+)+[^;&|]*fixes/"
 if printf '%s' "$norm" | grep -Eq "$fx_run" ||
-   { printf '%s' "$norm" | grep -q 'fixes/' && printf '%s' "$norm" | grep -Eq '(^|[;&|(`[:space:]])export[[:space:]]+(DEVWARD|FX)_'; }; then
+   { printf '%s' "$norm" | grep -q 'fixes/' && printf '%s' "$norm" | grep -Eq '(^|[;&|(`[:space:]])export[[:space:]]+(FORTKEEP|FX)_'; }; then
   block "fix scripts run only as-is, right after the person's answer"
 fi
 # Bash writes to the files fix scripts own: no redirect into one, and a segment that names one
 # must start with a read-only command. Edits elsewhere are already stopped by write-guard.
 dend='([/[:space:];&|)*?]|\[|$)'  # a folder name ends here: slash, separator, glob or end
-rc='\.zshrc|\.zprofile|\.zshenv|\.zlogin|\.bashrc|\.bash_profile|/\.profile|\.gitconfig|/\.config/git'"$dend"'|/\.ssh'"$dend"'|/LaunchAgents'"$dend"'|/\.config/devward'"$dend"'|/\.claude/settings[^/]*\.json|\.claude\.json|reports/knockknock'"$dend"
+rc='\.zshrc|\.zprofile|\.zshenv|\.zlogin|\.bashrc|\.bash_profile|/\.profile|\.gitconfig|/\.config/git'"$dend"'|/\.ssh'"$dend"'|/LaunchAgents'"$dend"'|/\.config/fortkeep'"$dend"'|/\.claude/settings[^/]*\.json|\.claude\.json|reports/knockknock'"$dend"
 ro_leader() {  # WORD — true for a command that only reads the paths it names
   case "$1" in
     cat|head|tail|less|more|grep|egrep|fgrep|rg|diff|cmp|ls|stat|file|wc|shasum|md5|readlink|realpath|du|test|\[|echo|printf|source|.|checks/private.sh|checks/accept.sh) return 0 ;;
@@ -99,8 +99,8 @@ guard_path() {  # RE MSG [SEGFN] — no redirect into a path matching RE, no xar
 $(printf '%s' "$segs" | tr ';&|()`' '\n\n\n\n\n\n')
 EOF
 }
-# ~/.config/devward holds what only the person may change: the accepted baselines, among others.
-tmsg="files in ~/.config/devward change only when the person runs checks/baseline.sh accept in the Terminal app"
+# ~/.config/fortkeep holds what only the person may change: the accepted baselines, among others.
+tmsg="files in ~/.config/fortkeep change only when the person runs checks/baseline.sh accept in the Terminal app"
 commit_ok() {  # SEGMENT — a plain git commit without variables: its words are a message or repo paths
   case "$1 " in 'git commit '*) case "$1" in *'$'*) return 1 ;; esac; return 0 ;; esac
   return 1
@@ -130,17 +130,17 @@ pin_names() {  # COMPONENT NAME — true when the component is NAME, or a glob o
   return 1
 }
 hlc="$(printf '%s' "$HOME" | tr '[:upper:]' '[:lower:]')"
-pin_word() {  # WORD — true when the lower-case word could name ~/.config/devward or ~/.config
+pin_word() {  # WORD — true when the lower-case word could name ~/.config/fortkeep or ~/.config
   local c prev=start last="" lastprev="" IFS=/ var='*[$`]*' hb="${hlc##*/}"
   set -f  # no globbing while splitting; the callers turn it back on
   for c in $1; do
-    case "$c" in devward)
+    case "$c" in fortkeep)
       # shellcheck disable=SC2254 # $var is a pattern on purpose
-      case "$prev" in start|.|''|..|.config|devward|$var|*[*?[\{]*) return 0 ;; esac ;;
+      case "$prev" in start|.|''|..|.config|fortkeep|$var|*[*?[\{]*) return 0 ;; esac ;;
     esac
     # shellcheck disable=SC2254 # $var is a pattern on purpose
     case "$c" in *[*?[]*|*'{'*,*'}'*|*'{'*..*'}'*|$var)  # a glob, brace or variable counts under the folder, or as ~/.config
-      case "$prev" in .config|devward) return 0 ;; '~'|"$hb"|'$home'|'${home}') pin_names "$c" .config && return 0 ;; esac ;;
+      case "$prev" in .config|fortkeep) return 0 ;; '~'|"$hb"|'$home'|'${home}') pin_names "$c" .config && return 0 ;; esac ;;
     esac
     if [ -n "$c" ]; then lastprev="$prev"; last="$c"; fi
     prev="$c"
@@ -150,7 +150,7 @@ pin_word() {  # WORD — true when the lower-case word could name ~/.config/devw
   case "$lastprev" in start|.|''|..|'~'|"$hb"|$var) return 0 ;; esac
   return 1
 }
-pin_dir() {  # TARGET — true when a cd to TARGET could land in home, ~/.config or ~/.config/devward
+pin_dir() {  # TARGET — true when a cd to TARGET could land in home, ~/.config or ~/.config/fortkeep
   local t="${1%/}"
   case "$t" in ''|'~'|'$home'|'${home}'|"$hlc") return 0 ;; \~/[\$\`]*|'$home/'[\$\`]*|'${home}/'[\$\`]*) return 0 ;; esac
   # A target spelled with .., ., //, a variable, a glob or ~name could be any of them.
@@ -162,7 +162,7 @@ pin_check() {  # SEGMENTS — after a cd into home, ~/.config or the folder noth
   while IFS= read -r seg; do
     seg="${seg#"${seg%%[![:space:]]*}"}"; lead="${seg%%[[:space:]]*}"
     [ -n "$seg" ] || continue
-    case "$seg" in *'${'*devward*|*'${'*.config*) block "$tmsg" ;; esac
+    case "$seg" in *'${'*fortkeep*|*'${'*.config*) block "$tmsg" ;; esac
     case "$lead" in cd|pushd)
       t=""; set -f
       # shellcheck disable=SC2086 # split into words on purpose
@@ -199,7 +199,7 @@ EOF
 pin_check "$lsegs_j"; pin_check "$lsegs_n"
 # shellcheck disable=SC2329 # called through guard_path
 commit_skip() { commit_ok "$1" && return 3; return 0; }
-guard_path '\.config/devward' "$tmsg" commit_skip
+guard_path '\.config/fortkeep' "$tmsg" commit_skip
 # shellcheck disable=SC2329 # called through guard_path
 rc_seg() {
   commit_ok "$1" && return 3  # a commit message may name these paths
@@ -211,14 +211,14 @@ up_re='(^|[;&|(`[:space:]/])(curl[^;&|]*[[:space:]](-T|--upload-file|-F|--form|-
 if printf '%s' "$norm" | grep -Eq "$up_re"; then
   block "uploading files from this Mac isn't allowed here"
 fi
-if printf '%s' "$unq" | grep -Eqi '(baseline\.sh|devward[^;&|]*[[:space:]]baseline)[^;&|]*accept|baseline\.json|knockknock/baseline'; then
+if printf '%s' "$unq" | grep -Eqi '(baseline\.sh|fortkeep[^;&|]*[[:space:]]baseline)[^;&|]*accept|baseline\.json|knockknock/baseline'; then
   block "baselines are accepted only by the person, in the Terminal app"
 fi
-if printf '%s' "$unq" | grep -Eqi '(private\.sh|devward[^;&|]*[[:space:]]private)[^;&|]*remove'; then
-  block "only the person removes a private folder: they type devward private remove in the Terminal app"
+if printf '%s' "$unq" | grep -Eqi '(private\.sh|fortkeep[^;&|]*[[:space:]]private)[^;&|]*remove'; then
+  block "only the person removes a private folder: they type fortkeep private remove in the Terminal app"
 fi
-if printf '%s' "$unq" | grep -Eqi 'devward[^;&|]*[[:space:]]uninstall'; then
-  block "only the person uninstalls devward, in the Terminal app"
+if printf '%s' "$unq" | grep -Eqi 'fortkeep[^;&|]*[[:space:]]uninstall'; then
+  block "only the person uninstalls fortkeep, in the Terminal app"
 fi
 if printf '%s\n%s' "$norm" "$unq" | grep -qi '\.approvals'; then  # unq: .appr''ovals still matches
   block "approvals come only from the person's answer"

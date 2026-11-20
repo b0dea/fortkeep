@@ -20,7 +20,7 @@ then read `reports/latest/results.json`. Look up each result in `controls/contro
 ## ERROR: the check couldn't decide
 
 There is nothing to fix yet. In a sentence or two, explain what stopped the check, from its evidence and note. Then
-ask whether to check it again: `checks/run.sh --only <ID>`. If the evidence says "Something outside devward stopped
+ask whether to check it again: `checks/run.sh --only <ID>`. If the evidence says "Something outside fortkeep stopped
 this check", a security tool on the Mac killed it: the person asks whoever manages that tool for an exclusion and
 never turns the tool off. Offer no fix for an ERROR. If the re-run gives a FAIL, handle it as a FAIL below.
 
@@ -55,7 +55,7 @@ password (or Touch ID), and nothing appears on screen while they type the passwo
 press Return. The teach file's last step is "sudo -k", which ends the admin session; keep it. When they say "done", re-run the check.
 
 If the teach file says a restart is needed, tell them how to come back afterwards, before they restart: open the
-Terminal app, type `devward agent` and the agent they use now (`devward agent claude`, `codex` or `opencode`), then
+Terminal app, type `fortkeep agent` and the agent they use now (`fortkeep agent claude`, `codex` or `opencode`), then
 `/fix` (in Codex, `$fix`). It checks the Mac again first, so it picks up where they left off.
 
 ## c) Guided fix (`fix` is null and no admin command)

@@ -1,6 +1,6 @@
 # Contributing
 
-For people and AI coding agents changing devward itself. To check your own Mac, start with the
+For people and AI coding agents changing fortkeep itself. To check your own Mac, start with the
 [README](README.md). Taking part means following the [Code of Conduct](CODE_OF_CONDUCT.md).
 
 **AI agents:** read [AGENTS.md](AGENTS.md) too. It is written for the agent guiding a person through a checkup, and
@@ -29,8 +29,8 @@ then uses whatever is on your PATH, so versions can differ from the pins.
 global git config sets `core.hooksPath`, `make hooks` warns and installs nothing, since lefthook would write into
 that shared folder. Run `make ci` before you push instead.
 
-**Start your agent with `DEVWARD_DEV=1`** (for example `DEVWARD_DEV=1 claude`), after creating the marker once
-yourself in the Terminal app: `mkdir -p ~/.config/devward && touch ~/.config/devward/dev`. Without both the guards
+**Start your agent with `FORTKEEP_DEV=1`** (for example `FORTKEEP_DEV=1 claude`), after creating the marker once
+yourself in the Terminal app: `mkdir -p ~/.config/fortkeep && touch ~/.config/fortkeep/dev`. Without both the guards
 treat the session as a person's checkup and refuse edits to the repo, so a person's agent can't change the guards,
 checks or fixes that later run without a prompt; the marker is a file no person's session can write.
 
@@ -58,7 +58,7 @@ It runs lint, the controls check, the tests (also with stock tools) and the scan
 request, and paste its last lines there. `make push-check` is the same without the tests.
 
 CI (`.github/workflows/ci.yml`) runs the same steps on GitHub: lint, the controls check and the scans on Linux, the
-tests on macOS. `ci-ok` is the one required check. The payload scan runs devward's own malware scanners over every
+tests on macOS. `ci-ok` is the one required check. The payload scan runs fortkeep's own malware scanners over every
 push.
 
 On a Mac whose endpoint security (EDR) kills the browser wallet-extension check, `tests/br.bats` fails with exit
@@ -73,12 +73,12 @@ code 137. That is the EDR stopping the check, not a test failure; CI runs it on 
    `controls`, the list of its controls. Then `make build`; `make controls-check` fails while `controls/controls.json` is stale or a field
    is wrong.
 2. **Write the check**, `checks/macos/<ID>.sh`:
-   - it sources `checks/lib/common.sh` and prints one result with `devward_result <ID> <STATUS> <evidence> [note]`,
+   - it sources `checks/lib/common.sh` and prints one result with `fortkeep_result <ID> <STATUS> <evidence> [note]`,
      where STATUS is PASS, FAIL, NA or ERROR, then exits 0. ACCEPTED is applied by `checks/run.sh`, never by a check;
    - it finishes within its timeout: the control's `timeout` field, or `checks/run.sh`'s default. An overrun is
      recorded as ERROR;
-   - it reads system files through `devward_path`, so tests can point `DEVWARD_SYSROOT` at a fake root;
-   - it walks folders with `devward_walk` and skips any path `devward_is_private` names;
+   - it reads system files through `fortkeep_path`, so tests can point `FORTKEEP_SYSROOT` at a fake root;
+   - it walks folders with `fortkeep_walk` and skips any path `fortkeep_is_private` names;
    - it never uses the network, and never prints a secret's value: counts, lengths or fingerprints only.
 3. **Write the lesson**, `teach/<ID>.md`: a `# <ID> · <title>` heading and the labels **Why:**, **Real attack:**,
    **Check it yourself:**, **How to fix:** and **What the agent is doing:**. `tests/lessons.bats` fails without them.
@@ -90,7 +90,7 @@ code 137. That is the EDR stopping the check, not a test failure; CI runs it on 
      and logs with `fx_log`;
    - exit codes: 0 done, 2 usage, 3 a manual step for the person (`MANUAL:`), 4 no approval, 5 nothing to undo, 6
      undo stopped because the files changed after the fix;
-   - add its `prefix_rule(... decision="prompt" ...)` line to `.codex/rules/devward.rules`, so Codex asks before it
+   - add its `prefix_rule(... decision="prompt" ...)` line to `.codex/rules/fortkeep.rules`, so Codex asks before it
      runs. `tests/agents.bats` fails without it.
 
 ## Indicators and markers
@@ -147,7 +147,7 @@ holds file and folder names from your Mac. **Never report a vulnerability in a p
 - **Only a maintainer, never an agent,** writes their global git config, runs `make install` and `brew install`, and
   runs `checks/baseline.sh accept`.
 - **`make scan-private`** fails if a tracked file contains a term from your own list of names you never want
-  committed, such as employer or client names: `~/.config/devward/denylist`, one per line. It needs that list, so
+  committed, such as employer or client names: `~/.config/fortkeep/denylist`, one per line. It needs that list, so
   contributors' gates leave it out.
 - **Releases.** People's Macs run signed releases, not `main`. On `main`, `make release VERSION=v1.2.3` runs `make ci`
   and `make scan-private`, signs the tag with your SSH signing key and keeps it only if copies would accept it. Publish

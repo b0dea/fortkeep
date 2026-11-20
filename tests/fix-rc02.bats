@@ -8,7 +8,7 @@ setup() {
   printf 'export PATH="%s:/usr/bin:/bin:/usr/sbin:/sbin"\n' "$BATS_TEST_TMPDIR/bin" > "$HOME/.zlogin"
 }
 fix() { run /bin/bash "$T/fixes/macos/BL-RC-02.sh" "$1"; }
-approve() { date +%s > "$DEVWARD_REPORTS/.approvals/BL-RC-02.$1"; }
+approve() { date +%s > "$FORTKEEP_REPORTS/.approvals/BL-RC-02.$1"; }
 D() { printf '%s\n' "$HOME/.local/bin/git-scan-new-files"; }
 
 @test "refuses without approval" {
@@ -19,7 +19,7 @@ D() { printf '%s\n' "$HOME/.local/bin/git-scan-new-files"; }
   approve apply; GIT_CONFIG_GLOBAL="$ALT" fix apply; [ "$status" -eq 3 ]
   [[ "$output" == *GIT_CONFIG_GLOBAL* ]]
   [ ! -e "$ALT" ]; [ ! -e "$(D)" ]; [ ! -e "$HOME/.gitconfig" ]
-  [ -z "$(ls "$DEVWARD_BACKUPS/BL-RC-02" 2>/dev/null)" ]
+  [ -z "$(ls "$FORTKEEP_BACKUPS/BL-RC-02" 2>/dev/null)" ]
 }
 @test "MANUAL on a git older than 2.54, nothing changed" {
   FAKE_GIT_VERSION=2.50.1 approve apply
@@ -29,9 +29,9 @@ D() { printf '%s\n' "$HOME/.local/bin/git-scan-new-files"; }
 @test "apply installs the scanner and the hooks, the check passes, undo removes them" {
   approve apply; fix apply; [ "$status" -eq 0 ]
   [ -x "$(D)" ]
-  [ "$(git config --global --get hook.devward-scan-checkout.command)" = '"$HOME/.local/bin/git-scan-new-files" post-checkout' ]
+  [ "$(git config --global --get hook.fortkeep-scan-checkout.command)" = '"$HOME/.local/bin/git-scan-new-files" post-checkout' ]
   [ "$(/bin/bash "$REPO/checks/macos/BL-RC-02.sh" | jq -r .status)" = PASS ]
-  grep -q '| BL-RC-02 | apply |' "$DEVWARD_REPORTS/change-log.md"
+  grep -q '| BL-RC-02 | apply |' "$FORTKEEP_REPORTS/change-log.md"
   approve undo; fix undo; [ "$status" -eq 0 ]
   [ ! -e "$(D)" ]; [ ! -e "$HOME/.gitconfig" ]
 }
@@ -49,7 +49,7 @@ D() { printf '%s\n' "$HOME/.local/bin/git-scan-new-files"; }
   [[ "$output" == *"nothing was changed"* ]]
   [ ! -e "$(D)" ]
   [ -L "$HOME/.gitconfig" ]; [ ! -e "$HOME/.gitconfig" ]
-  [ -z "$(find "$DEVWARD_BACKUPS" -name manifest.tsv 2>/dev/null)" ]
+  [ -z "$(find "$FORTKEEP_BACKUPS" -name manifest.tsv 2>/dev/null)" ]
   approve undo; fix undo; [ "$status" -eq 5 ]
 }
 @test "apply replaces an outdated scanner, and undo puts the old copy back" {
@@ -62,11 +62,11 @@ D() { printf '%s\n' "$HOME/.local/bin/git-scan-new-files"; }
 }
 @test "undo removes only the scan hooks and keeps git config edits made after apply" {
   approve apply; fix apply; [ "$status" -eq 0 ]
-  [ -n "$(find "$DEVWARD_BACKUPS/BL-RC-02" -name sealed.tsv)" ]
+  [ -n "$(find "$FORTKEEP_BACKUPS/BL-RC-02" -name sealed.tsv)" ]
   git config --global user.name Later
   approve undo; fix undo; [ "$status" -eq 0 ]
   [ "$(git config --global user.name)" = Later ]
-  run git config --global --get-regexp '^hook\.devward-scan-'; [ "$status" -ne 0 ]
+  run git config --global --get-regexp '^hook\.fortkeep-scan-'; [ "$status" -ne 0 ]
   [ ! -e "$(D)" ]
 }
 @test "undo leaves an edited scanner alone and says why" {
@@ -74,21 +74,21 @@ D() { printf '%s\n' "$HOME/.local/bin/git-scan-new-files"; }
   echo '# mine' >> "$(D)"
   approve undo; fix undo; [ "$status" -eq 6 ]; [[ "$output" == *"your later edits stopped the undo"* ]]
   grep -q '# mine' "$(D)"
-  run git config --global --get-regexp '^hook\.devward-scan-'; [ "$status" -ne 0 ]
+  run git config --global --get-regexp '^hook\.fortkeep-scan-'; [ "$status" -ne 0 ]
 }
 @test "a git config that can't be edited on undo reports undo incomplete and keeps the scanner" {
   approve apply; fix apply; [ "$status" -eq 0 ]
   stub git "for a; do [ \"\$a\" = --remove-section ] && exit 1; done; exec '$REAL_GIT' \"\$@\""
   approve undo; fix undo; [ "$status" -eq 6 ]; [[ "$output" == *"undo incomplete"* ]]
-  [ -x "$(D)" ]; [ -n "$(find "$DEVWARD_BACKUPS/BL-RC-02" -name manifest.tsv)" ]
+  [ -x "$(D)" ]; [ -n "$(find "$FORTKEEP_BACKUPS/BL-RC-02" -name manifest.tsv)" ]
 }
 @test "undo removes the hooks apply wrote to the XDG git config even after a ~/.gitconfig appears" {
   X="$HOME/.config/git/config"; mkdir -p "$(dirname "$X")"; : > "$X"
   approve apply; fix apply; [ "$status" -eq 0 ]
-  git config --file "$X" --get-regexp '^hook\.devward-scan-' >/dev/null
+  git config --file "$X" --get-regexp '^hook\.fortkeep-scan-' >/dev/null
   printf '[user]\n\tname = Later\n' > "$HOME/.gitconfig"
   approve undo; fix undo; [ "$status" -eq 0 ]
-  run git config --file "$X" --get-regexp '^hook\.devward-'; [ "$status" -eq 1 ]
+  run git config --file "$X" --get-regexp '^hook\.fortkeep-'; [ "$status" -eq 1 ]
   [ ! -e "$(D)" ]; [ "$(git config --file "$HOME/.gitconfig" user.name)" = Later ]
 }
 @test "the scanner raises agent config that switches off hooks to HIGH" {
@@ -583,7 +583,7 @@ L
 
 @test "legitimate files that share a loader's names or tricks raise no HIGH" {
   newrepo fp; mkdir -p .vscode scripts .husky .claude src data
-  printf 'devward\nlefthook\n' > .vscode/spellright.dict
+  printf 'fortkeep\nlefthook\n' > .vscode/spellright.dict
   printf '@echo off\nset NODE_ENV=development\n' > scripts/config.bat
   printf 'node_modules\nconfig.bat\n' > .gitignore
   printf 'repos:\n- repo: local\n  hooks:\n  - id: version\n    name: version\n    language: system\n    entry: python3 -c "import sys; print(sys.version)"\n' > .pre-commit-config.yaml

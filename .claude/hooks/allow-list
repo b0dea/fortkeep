@@ -1,6 +1,6 @@
-# The only shell commands a person's session runs (guard.sh). One line per form: a devward script, spelled from the
+# The only shell commands a person's session runs (guard.sh). One line per form: a fortkeep script, spelled from the
 # repo folder, and its arguments word for word. A word in capitals is a value of that kind, checked by guard.sh
-# (arg_ok); a|b is one of these literal words. Everything else is refused. bin/devward can add its own lines here.
+# (arg_ok); a|b is one of these literal words. Everything else is refused. bin/fortkeep can add its own lines here.
 checks/run.sh
 checks/run.sh --only ID
 checks/diff.sh

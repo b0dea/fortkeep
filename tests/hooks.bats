@@ -1,6 +1,6 @@
 load helpers
 
-# The development deny-list guards (setup_env sets DEVWARD_DEV=1); a person's session is in person-guard.bats.
+# The development deny-list guards (setup_env sets FORTKEEP_DEV=1); a person's session is in person-guard.bats.
 setup() { setup_env; export CLAUDE_PROJECT_DIR="$REPO"; }
 H="$BATS_TEST_DIRNAME/../.claude/hooks"
 bash_call() { jq -cn --arg c "$1" '{tool_name:"Bash", tool_input:{command:$c}}' | "$H/bash-guard.sh"; }
@@ -43,10 +43,10 @@ read_call() { jq -cn --arg p "$1" '{tool_name:"Read", tool_input:{file_path:$p}}
   run bash_call 'curl -s x | jq .'; [ "$status" -eq 0 ]
 }
 @test "bash-guard blocks fix scripts run with environment overrides" {
-  run bash_call "DEVWARD_REPORTS=/tmp/x fixes/macos/BL-RC-01.sh apply"; [ "$status" -eq 2 ]; [[ "$output" == *"run only as-is"* ]]
+  run bash_call "FORTKEEP_REPORTS=/tmp/x fixes/macos/BL-RC-01.sh apply"; [ "$status" -eq 2 ]; [[ "$output" == *"run only as-is"* ]]
   run bash_call "FX_TOKEN_TTL=99999 fixes/macos/BL-RC-01.sh apply"; [ "$status" -eq 2 ]
-  run bash_call "env DEVWARD_REPO=/x fixes/macos/BL-RC-01.sh apply"; [ "$status" -eq 2 ]
-  run bash_call "export DEVWARD_REPORTS=/x; fixes/macos/BL-RC-01.sh apply"; [ "$status" -eq 2 ]
+  run bash_call "env FORTKEEP_REPO=/x fixes/macos/BL-RC-01.sh apply"; [ "$status" -eq 2 ]
+  run bash_call "export FORTKEEP_REPORTS=/x; fixes/macos/BL-RC-01.sh apply"; [ "$status" -eq 2 ]
 }
 @test "bash-guard allows fix scripts as-is and the fix tests" {
   run bash_call "fixes/macos/BL-RC-01.sh apply"; [ "$status" -eq 0 ]
@@ -54,7 +54,7 @@ read_call() { jq -cn --arg p "$1" '{tool_name:"Read", tool_input:{file_path:$p}}
 }
 @test "bash-guard blocks assignments or env in front of a fix script, however it is run" {
   run bash_call "X=1 bash fixes/macos/BL-RC-01.sh apply"; [ "$status" -eq 2 ]
-  run bash_call "cd /r && DEVWARD_REPORTS=/x /bin/bash fixes/macos/BL-RC-01.sh apply"; [ "$status" -eq 2 ]
+  run bash_call "cd /r && FORTKEEP_REPORTS=/x /bin/bash fixes/macos/BL-RC-01.sh apply"; [ "$status" -eq 2 ]
 }
 @test "bash-guard allows reading or grepping fix scripts" {
   run bash_call "grep -rn export fixes/"; [ "$status" -eq 0 ]
@@ -76,13 +76,13 @@ read_call() { jq -cn --arg p "$1" '{tool_name:"Read", tool_input:{file_path:$p}}
   run bash_call "git add private-paths.example"; [ "$status" -eq 0 ]
 }
 @test "private-guard blocks a private path, by ~ or absolute form" {
-  printf '~/Secret\n' > "$DEVWARD_PRIVATE_PATHS"
+  printf '~/Secret\n' > "$FORTKEEP_PRIVATE_PATHS"
   run read_call "$HOME/Secret/notes.txt"; [ "$status" -eq 2 ]; [[ "$output" == *private* ]]
   run read_call "~/Secret/notes.txt"; [ "$status" -eq 2 ]
   run read_call "$HOME/Open/notes.txt"; [ "$status" -eq 0 ]
 }
 @test "private-guard inspects Bash commands too" {
-  printf '~/Secret\n' > "$DEVWARD_PRIVATE_PATHS"
+  printf '~/Secret\n' > "$FORTKEEP_PRIVATE_PATHS"
   run bash -c "jq -cn --arg c 'ls ~/Secret' '{tool_name:\"Bash\",tool_input:{command:\$c}}' | '$H/private-guard.sh'"
   [ "$status" -eq 2 ]
 }
@@ -90,18 +90,18 @@ pg_bash() { jq -cn --arg c "$1" '{tool_name:"Bash", tool_input:{command:$c}}' | 
 grep_call() { jq -cn --arg p "$1" '{tool_name:"Grep", tool_input:{pattern:"x", path:$p}}' | "$H/private-guard.sh"; }
 
 @test "private-guard expands \$HOME and \${HOME} forms" {
-  printf '~/Secret\n' > "$DEVWARD_PRIVATE_PATHS"
+  printf '~/Secret\n' > "$FORTKEEP_PRIVATE_PATHS"
   run pg_bash 'cat "$HOME/Secret/a"'; [ "$status" -eq 2 ]
   run pg_bash 'ls ${HOME}/Secret'; [ "$status" -eq 2 ]
   run pg_bash 'ls "$HOME/Open"'; [ "$status" -eq 0 ]
 }
 @test "private-guard matches regardless of letter case" {
-  printf '~/Secret\n' > "$DEVWARD_PRIVATE_PATHS"
+  printf '~/Secret\n' > "$FORTKEEP_PRIVATE_PATHS"
   run read_call "~/secret/a"; [ "$status" -eq 2 ]
   run pg_bash 'cat ~/SECRET/a'; [ "$status" -eq 2 ]
 }
 @test "private-guard blocks a search rooted above a private folder" {
-  printf '~/Secret\n' > "$DEVWARD_PRIVATE_PATHS"
+  printf '~/Secret\n' > "$FORTKEEP_PRIVATE_PATHS"
   run grep_call "$HOME"; [ "$status" -eq 2 ]
   run grep_call "$HOME/"; [ "$status" -eq 2 ]
   run grep_call "~"; [ "$status" -eq 2 ]
@@ -113,9 +113,9 @@ grep_call() { jq -cn --arg p "$1" '{tool_name:"Grep", tool_input:{pattern:"x", p
 }
 @test "in a person's session, session-start emits a message with the last run and how to start, in every agent" {
   person_session
-  mkdir -p "$DEVWARD_REPORTS/20260101T000000Z"
-  echo '{"run":"20260101T000000Z","results":[{"status":"PASS"},{"status":"FAIL"}]}' > "$DEVWARD_REPORTS/20260101T000000Z/results.json"
-  ln -s 20260101T000000Z "$DEVWARD_REPORTS/latest"
+  mkdir -p "$FORTKEEP_REPORTS/20260101T000000Z"
+  echo '{"run":"20260101T000000Z","results":[{"status":"PASS"},{"status":"FAIL"}]}' > "$FORTKEEP_REPORTS/20260101T000000Z/results.json"
+  ln -s 20260101T000000Z "$FORTKEEP_REPORTS/latest"
   run "$H/session-start.sh" </dev/null
   [ "$status" -eq 0 ]
   msg="$(jq -r .systemMessage <<<"$output")"
@@ -149,10 +149,10 @@ grep_call() { jq -cn --arg p "$1" '{tool_name:"Grep", tool_input:{pattern:"x", p
 }
 @test "bash-guard blocks accepting a baseline or touching it" {
   run bash_call "checks/baseline.sh accept"; [ "$status" -eq 2 ]; [[ "$output" == *Terminal* ]]
-  for c in 'bin/devward baseline accept' 'devward  baseline accept' 'bin/devward private remove ~/x' "bin/devward pri''vate remove ~/x" 'bin/devward uninstall'; do
+  for c in 'bin/fortkeep baseline accept' 'fortkeep  baseline accept' 'bin/fortkeep private remove ~/x' "bin/fortkeep pri''vate remove ~/x" 'bin/fortkeep uninstall'; do
     run bash_call "$c"; [ "$status" -eq 2 ]; [[ "$output" == *Terminal* ]]
   done
-  run bash_call 'bin/devward private add ~/x'; [ "$status" -eq 0 ]
+  run bash_call 'bin/fortkeep private add ~/x'; [ "$status" -eq 0 ]
   run bash_call "cp x reports/knockknock/baseline.json"; [ "$status" -eq 2 ]
   run bash_call "checks/run.sh --only GD-RT-01"; [ "$status" -eq 0 ]
 }
@@ -188,8 +188,8 @@ grep_call() { jq -cn --arg p "$1" '{tool_name:"Grep", tool_input:{pattern:"x", p
   run bash_call "sed -i '' 's/a/b/' ~/.zprofile"; [ "$status" -eq 2 ]
   run bash_call 'echo y | tee -a ~/.bashrc'; [ "$status" -eq 2 ]
   run bash_call 'rm ~/.ZSHRC'; [ "$status" -eq 2 ]
-  run bash_call 'grep -c devward ~/.zshrc'; [ "$status" -eq 0 ]
-  run bash_call 'ls ~/Library/LaunchAgents | grep -c devward'; [ "$status" -eq 0 ]
+  run bash_call 'grep -c fortkeep ~/.zshrc'; [ "$status" -eq 0 ]
+  run bash_call 'ls ~/Library/LaunchAgents | grep -c fortkeep'; [ "$status" -eq 0 ]
   run bash_call 'cp ~/.zshrc /tmp/zshrc-copy'; [ "$status" -eq 0 ]
   run bash_call 'git add .claude/settings.json templates/agent-guard.sh'; [ "$status" -eq 0 ]
   run bash_call 'bats tests/agent-guard.bats'; [ "$status" -eq 0 ]
@@ -210,7 +210,7 @@ grep_call() { jq -cn --arg p "$1" '{tool_name:"Grep", tool_input:{pattern:"x", p
 @test "bash-guard fix-owned folders count without a trailing slash" {
   run bash_call 'rm -rf ~/.ssh'; [ "$status" -eq 2 ]
   run bash_call 'mv ~/.ssh ~/.ssh-old'; [ "$status" -eq 2 ]
-  run bash_call 'rm -rf ~/.config/devward'; [ "$status" -eq 2 ]
+  run bash_call 'rm -rf ~/.config/fortkeep'; [ "$status" -eq 2 ]
   run bash_call 'rm -rf ~/Library/LaunchAgents'; [ "$status" -eq 2 ]
   run bash_call 'ls -l ~/.ssh'; [ "$status" -eq 0 ]
 }
@@ -227,7 +227,7 @@ grep_call() { jq -cn --arg p "$1" '{tool_name:"Grep", tool_input:{pattern:"x", p
   run bash_call 'rm -rf ~/.ssh?'; [ "$status" -eq 2 ]
   run bash_call 'rm -rf ~/.ssh[a-z]'; [ "$status" -eq 2 ]
   run bash_call 'rm -rf ~/Library/LaunchAgents*'; [ "$status" -eq 2 ]
-  run bash_call 'rm -rf ~/.config/devward*'; [ "$status" -eq 2 ]
+  run bash_call 'rm -rf ~/.config/fortkeep*'; [ "$status" -eq 2 ]
   run bash_call 'ls -d ~/.ssh*'; [ "$status" -eq 0 ]
   run bash_call 'rm -rf ~/.sshfs-cache'; [ "$status" -eq 0 ]
 }
@@ -246,16 +246,16 @@ grep_call() { jq -cn --arg p "$1" '{tool_name:"Grep", tool_input:{pattern:"x", p
   run bash_call 'ls reports/knockknock'; [ "$status" -eq 0 ]
 }
 @test "the accepted baselines live where the guard already refuses writes; reading them is fine" {
-  grep -q '"$HOME/.config/devward/baseline"' "$REPO/checks/lib/baselines.sh"
-  run bash_call 'printf node > ~/.config/devward/baseline/listeners.txt'; [ "$status" -eq 2 ]
-  run bash_call 'cp /tmp/x ~/.config/devward/baseline/control-files.txt'; [ "$status" -eq 2 ]
-  run bash_call 'cd ~/.config/devward/baseline && cp /tmp/x knockknock.json'; [ "$status" -eq 2 ]
-  run bash_call 'cat ~/.config/devward/baseline/listeners.txt'; [ "$status" -eq 0 ]
+  grep -q '"$HOME/.config/fortkeep/baseline"' "$REPO/checks/lib/baselines.sh"
+  run bash_call 'printf node > ~/.config/fortkeep/baseline/listeners.txt'; [ "$status" -eq 2 ]
+  run bash_call 'cp /tmp/x ~/.config/fortkeep/baseline/control-files.txt'; [ "$status" -eq 2 ]
+  run bash_call 'cd ~/.config/fortkeep/baseline && cp /tmp/x knockknock.json'; [ "$status" -eq 2 ]
+  run bash_call 'cat ~/.config/fortkeep/baseline/listeners.txt'; [ "$status" -eq 0 ]
 }
 @test "bash-guard refuses git config writes to the global, system or a named file" {
-  run bash_call 'git config --global hook.devward-scan-checkout.command /bin/true'; [ "$status" -eq 2 ]
-  run bash_call 'git config --global --unset hook.devward-gitleaks.command'; [ "$status" -eq 2 ]
-  run bash_call 'git config --global --remove-section hook.devward-gitleaks'; [ "$status" -eq 2 ]
+  run bash_call 'git config --global hook.fortkeep-scan-checkout.command /bin/true'; [ "$status" -eq 2 ]
+  run bash_call 'git config --global --unset hook.fortkeep-gitleaks.command'; [ "$status" -eq 2 ]
+  run bash_call 'git config --global --remove-section hook.fortkeep-gitleaks'; [ "$status" -eq 2 ]
   run bash_call 'git config --global --edit'; [ "$status" -eq 2 ]
   run bash_call 'git config --system core.hooksPath /tmp/h'; [ "$status" -eq 2 ]
   run bash_call 'git config --file /tmp/other.cfg a.b c'; [ "$status" -eq 2 ]
@@ -299,33 +299,33 @@ grep_call() { jq -cn --arg p "$1" '{tool_name:"Grep", tool_input:{pattern:"x", p
   run bash_call 'git config --fil=/tmp/x.cfg a.b c'; [ "$status" -eq 2 ]
   run bash_call 'git config --gl --get a.b'; [ "$status" -eq 0 ]
 }
-@test "bash-guard blocks writes to the devward folder, allows reading them" {
-  run bash_call 'echo SHA256:x >> ~/.config/devward/baseline/listeners.txt'; [ "$status" -eq 2 ]; [[ "$output" == *"checks/baseline.sh accept"* ]]
+@test "bash-guard blocks writes to the fortkeep folder, allows reading them" {
+  run bash_call 'echo SHA256:x >> ~/.config/fortkeep/baseline/listeners.txt'; [ "$status" -eq 2 ]; [[ "$output" == *"checks/baseline.sh accept"* ]]
   run bash_call 'cd "$D" && tee listeners.txt < /tmp/x'; [ "$status" -eq 2 ]
-  run bash_call 'cat ~/.config/devward/baseline/listeners.txt'; [ "$status" -eq 0 ]
+  run bash_call 'cat ~/.config/fortkeep/baseline/listeners.txt'; [ "$status" -eq 0 ]
 }
-@test "bash-guard blocks resetting or replacing the devward folder through their folder" {
-  run bash_call 'cd ~/.config && rm -r devward'; [ "$status" -eq 2 ]; [[ "$output" == *"checks/baseline.sh accept"* ]]
-  run bash_call 'cd ~/.config && ditto /tmp/dp devward'; [ "$status" -eq 2 ]
-  run bash_call 'cd ~/.config && cp /tmp/x/listeners.txt devward/'; [ "$status" -eq 2 ]
-  run bash_call 'cp /tmp/x/listeners.txt ~/.config/devward/'; [ "$status" -eq 2 ]
+@test "bash-guard blocks resetting or replacing the fortkeep folder through their folder" {
+  run bash_call 'cd ~/.config && rm -r fortkeep'; [ "$status" -eq 2 ]; [[ "$output" == *"checks/baseline.sh accept"* ]]
+  run bash_call 'cd ~/.config && ditto /tmp/dp fortkeep'; [ "$status" -eq 2 ]
+  run bash_call 'cd ~/.config && cp /tmp/x/listeners.txt fortkeep/'; [ "$status" -eq 2 ]
+  run bash_call 'cp /tmp/x/listeners.txt ~/.config/fortkeep/'; [ "$status" -eq 2 ]
   run bash_call "find ~/.config -name 'listen*' -delete"; [ "$status" -eq 2 ]
-  run bash_call 'cd ~/.config && rm -rf ./devward'; [ "$status" -eq 2 ]
+  run bash_call 'cd ~/.config && rm -rf ./fortkeep'; [ "$status" -eq 2 ]
   run bash_call 'cd ~/.config && rm -rf dev*'; [ "$status" -eq 2 ]
-  run bash_call 'cd ~ && rm -r .config/devward'; [ "$status" -eq 2 ]
+  run bash_call 'cd ~ && rm -r .config/fortkeep'; [ "$status" -eq 2 ]
   run bash_call 'rm -rf ~/.config'; [ "$status" -eq 2 ]
   run bash_call 'mv ~/.config/ /tmp/old'; [ "$status" -eq 2 ]
-  run bash_call 'rm ~/.config/devward/t*'; [ "$status" -eq 2 ]
-  run bash_call 'cd ~/.config && echo x > devward/$n'; [ "$status" -eq 2 ]
-  run bash_call 'cd ~/.config && git rm -r devward commit'; [ "$status" -eq 2 ]
+  run bash_call 'rm ~/.config/fortkeep/t*'; [ "$status" -eq 2 ]
+  run bash_call 'cd ~/.config && echo x > fortkeep/$n'; [ "$status" -eq 2 ]
+  run bash_call 'cd ~/.config && git rm -r fortkeep commit'; [ "$status" -eq 2 ]
 }
-@test "bash-guard still allows reading the devward folder and working in the repo" {
-  run bash_call 'ls -la ~/.config/devward'; [ "$status" -eq 0 ]
-  run bash_call 'stat -f %Lp ~/.config/devward/baseline/listeners.txt'; [ "$status" -eq 0 ]
-  run bash_call 'cd ~/.config && cat devward/baseline/listeners.txt'; [ "$status" -eq 0 ]
-  run bash_call 'cd ~/projects/personal/devward && make ci'; [ "$status" -eq 0 ]
-  run bash_call 'rm -rf ~/projects/personal/devward/tmp-x'; [ "$status" -eq 0 ]
-  run bash_call 'git commit -m "docs: devward checks this Mac"'; [ "$status" -eq 0 ]
+@test "bash-guard still allows reading the fortkeep folder and working in the repo" {
+  run bash_call 'ls -la ~/.config/fortkeep'; [ "$status" -eq 0 ]
+  run bash_call 'stat -f %Lp ~/.config/fortkeep/baseline/listeners.txt'; [ "$status" -eq 0 ]
+  run bash_call 'cd ~/.config && cat fortkeep/baseline/listeners.txt'; [ "$status" -eq 0 ]
+  run bash_call 'cd ~/projects/personal/fortkeep && make ci'; [ "$status" -eq 0 ]
+  run bash_call 'rm -rf ~/projects/personal/fortkeep/tmp-x'; [ "$status" -eq 0 ]
+  run bash_call 'git commit -m "docs: fortkeep checks this Mac"'; [ "$status" -eq 0 ]
   run bash_call 'rm -f /tmp/x/*.log'; [ "$status" -eq 0 ]
   run bash_call "awk '{ print \$1 }' f | sort"; [ "$status" -eq 0 ]
   run bash_call 'grep -n "f() {\|g" x.sh'; [ "$status" -eq 0 ]
@@ -341,15 +341,15 @@ grep_call() { jq -cn --arg p "$1" '{tool_name:"Grep", tool_input:{pattern:"x", p
   run bash_call 'git commit -m "docs: no longer unset CLAUDECODE"'; [ "$status" -eq 0 ]
   run bash_call 'git commit -m x; unset CLAUDECODE'; [ "$status" -eq 2 ]
 }
-@test "bash-guard: ~/.config/devward in any letter case" {
-  run bash_call 'cd ~/.config && rm -r DEVWARD'; [ "$status" -eq 2 ]; [[ "$output" == *"checks/baseline.sh accept"* ]]
-  run bash_call 'cd ~/.config && ditto /tmp/dp Devward'; [ "$status" -eq 2 ]
+@test "bash-guard: ~/.config/fortkeep in any letter case" {
+  run bash_call 'cd ~/.config && rm -r FORTKEEP'; [ "$status" -eq 2 ]; [[ "$output" == *"checks/baseline.sh accept"* ]]
+  run bash_call 'cd ~/.config && ditto /tmp/dp Fortkeep'; [ "$status" -eq 2 ]
   run bash_call 'rm -rf ~/.CONFIG'; [ "$status" -eq 2 ]
   run bash_call 'cd ~ && rm -rf .Config'; [ "$status" -eq 2 ]
-  run bash_call 'find ~ -iname DEVWARD -exec rm -rf {} +'; [ "$status" -eq 2 ]
-  run bash_call 'rm -rf ~/.CONFIG/DEVWARD'; [ "$status" -eq 2 ]
+  run bash_call 'find ~ -iname FORTKEEP -exec rm -rf {} +'; [ "$status" -eq 2 ]
+  run bash_call 'rm -rf ~/.CONFIG/FORTKEEP'; [ "$status" -eq 2 ]
 }
-@test "bash-guard: after a cd into ~/.config, ~/.config/devward or home, nothing writes" {
+@test "bash-guard: after a cd into ~/.config, ~/.config/fortkeep or home, nothing writes" {
   run bash_call 'cd ~/.config && find . -delete'; [ "$status" -eq 2 ]; [[ "$output" == *"checks/baseline.sh accept"* ]]
   run bash_call 'cd ~/.config && rsync -a --delete /tmp/empty/ ./'; [ "$status" -eq 2 ]
   run bash_call 'cd ~/.config && cp -R /tmp/stage/ .'; [ "$status" -eq 2 ]
@@ -361,10 +361,10 @@ grep_call() { jq -cn --arg p "$1" '{tool_name:"Grep", tool_input:{pattern:"x", p
   run bash_call 'cd && rm -rf .c*'; [ "$status" -eq 2 ]
   run bash_call 'cd ~/.config && echo x > foo'; [ "$status" -eq 2 ]
   run bash_call "find ~ -regex '.*/.config/device-postur.*' -delete"; [ "$status" -eq 2 ]
-  run bash_call 'rm -r ~/.confi?/devward'; [ "$status" -eq 2 ]
+  run bash_call 'rm -r ~/.confi?/fortkeep'; [ "$status" -eq 2 ]
   run bash_call 'rm -rf ${HOME}/.config'; [ "$status" -eq 2 ]
   run bash_call 'cd ~/.config && ls -la 2>/dev/null'; [ "$status" -eq 0 ]
-  run bash_call 'cd ~/.config && cat devward/baseline/listeners.txt'; [ "$status" -eq 0 ]
+  run bash_call 'cd ~/.config && cat fortkeep/baseline/listeners.txt'; [ "$status" -eq 0 ]
   run bash_call 'cd ~/.config/fish && cd /tmp && rm -rf x'; [ "$status" -eq 0 ]
 }
 @test "bash-guard: everyday globs, braces and commit messages pass; tricks around a commit don't" {
@@ -375,26 +375,26 @@ grep_call() { jq -cn --arg p "$1" '{tool_name:"Grep", tool_input:{pattern:"x", p
   run bash_call 'cp x.txt{,.bak}'; [ "$status" -eq 0 ]
   run bash_call "jq -r '{name,id}' x.json"; [ "$status" -eq 0 ]
   run bash_call 'mkdir -p src/{a,b}'; [ "$status" -eq 0 ]
-  run bash_call 'cd /tmp && rm -rf devward'; [ "$status" -eq 2 ]
-  run bash_call 'git clone https://github.com/x/devward'; [ "$status" -eq 0 ]
-  run bash_call 'git commit -m "baselines live in ~/.config/devward/baseline/listeners.txt"'; [ "$status" -eq 0 ]
-  run bash_call 'rm -r devward'; [ "$status" -eq 2 ]
-  run bash_call 'git commit -m x $(rm -r devward)'; [ "$status" -eq 2 ]
-  run bash_call 'git commit -m x <(rm -r devward)'; [ "$status" -eq 2 ]
-  run bash_call 'git commit -m x `rm -r devward`'; [ "$status" -eq 2 ]
-  run bash_call 'git commit --no-verify -m x; rm -r devward'; [ "$status" -eq 2 ]
-  run bash_call 'git commit -m x > devward/x'; [ "$status" -eq 2 ]
-  run bash_call 'git commit -m x 2>devward/baseline/listeners.txt'; [ "$status" -eq 2 ]
-  run bash_call 'git commit -m x ${x:=devward}'; [ "$status" -eq 2 ]
-  run bash_call $'git commit -m x\ncd ~/.config && rm -r devward'; [ "$status" -eq 2 ]
+  run bash_call 'cd /tmp && rm -rf fortkeep'; [ "$status" -eq 2 ]
+  run bash_call 'git clone https://github.com/x/fortkeep'; [ "$status" -eq 0 ]
+  run bash_call 'git commit -m "baselines live in ~/.config/fortkeep/baseline/listeners.txt"'; [ "$status" -eq 0 ]
+  run bash_call 'rm -r fortkeep'; [ "$status" -eq 2 ]
+  run bash_call 'git commit -m x $(rm -r fortkeep)'; [ "$status" -eq 2 ]
+  run bash_call 'git commit -m x <(rm -r fortkeep)'; [ "$status" -eq 2 ]
+  run bash_call 'git commit -m x `rm -r fortkeep`'; [ "$status" -eq 2 ]
+  run bash_call 'git commit --no-verify -m x; rm -r fortkeep'; [ "$status" -eq 2 ]
+  run bash_call 'git commit -m x > fortkeep/x'; [ "$status" -eq 2 ]
+  run bash_call 'git commit -m x 2>fortkeep/baseline/listeners.txt'; [ "$status" -eq 2 ]
+  run bash_call 'git commit -m x ${x:=fortkeep}'; [ "$status" -eq 2 ]
+  run bash_call $'git commit -m x\ncd ~/.config && rm -r fortkeep'; [ "$status" -eq 2 ]
 }
 @test "bash-guard: a newline separates commands like ; for the folder and agent-variable rules" {
   run bash_call $'echo hi\nrm -rf ~/.config'; [ "$status" -eq 2 ]
-  run bash_call $'echo hi\nrm -r devward'; [ "$status" -eq 2 ]
-  run bash_call $'cd ~/.config\nrm -r devward'; [ "$status" -eq 2 ]
-  run bash_call $'cd ~/.config && ls\nrm -r devward'; [ "$status" -eq 2 ]
+  run bash_call $'echo hi\nrm -r fortkeep'; [ "$status" -eq 2 ]
+  run bash_call $'cd ~/.config\nrm -r fortkeep'; [ "$status" -eq 2 ]
+  run bash_call $'cd ~/.config && ls\nrm -r fortkeep'; [ "$status" -eq 2 ]
   run bash_call $'git commit -m x\nrm -rf ~/.config'; [ "$status" -eq 2 ]
-  run bash_call $'git commit -m x\ncd ~/.config\nrm -r devward'; [ "$status" -eq 2 ]
+  run bash_call $'git commit -m x\ncd ~/.config\nrm -r fortkeep'; [ "$status" -eq 2 ]
   run bash_call $'git commit -m x\nunset CLAUDECODE\nchecks/baseline.sh accept'; [ "$status" -eq 2 ]
   run bash_call $'git commit -m x\nenv -u CLAUDECODE checks/baseline.sh accept'; [ "$status" -eq 2 ]
   run bash_call $'git commit -m x\nCLAUDECODE= checks/baseline.sh accept'; [ "$status" -eq 2 ]
@@ -409,8 +409,8 @@ grep_call() { jq -cn --arg p "$1" '{tool_name:"Grep", tool_input:{pattern:"x", p
   run bash_call 'cd ~/Documents/.. && rm -rf .config'; [ "$status" -eq 2 ]
   run bash_call 'cd /tmp/../Users/someone && rm -rf .config'; [ "$status" -eq 2 ]
   run bash_call 'cd /Users//someone && rm -rf .config'; [ "$status" -eq 2 ]
-  run bash_call 'cd ~/foo/$x && rm -r devward'; [ "$status" -eq 2 ]
-  run bash_call 'cd /tmp/$x && rm -r devward'; [ "$status" -eq 2 ]
+  run bash_call 'cd ~/foo/$x && rm -r fortkeep'; [ "$status" -eq 2 ]
+  run bash_call 'cd /tmp/$x && rm -r fortkeep'; [ "$status" -eq 2 ]
   run bash_call 'cd ~/.config/./ && find . -delete'; [ "$status" -eq 2 ]
   run bash_call 'cd ~/.config/fish/.. && find . -delete'; [ "$status" -eq 2 ]
   run bash_call 'cd ~/.config/fish && cd .. && find . -delete'; [ "$status" -eq 2 ]
@@ -418,8 +418,8 @@ grep_call() { jq -cn --arg p "$1" '{tool_name:"Grep", tool_input:{pattern:"x", p
   run bash_call 'cd /Users/s*fy && rm -rf .config'; [ "$status" -eq 2 ]
   run bash_call 'cd /Users && cd someone && rm -rf .config'; [ "$status" -eq 2 ]
   run bash_call 'cd /System/Volumes/Data/Users/someone && rm -rf .config'; [ "$status" -eq 2 ]
-  run bash_call 'cd /tmp && rm -rf devward'; [ "$status" -eq 2 ]
-  run bash_call 'cd ~/projects/personal/devward && make ci'; [ "$status" -eq 0 ]
+  run bash_call 'cd /tmp && rm -rf fortkeep'; [ "$status" -eq 2 ]
+  run bash_call 'cd ~/projects/personal/fortkeep && make ci'; [ "$status" -eq 0 ]
   run bash_call 'cd .. && ls'; [ "$status" -eq 0 ]
 }
 @test "bash-guard: quoting can't hide the approvals folder" {
@@ -428,12 +428,12 @@ grep_call() { jq -cn --arg p "$1" '{tool_name:"Grep", tool_input:{pattern:"x", p
   run bash_call 'touch reports/.ap\provals/x'; [ "$status" -eq 2 ]
 }
 @test "private-guard: fix backups (copies of start-up files, which can hold keys) are never read" {
-  mkdir -p "$DEVWARD_BACKUPS/BL-SC-02/x"; : > "$DEVWARD_BACKUPS/BL-SC-02/x/zshrc"
-  run read_call "$DEVWARD_BACKUPS/BL-SC-02/x/zshrc"; [ "$status" -eq 2 ]
-  run bash -c "jq -cn --arg c 'cat $DEVWARD_BACKUPS/BL-SC-02/x/zshrc' '{tool_name:\"Bash\",tool_input:{command:\$c}}' | '$H/private-guard.sh'"; [ "$status" -eq 2 ]
-  run read_call "$DEVWARD_REPORTS/change-log.md"; [ "$status" -eq 0 ]
+  mkdir -p "$FORTKEEP_BACKUPS/BL-SC-02/x"; : > "$FORTKEEP_BACKUPS/BL-SC-02/x/zshrc"
+  run read_call "$FORTKEEP_BACKUPS/BL-SC-02/x/zshrc"; [ "$status" -eq 2 ]
+  run bash -c "jq -cn --arg c 'cat $FORTKEEP_BACKUPS/BL-SC-02/x/zshrc' '{tool_name:\"Bash\",tool_input:{command:\$c}}' | '$H/private-guard.sh'"; [ "$status" -eq 2 ]
+  run read_call "$FORTKEEP_REPORTS/change-log.md"; [ "$status" -eq 0 ]
   # they live outside the repo and reports/, so searching either is not a search of the backups
-  run grep_call "$DEVWARD_REPORTS"; [ "$status" -eq 0 ]
+  run grep_call "$FORTKEEP_REPORTS"; [ "$status" -eq 0 ]
   run grep_call "$REPO"; [ "$status" -eq 0 ]
   run grep_call "$HOME/.local"; [ "$status" -eq 2 ]
 }
@@ -446,7 +446,7 @@ grep_call() { jq -cn --arg p "$1" '{tool_name:"Grep", tool_input:{pattern:"x", p
 dev_call() { jq -cn --arg t "$1" --argjson i "$2" --arg w "$REPO" '{tool_name:$t, tool_input:$i, cwd:$w}' | "$H/guard.sh"; }
 s="$(printf '\xc5\xbf')"  # U+017F, a long s: APFS opens it as s
 @test "A1: in a development session the guards fold names as APFS does (NFC, upper, lower, NFC)" {
-  printf '~/Secret\n' > "$DEVWARD_PRIVATE_PATHS"; mkdir -p "$HOME/Secret"
+  printf '~/Secret\n' > "$FORTKEEP_PRIVATE_PATHS"; mkdir -p "$HOME/Secret"
   for c in "mkdir -p reports/.approval$s && date +%s > reports/.approval$s/BL-SC-02.apply" "cat private-path$s" \
     "echo x >> ~/.z${s}hrc" "checks/private.${s}h remove ~/x" "checks/baseline.${s}h accept" "cat ~/${s}ecret/a"; do
     run dev_call Bash "$(jq -cn --arg c "$c" '{command:$c}')"; [ "$status" -eq 2 ]

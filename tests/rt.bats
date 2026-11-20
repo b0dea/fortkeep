@@ -11,11 +11,11 @@ sysext() {  # LINE... — systemextensionsctl list output: one section, each LIN
     for l in "$@"; do printf '*\t*\tTEAMID0001\t%s\n' "$(printf '%s' "$l" | tr '|' '\t')"; done; } > "$BATS_TEST_TMPDIR/sysext"
 }
 chk() { run env PATH="$BATS_TEST_TMPDIR/bin:/usr/bin:/bin:/usr/sbin:/sbin" /bin/bash "$REPO/checks/macos/$1.sh"; }
-app() { mkdir -p "$DEVWARD_SYSROOT/Applications/$1.app"; }
+app() { mkdir -p "$FORTKEEP_SYSROOT/Applications/$1.app"; }
 
 @test "BL-RT-01 missing → FAIL; installed but not running → FAIL; running → PASS" {
   chk BL-RT-01; [ "$(field status)" = FAIL ]; [[ "$(field evidence)" == *"not installed"* ]]
-  mkdir -p "$DEVWARD_SYSROOT/Library/Objective-See/BlockBlock"; app "BlockBlock Helper"
+  mkdir -p "$FORTKEEP_SYSROOT/Library/Objective-See/BlockBlock"; app "BlockBlock Helper"
   chk BL-RT-01; [ "$(field status)" = FAIL ]; [[ "$(field evidence)" == *"not running"* ]]
   RUNNING="BlockBlock" chk BL-RT-01; [ "$(field status)" = PASS ]
 }
@@ -26,7 +26,7 @@ app() { mkdir -p "$DEVWARD_SYSROOT/Applications/$1.app"; }
 @test "BL-RT-03 none → FAIL; LuLu running → PASS by alternative; Little Snitch installed but stopped → FAIL" {
   chk BL-RT-03; [ "$(field status)" = FAIL ]
   app LuLu; RUNNING=LuLu chk BL-RT-03; [ "$(field status)" = PASS ]; [[ "$(field evidence)" == *LuLu* ]]
-  rm -r "$DEVWARD_SYSROOT/Applications/LuLu.app"; app "Little Snitch"
+  rm -r "$FORTKEEP_SYSROOT/Applications/LuLu.app"; app "Little Snitch"
   chk BL-RT-03; [ "$(field status)" = FAIL ]
 }
 @test "BL-RT-04 OverSight or Micro Snitch → PASS; neither → FAIL" {
@@ -62,7 +62,7 @@ app() { mkdir -p "$DEVWARD_SYSROOT/Applications/$1.app"; }
   chk BL-RT-05; [ "$(field status)" = ERROR ]; [[ "$(field evidence)" == *SentinelOne* ]]; [[ "$(field note)" == *systemextensionsctl* ]]
   stub systemextensionsctl 'echo "usage: systemextensionsctl"'
   chk BL-RT-05; [ "$(field status)" = ERROR ]
-  rm -r "$DEVWARD_SYSROOT/Applications/SentinelOne.app"
+  rm -r "$FORTKEEP_SYSROOT/Applications/SentinelOne.app"
   chk BL-RT-05; [ "$(field status)" = FAIL ]; [ "$(field evidence)" = "No known endpoint protection or antivirus" ]
 }
 @test "BL-RT-06 tirith on PATH → PASS; absent → FAIL" {

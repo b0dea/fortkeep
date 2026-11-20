@@ -4,9 +4,9 @@ setup() { setup_env; AS="$HOME/Library/Application Support"; }
 # As run.sh records it, so a check that something outside stops (an EDR) shows why. That is never a pass of the test,
 # even one expecting ERROR: the check didn't run.
 chk() {
-  run /bin/bash -c '. "$1/checks/lib/common.sh"; out="$(devward_timeout 60 /bin/bash "$1/checks/macos/$2.sh")"; devward_check_verdict "$2" $? "$out" 60' _ "$REPO" "$1"
+  run /bin/bash -c '. "$1/checks/lib/common.sh"; out="$(fortkeep_timeout 60 /bin/bash "$1/checks/macos/$2.sh")"; fortkeep_check_verdict "$2" $? "$out" 60' _ "$REPO" "$1"
   printf '%s\n' "$output"
-  case "$output" in *'"Something outside devward stopped this check'*) return 1 ;; esac
+  case "$output" in *'"Something outside fortkeep stopped this check'*) return 1 ;; esac
 }
 chrome() {  # PROFILE PREFS_JSON — a Chrome profile
   P="$AS/Google/Chrome/$1"; mkdir -p "$P"; printf '%s\n' "$2" > "$P/Preferences"
@@ -54,7 +54,7 @@ firefox() {  # PREFS_LINE EXTENSIONS_JSON — one Firefox profile
 }
 @test "BL-BR-01 a managed policy turning it off counts" {
   chrome Default '{}'
-  M="$DEVWARD_SYSROOT/Library/Managed Preferences"; mkdir -p "$M"
+  M="$FORTKEEP_SYSROOT/Library/Managed Preferences"; mkdir -p "$M"
   plutil -create xml1 "$M/com.google.Chrome.plist"; plutil -insert PasswordManagerEnabled -bool false "$M/com.google.Chrome.plist"
   chk BL-BR-01; [ "$(field status)" = PASS ]
 }
@@ -74,7 +74,7 @@ firefox() {  # PREFS_LINE EXTENSIONS_JSON — one Firefox profile
 }
 @test "BL-BR-01 ERROR when a managed policy file cannot be parsed" {
   chrome Default '{}'
-  M="$DEVWARD_SYSROOT/Library/Managed Preferences"; mkdir -p "$M"; echo "<plist><dict>" > "$M/com.google.Chrome.plist"
+  M="$FORTKEEP_SYSROOT/Library/Managed Preferences"; mkdir -p "$M"; echo "<plist><dict>" > "$M/com.google.Chrome.plist"
   chk BL-BR-01; [ "$(field status)" = ERROR ]; [ -n "$(field evidence)" ]
 }
 @test "BL-BR-02 1Password by id or name in every profile → PASS; one profile without → FAIL" {
@@ -227,7 +227,7 @@ EOS"; }
   chk BL-BR-06; [ "$(field status)" = ERROR ]; [[ "$(field evidence)" == *"answered nothing"* ]]
 }
 @test "BL-BR-06 the NextDNS app running → PASS" {
-  dns 192.168.1.1; mkdir -p "$DEVWARD_SYSROOT/Applications/NextDNS.app"; stub pgrep '[ "$2" = NextDNS ]'
+  dns 192.168.1.1; mkdir -p "$FORTKEEP_SYSROOT/Applications/NextDNS.app"; stub pgrep '[ "$2" = NextDNS ]'
   chk BL-BR-06; [ "$(field status)" = PASS ]
 }
 @test "BL-BR-06 ERROR when scutil fails" {
@@ -240,7 +240,7 @@ EOS"; }
 }
 @test "BL-BR-06 ERROR when scutil hangs" {
   stub scutil 'sleep 30'
-  DEVWARD_SCUTIL_TIMEOUT=1 chk BL-BR-06; [ "$(field status)" = ERROR ]; [ -n "$(field evidence)" ]
+  FORTKEEP_SCUTIL_TIMEOUT=1 chk BL-BR-06; [ "$(field status)" = ERROR ]; [ -n "$(field evidence)" ]
 }
 @test "BL-BR-04 a wallet in one profile is a FAIL even when another profile can't be read, and the note names it" {
   [ "$(id -u)" -ne 0 ] || skip "root reads everything"
@@ -261,20 +261,20 @@ EOS"; }
 }
 @test "BR checks skip a private Chrome-family profile or browser folder and say only that one was excluded" {
   chrome "Profile 3" '{}'; ext "$P" abcdefghijklmnopabcdefghijklmnop "MetaMask"
-  printf '%s\n' "$P" > "$DEVWARD_PRIVATE_PATHS"
+  printf '%s\n' "$P" > "$FORTKEEP_PRIVATE_PATHS"
   for c in BL-BR-01 BL-BR-02 BL-BR-03 BL-BR-04 BL-BR-05; do
     chk "$c"; [ "$(field status)" = NA ]; [[ "$output" == *"a private folder was excluded"* ]]; [[ "$output" != *"Profile 3"* ]]
   done
   chrome Default '{"credentials_enable_service":false}'
   chk BL-BR-01; [ "$(field status)" = PASS ]; [[ "$(field note)" == *"a private folder was excluded"* ]]
-  printf '%s\n' "$AS/Google/Chrome" > "$DEVWARD_PRIVATE_PATHS"
+  printf '%s\n' "$AS/Google/Chrome" > "$FORTKEEP_PRIVATE_PATHS"
   chk BL-BR-01; [ "$(field status)" = NA ]; [[ "$output" == *"a private folder was excluded"* ]]
 }
 @test "BR checks skip a Firefox profile inside a private folder and say only that one was excluded" {
   F="$AS/Firefox"; X="$HOME/Secret/ff.default"; mkdir -p "$F" "$X"
   printf '[Profile0]\nName=x\nIsRelative=0\nPath=%s\n' "$X" > "$F/profiles.ini"
   printf '\n' > "$X/prefs.js"; echo '{"addons":[]}' > "$X/extensions.json"
-  printf '~/Secret\n' > "$DEVWARD_PRIVATE_PATHS"
+  printf '~/Secret\n' > "$FORTKEEP_PRIVATE_PATHS"
   for c in BL-BR-01 BL-BR-02 BL-BR-03 BL-BR-04 BL-BR-05; do
     chk "$c"; [ "$(field status)" = NA ]
     [[ "$output" == *"a private folder was excluded"* ]]; [[ "$output" != *Secret* ]]; [[ "$output" != *ff.default* ]]

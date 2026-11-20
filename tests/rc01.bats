@@ -20,11 +20,11 @@ chk() { run /bin/bash "$REPO/checks/macos/BL-RC-01.sh"; }
 @test "a private editor folder or profile is never read or listed, and the result says one was excluded" {
   mkdir -p "$HOME/$U/profiles/secret"; echo '{"task.allowAutomaticTasks":"off"}' > "$HOME/$U/settings.json"
   echo '{}' > "$HOME/$U/profiles/secret/settings.json"
-  echo "~/$U/profiles/secret" > "$DEVWARD_PRIVATE_PATHS"
+  echo "~/$U/profiles/secret" > "$FORTKEEP_PRIVATE_PATHS"
   chk; [ "$(field status)" = PASS ]; [ "$(field note)" = "(a private folder was excluded)" ]; [[ "$output" != *secret* ]]
-  echo "~/$U" > "$DEVWARD_PRIVATE_PATHS"
+  echo "~/$U" > "$FORTKEEP_PRIVATE_PATHS"
   chk; [ "$(field status)" = ERROR ]; [ "$(field note)" = "a private folder was excluded" ]
-  echo "~/$U/profiles" > "$DEVWARD_PRIVATE_PATHS"
+  echo "~/$U/profiles" > "$FORTKEEP_PRIVATE_PATHS"
   chk; [ "$(field status)" = PASS ]; [ "$(field note)" = "(a private folder was excluded)" ]; [[ "$output" != *secret* ]]
 }
 @test "Windsurf, VSCodium and VS Code Insiders count too" {

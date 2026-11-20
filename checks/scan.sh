@@ -10,7 +10,7 @@
 # left out (SKIP), then the verdict line.
 # Exit: 0 clean: every repo scanned, nothing flagged
 #       1 HIGH: signs of a poisoned repo; don't open, install, build or run it
-#       2 refused: not one existing folder, or /, the home folder, a folder above it, devward's own folder, or a .git folder
+#       2 refused: not one existing folder, or /, the home folder, a folder above it, fortkeep's own folder, or a .git folder
 #       3 look: only lower-confidence findings (WARN)
 #       4 incomplete: a repo not scanned in full (time, unreadable, too large, git data elsewhere), no repo found, or the
 #         folder is private
@@ -18,27 +18,27 @@
 # Started as `bash scan.sh`: start again in privileged mode, which ignores BASH_ENV, ENV and exported functions.
 case $- in *p*) ;; *) exec /usr/bin/env -u BASH_ENV -u ENV /bin/bash -p "$0" "$@" ;; esac
 case "$0" in */*) . "${0%/*}/lib/common.sh" ;; *) . ./lib/common.sh ;; esac
-devward_clean_start "$0" "$@"
-. "$DEVWARD_LIB_DIR/agents.sh"  # devward_private_physical
+fortkeep_clean_start "$0" "$@"
+. "$FORTKEEP_LIB_DIR/agents.sh"  # fortkeep_private_physical
 
 refuse() { echo "$1" >&2; exit 2; }
 [ $# -eq 1 ] && [ -n "$1" ] || refuse "usage: $0 FOLDER   (absolute, or starting with ~/)"
-dir="$(devward_private_folder "$1")" || refuse "use an absolute path, or one starting with ~/, without . or .. in it"
+dir="$(fortkeep_private_folder "$1")" || refuse "use an absolute path, or one starting with ~/, without . or .. in it"
 excluded="Verdict: not scanned. A private folder was excluded."
-if devward_is_private "$dir"; then echo "$excluded"; exit 4; fi
+if fortkeep_is_private "$dir"; then echo "$excluded"; exit 4; fi
 [ -d "$dir" ] || refuse "no such folder: $dir"
 phys="$(cd "$dir" 2>/dev/null && pwd -P)" || refuse "could not open the folder: $dir"
-if devward_private_physical "$phys"; then echo "$excluded"; exit 4; fi
-devward_private_refused "$dir" \
-  && refuse "that is /, your home folder, a folder above it, or devward's own folder: name one project folder"
+if fortkeep_private_physical "$phys"; then echo "$excluded"; exit 4; fi
+fortkeep_private_refused "$dir" \
+  && refuse "that is /, your home folder, a folder above it, or fortkeep's own folder: name one project folder"
 # A repo's .git folder, as named or where a link leads: the repo is the folder above it, outside what was named.
 for n in "${dir##*/}" "${phys##*/}"; do
-  [ "$(printf '%s' "$n" | devward_fold)" != .git ] || refuse "that is a repo's .git folder: name the repo's own folder"
+  [ "$(printf '%s' "$n" | fortkeep_fold)" != .git ] || refuse "that is a repo's .git folder: name the repo's own folder"
 done
 
 inside() { case "$1" in "$phys"/*|"$phys") return 0 ;; esac; return 1; }
 show() {  # PHYSICAL_PATH — as the person spelled the folder, ~/ for the home folder
-  local p="$1"; case "$p" in "$phys"/*|"$phys") p="$dir${p#"$phys"}" ;; esac; devward_tilde "$p"
+  local p="$1"; case "$p" in "$phys"/*|"$phys") p="$dir${p#"$phys"}" ;; esac; fortkeep_tilde "$p"
 }
 gitdir_inside() {  # REPO — true when the git folder git reads for REPO (a worktree's shared one too) is inside the folder
   local d="$1/.git" c
@@ -59,27 +59,27 @@ printable() { printf '%s' "$1" | LC_ALL=C perl -pe 's/[\x00-\x1f\x7f]|\xc2[\x80-
 # hold copies, not repos. The folder itself may be hidden, and is never matched (-mindepth 1): its own .git is below it.
 while IFS= read -r -d '' g; do
   r="${g%/.git}"
-  if devward_private_physical "$r"; then skipped=1
+  if fortkeep_private_physical "$r"; then skipped=1
   elif ! gitdir_inside "$r"; then skips="$skips$(printable "$(show "$r")")"$'\n'
   else repos+=("$r"); fi
-done < <(devward_walk "$phys" -mindepth 1 -maxdepth 5 \( -name node_modules -o \( -name '.*' ! -name .git \) \) -prune \
+done < <(fortkeep_walk "$phys" -mindepth 1 -maxdepth 5 \( -name node_modules -o \( -name '.*' ! -name .git \) \) -prune \
   -o -name .git -prune -print0)
-fphys="$(printf '%s' "$phys" | devward_fold)"; fdir="$(printf '%s' "$dir" | devward_fold)"
+fphys="$(printf '%s' "$phys" | fortkeep_fold)"; fdir="$(printf '%s' "$dir" | fortkeep_fold)"
 while IFS= read -r p; do
   [ -n "$p" ] || continue
-  case "$(printf '%s' "$p" | devward_fold)" in "$fphys"/*|"$fdir"/*) [ ! -e "$p" ] || skipped=1 ;; esac
+  case "$(printf '%s' "$p" | fortkeep_fold)" in "$fphys"/*|"$fdir"/*) [ ! -e "$p" ] || skipped=1 ;; esac
 done <<EOF
-$(devward_private_list)
+$(fortkeep_private_list)
 EOF
 priv=()
 while IFS= read -r p; do
   [ -n "$p" ] || continue
   priv+=(--private "$p"); r="$(cd "$p" 2>/dev/null && pwd -P)" && [ "$r" != "$p" ] && priv+=(--private "$r")
 done <<EOF
-$(devward_private_list)
+$(fortkeep_private_list)
 EOF
 excl=""; [ -z "$skipped" ] || excl=" A private folder was excluded."
-nskip="$(devward_count "$skips")"
+nskip="$(fortkeep_count "$skips")"
 skip_lines() { printf '%s' "$skips" | while IFS= read -r r; do printf 'SKIP  %s  its git data is outside this folder, so it was not scanned\n' "$r"; done; }
 if [ ${#repos[@]} -eq 0 ]; then
   [ "$nskip" -gt 0 ] && { skip_lines; echo "Verdict: incomplete. Scanned 0 of $nskip repo(s).$excl"; exit 4; }
@@ -93,10 +93,10 @@ if ! xcode-select -p >/dev/null 2>&1 || [ ! -x /usr/bin/python3 ]; then
 fi
 # The repo copy of the scanner, not the installed hook, with GD-RC-01's time limits: it stops itself first. Untracked
 # and ignored files too: a downloaded folder's payload needn't be committed.
-SCAN="$DEVWARD_REPO/fixes/files/git-scan-new-files"
-t="${DEVWARD_SWEEP_TIMEOUT:-140}"
+SCAN="$FORTKEEP_REPO/fixes/files/git-scan-new-files"
+t="${FORTKEEP_SWEEP_TIMEOUT:-140}"
 budget=$(( t > 20 ? t - 15 : t / 2 ))
-out="$(devward_timeout "$t" /usr/bin/python3 -I "$SCAN" --sweep --budget "$budget" ${priv[@]+"${priv[@]}"} --untracked "${repos[@]}" 2>/dev/null)"; rc=$?
+out="$(fortkeep_timeout "$t" /usr/bin/python3 -I "$SCAN" --sweep --budget "$budget" ${priv[@]+"${priv[@]}"} --untracked "${repos[@]}" 2>/dev/null)"; rc=$?
 total=$(( ${#repos[@]} + nskip ))
 # What the scanner printed before it stopped counts, whatever stopped it: a HIGH is never lost to the time.
 done_line="$(printf '%s\n' "$out" | grep '^DONE	' | tail -n 1)"
@@ -112,11 +112,11 @@ for s in HIGH WARN ERROR UNREAD INFO; do
   done
 done
 skip_lines
-count() { devward_count "$(printf '%s\n' "$out" | awk -F'\t' -v s="$1" '$1 == s')"; }
+count() { fortkeep_count "$(printf '%s\n' "$out" | awk -F'\t' -v s="$1" '$1 == s')"; }
 nh="$(count HIGH)"; nw="$(count WARN)"; nu="$(count UNREAD)"; ne="$(count ERROR)"; ni="$(count INFO)"
 failed=""; [ "$rc" -eq 0 ] && [ -n "$done_line" ] || failed=1
 if [ "$nh" -gt 0 ]; then
-  nr="$(devward_count "$(printf '%s\n' "$out" | awk -F'\t' '$1 == "HIGH" {print $2}' | sort -u)")"
+  nr="$(fortkeep_count "$(printf '%s\n' "$out" | awk -F'\t' '$1 == "HIGH" {print $2}' | sort -u)")"
   late=""
   if [ "$rc" -eq 142 ] || [ $((swept + nu)) -lt ${#repos[@]} ]; then late=" The time ran out before every repo was scanned."
   elif [ -n "$failed" ]; then late=" The repo scanner failed (exit $rc) part way."; fi

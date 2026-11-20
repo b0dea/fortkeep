@@ -1,5 +1,5 @@
 # Codex settings for this repo, loaded once the folder is trusted. Web search is a hosted tool that no hook sees, so
 # guard.sh can't refuse it in a person's session the way it refuses Claude Code's and OpenCode's: a search query
 # could carry what the agent read (results, scans, the change log) off this Mac. No skill needs it. To use it while
-# developing devward, start Codex with -c web_search=live.
+# developing fortkeep, start Codex with -c web_search=live.
 web_search = "disabled"

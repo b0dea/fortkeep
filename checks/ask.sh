@@ -4,15 +4,15 @@
 # records an answer only to exactly this question, naming what the change does, with exactly these options.
 # Usage: checks/ask.sh ID apply|undo | checks/ask.sh ID accept "REASON" | checks/ask.sh private add FOLDER
 . "$(dirname "$0")/lib/common.sh"
-CONTROLS="${DEVWARD_CONTROLS:-$DEVWARD_REPO/controls/controls.json}"
+CONTROLS="${FORTKEEP_CONTROLS:-$FORTKEEP_REPO/controls/controls.json}"
 usage() { echo "usage: $0 ID apply|undo | $0 ID accept \"REASON\" | $0 private add FOLDER" >&2; exit 2; }
 if [ "${1:-} ${2:-}" = "private add" ]; then
   # The question names the folder exactly as checks/private.sh add will take it, and the approval hook ties the answer
   # to that folder.
   [ $# -eq 3 ] || usage
-  f="$(devward_private_folder "$3")" || { echo "use an absolute path, or one starting with ~/, without . or .. in it" >&2; exit 2; }
-  if devward_private_refused "$f"; then
-    echo "that folder is /, your home folder, a folder above it, or devward's own folder: if it must be private, add it yourself in the Terminal app" >&2
+  f="$(fortkeep_private_folder "$3")" || { echo "use an absolute path, or one starting with ~/, without . or .. in it" >&2; exit 2; }
+  if fortkeep_private_refused "$f"; then
+    echo "that folder is /, your home folder, a folder above it, or fortkeep's own folder: if it must be private, add it yourself in the Terminal app" >&2
     exit 2
   fi
   jq -n --arg f "$f" '{question: "Add \"\($f)\" to the private list? Every scan skips that folder from now on, and only you can take it off, in the Terminal app.",
@@ -26,7 +26,7 @@ case "${2:-}" in
   # The question names the reason, and the approval hook ties the answer to it: the words recorded as the person's are
   # the ones they saw.
   accept) [ $# -eq 3 ] || usage
-    devward_accept_reason "$3" || { echo "give the reason as one line of at most 300 characters, without backslashes" >&2; exit 2; } ;;
+    fortkeep_accept_reason "$3" || { echo "give the reason as one line of at most 300 characters, without backslashes" >&2; exit 2; } ;;
   *) usage ;;
 esac
 printf '%s\n' "$1" | grep -Eq '^(BL|GD|OV)-[A-Z]{2,4}-[0-9]{2}$' || usage

@@ -88,14 +88,14 @@ touch_id_mac() {  # an administrator on a Mac with a Touch ID sensor, unless GRO
   SENSOR="" TEMPLATES=2 chk BL-OS-08; [ "$(field status)" = FAIL ]
 }
 @test "BL-OS-08 pam_tid present → PASS" {
-  mkdir -p "$DEVWARD_SYSROOT/etc/pam.d"
-  printf '# comment\nauth       sufficient     pam_tid.so\n' > "$DEVWARD_SYSROOT/etc/pam.d/sudo_local"
+  mkdir -p "$FORTKEEP_SYSROOT/etc/pam.d"
+  printf '# comment\nauth       sufficient     pam_tid.so\n' > "$FORTKEEP_SYSROOT/etc/pam.d/sudo_local"
   chk BL-OS-08; [ "$(field status)" = PASS ]
 }
 @test "BL-OS-08 commented out → FAIL" {
   touch_id_mac
-  mkdir -p "$DEVWARD_SYSROOT/etc/pam.d"
-  printf '#auth       sufficient     pam_tid.so\n' > "$DEVWARD_SYSROOT/etc/pam.d/sudo_local"
+  mkdir -p "$FORTKEEP_SYSROOT/etc/pam.d"
+  printf '#auth       sufficient     pam_tid.so\n' > "$FORTKEEP_SYSROOT/etc/pam.d/sudo_local"
   chk BL-OS-08; [ "$(field status)" = FAIL ]
 }
 @test "BL-OS-08 no file → FAIL" {
@@ -104,17 +104,17 @@ touch_id_mac() {  # an administrator on a Mac with a Touch ID sensor, unless GRO
 }
 
 @test "BL-OS-09 nothing installed → PASS" {
-  mkdir -p "$DEVWARD_SYSROOT/Applications" "$DEVWARD_SYSROOT/Library/LaunchDaemons"
-  touch "$DEVWARD_SYSROOT/Library/LaunchDaemons/com.example.ok.plist"
+  mkdir -p "$FORTKEEP_SYSROOT/Applications" "$FORTKEEP_SYSROOT/Library/LaunchDaemons"
+  touch "$FORTKEEP_SYSROOT/Library/LaunchDaemons/com.example.ok.plist"
   chk BL-OS-09; [ "$(field status)" = PASS ]
 }
 @test "BL-OS-09 leftover helper → FAIL naming it" {
-  mkdir -p "$DEVWARD_SYSROOT/Library/PrivilegedHelperTools"
-  touch "$DEVWARD_SYSROOT/Library/PrivilegedHelperTools/com.teamviewer.Helper"
+  mkdir -p "$FORTKEEP_SYSROOT/Library/PrivilegedHelperTools"
+  touch "$FORTKEEP_SYSROOT/Library/PrivilegedHelperTools/com.teamviewer.Helper"
   chk BL-OS-09; [ "$(field status)" = FAIL ]; [[ "$(field evidence)" == *com.teamviewer.Helper* ]]
 }
 @test "BL-OS-09 app installed → FAIL" {
-  mkdir -p "$DEVWARD_SYSROOT/Applications/AnyDesk.app"
+  mkdir -p "$FORTKEEP_SYSROOT/Applications/AnyDesk.app"
   chk BL-OS-09; [ "$(field status)" = FAIL ]; [[ "$(field evidence)" == *AnyDesk* ]]
 }
 

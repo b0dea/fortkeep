@@ -1,11 +1,11 @@
 name: Bug report
-description: devward does something it should not, or fails to do something it should.
+description: fortkeep does something it should not, or fails to do something it should.
 labels: ["bug"]
 body:
   - type: markdown
     attributes:
       value: |
-        Security problems do not go here; see [SECURITY.md](https://github.com/b0dea/devward/blob/main/SECURITY.md).
+        Security problems do not go here; see [SECURITY.md](https://github.com/b0dea/fortkeep/blob/main/SECURITY.md).
         A check that gives the wrong result has its own form. One defect per issue.
         Never paste `results.json` as it is: it holds file and folder names from your Mac. Remove paths and usernames.
   - type: textarea
@@ -35,7 +35,7 @@ body:
     attributes:
       label: Environment
       placeholder: |
-        devward version (older copies: git describe --tags, in the devward folder):
+        fortkeep version (older copies: git describe --tags, in the fortkeep folder):
         sw_vers -productVersion:
         uname -m:
         agent and its version (Claude Code, Codex, OpenCode):

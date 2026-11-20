@@ -1,6 +1,6 @@
 # Contributor Covenant Code of Conduct
 
-This code of conduct applies to everyone taking part in the devward project: issues, pull
+This code of conduct applies to everyone taking part in the fortkeep project: issues, pull
 requests, reviews and any other project space.
 
 ## Our Pledge

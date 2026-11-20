@@ -6,7 +6,7 @@
 
 **Check it yourself:** `ls -l "/Library/Application Support/ClaudeCode/managed-settings.json"` shows `root wheel`, and the file contains `"disableBypassPermissionsMode": "disable"` and a hook pointing at a script under `/usr/local/lib`. For Codex, `ls -l /etc/codex/requirements.toml` shows `root wheel`, and the file allows only `read-only` and `workspace-write`.
 
-**How to fix:** this needs your admin password. Open the Terminal app (Applications → Utilities), go to the devward folder (`cd` and a space, then the folder), and type each step on its own, pressing Return after each.
+**How to fix:** this needs your admin password. Open the Terminal app (Applications → Utilities), go to the fortkeep folder (`cd` and a space, then the folder), and type each step on its own, pressing Return after each.
 
 For Claude Code:
 1. `t="$(mktemp -d)"` makes a temporary folder for two files.
@@ -23,6 +23,6 @@ For Codex, which reads its root-owned rules from `/etc/codex/requirements.toml`:
 2. `echo 'allowed_sandbox_modes = ["read-only", "workspace-write"]' | sudo tee /etc/codex/requirements.toml`
 3. `sudo -k`
 
-After each devward update, repeat the Claude Code steps: this check compares the root-owned guard with your own copy of the same name and fails while they differ. Keep the agent autonomous: the point is a filter on what it installs and which files it touches, not approving every command. Codex's `workspace-write` mode still works on its own inside your project; only switching its sandbox off entirely (`danger-full-access`) is ruled out. Don't set `allowManagedHooksOnly` unless every hook you rely on is in the managed file. This protects against the agent, not against someone with your admin password.
+After each fortkeep update, repeat the Claude Code steps: this check compares the root-owned guard with your own copy of the same name and fails while they differ. Keep the agent autonomous: the point is a filter on what it installs and which files it touches, not approving every command. Codex's `workspace-write` mode still works on its own inside your project; only switching its sandbox off entirely (`danger-full-access`) is ruled out. Don't set `allowManagedHooksOnly` unless every hook you rely on is in the managed file. This protects against the agent, not against someone with your admin password.
 
 **What the agent is doing:** reading the managed settings file and Codex's requirements, checking who owns them and the hook script, and comparing that script with your own copy. The agent never runs sudo.

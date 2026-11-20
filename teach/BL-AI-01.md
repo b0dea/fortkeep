@@ -6,6 +6,6 @@
 
 **Check it yourself:** ask the agent to run `/usr/bin/which npm` and `npm install --no-save safe-chain-test`. The first must print the shim; the second must be refused.
 
-**How to fix:** fix BL-SC-02 and BL-SC-03, then quit the agent and start it again: it keeps the PATH it started with. Start it from the devward folder as before and type `/fix` (in Codex, `$fix`); it checks the Mac again first.
+**How to fix:** fix BL-SC-02 and BL-SC-03, then quit the agent and start it again: it keeps the PATH it started with. Start it from the fortkeep folder as before and type `/fix` (in Codex, `$fix`); it checks the Mac again first.
 
 **What the agent is doing:** asking where npm is in the shell this very review runs in, which is the agent's own.

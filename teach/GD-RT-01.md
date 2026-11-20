@@ -8,6 +8,6 @@
 
 **How to fix:** once the weekly check (BL-AU-02) has run a scan, open the Terminal app, `cd` to this repo, and run `checks/baseline.sh accept`. It shows what would become your baseline and asks you to type `accept`. The agent can't do this step for you, on purpose: an agent must never decide what's normal on your Mac.
 
-Your accepted baselines live in `~/.config/devward/baseline/`, outside the repo, where no agent may write. A baseline accepted while it still lived in the repo's `reports/` folder isn't read any more: run `checks/baseline.sh accept` once more.
+Your accepted baselines live in `~/.config/fortkeep/baseline/`, outside the repo, where no agent may write. A baseline accepted while it still lived in the repo's `reports/` folder isn't read any more: run `checks/baseline.sh accept` once more.
 
 **What the agent is doing:** comparing the latest scan with your baseline and listing only the names of new items.

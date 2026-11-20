@@ -7,25 +7,25 @@ unset BASH_ENV ENV CDPATH
 FX_LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 # A fix runs only from a copy that is exactly a signed release, checked before any other helper is loaded.
 . "$FX_LIB_DIR/../../checks/lib/repo.sh"
-devward_release_gate "$(cd "$FX_LIB_DIR/../.." && pwd -P)" || exit 4
-# No DEVWARD_* setting from the caller reaches the checks a fix runs (timeouts, config folders).
-for v in ${!DEVWARD_*}; do unset "$v"; done
-DEVWARD_REPO="$(cd "$FX_LIB_DIR/../.." && pwd -P)"
-DEVWARD_REPORTS="$DEVWARD_REPO/reports"
-DEVWARD_PRIVATE_PATHS="$DEVWARD_REPO/private-paths"
-DEVWARD_SYSROOT=""
-export DEVWARD_REPO DEVWARD_REPORTS DEVWARD_PRIVATE_PATHS DEVWARD_SYSROOT
-. "$DEVWARD_REPO/checks/lib/common.sh"
-. "$DEVWARD_REPO/checks/lib/approval.sh"
+fortkeep_release_gate "$(cd "$FX_LIB_DIR/../.." && pwd -P)" || exit 4
+# No FORTKEEP_* setting from the caller reaches the checks a fix runs (timeouts, config folders).
+for v in ${!FORTKEEP_*}; do unset "$v"; done
+FORTKEEP_REPO="$(cd "$FX_LIB_DIR/../.." && pwd -P)"
+FORTKEEP_REPORTS="$FORTKEEP_REPO/reports"
+FORTKEEP_PRIVATE_PATHS="$FORTKEEP_REPO/private-paths"
+FORTKEEP_SYSROOT=""
+export FORTKEEP_REPO FORTKEEP_REPORTS FORTKEEP_PRIVATE_PATHS FORTKEEP_SYSROOT
+. "$FORTKEEP_REPO/checks/lib/common.sh"
+. "$FORTKEEP_REPO/checks/lib/approval.sh"
 FX_STAMP="$(date -u +%Y%m%dT%H%M%SZ)-$$"
 
 fx_require_approval() {  # ID ACTION — consume a fresh token or refuse
   case "$2" in apply|undo) ;; *) echo "usage: $(basename "$0") apply|undo" >&2; exit 2 ;; esac
-  devward_take_approval "$DEVWARD_REPORTS/.approvals" "$1" "$2" || exit 4
+  fortkeep_take_approval "$FORTKEEP_REPORTS/.approvals" "$1" "$2" || exit 4
 }
 
 fx_backup() {  # ID FILE — non-zero if the backup fails; a dangling symlink is refused
-  local dir="$DEVWARD_BACKUPS/$1/$FX_STAMP" n
+  local dir="$FORTKEEP_BACKUPS/$1/$FX_STAMP" n
   mkdir -p "$dir" || return 1
   if [ -L "$2" ] && [ ! -e "$2" ]; then return 1; fi
   if [ -f "$2" ]; then
@@ -39,7 +39,7 @@ fx_backup() {  # ID FILE — non-zero if the backup fails; a dangling symlink is
 
 fx_latest_backup() {  # ID — the newest backup folder not yet undone; status 1 if none
   local d dir=""
-  for d in "$DEVWARD_BACKUPS/$1"/*/; do [ -f "$d/manifest.tsv" ] && dir="${d%/}"; done
+  for d in "$FORTKEEP_BACKUPS/$1"/*/; do [ -f "$d/manifest.tsv" ] && dir="${d%/}"; done
   [ -n "$dir" ] || return 1
   printf '%s\n' "$dir"
 }
@@ -49,7 +49,7 @@ fx_state() {  # FILE — its SHA-256, or ABSENT
 }
 
 fx_seal() {  # ID — record each backed-up file's state right after the change, so undo can spot later edits
-  fx_seal_dir "$DEVWARD_BACKUPS/$1/$FX_STAMP"
+  fx_seal_dir "$FORTKEEP_BACKUPS/$1/$FX_STAMP"
 }
 
 fx_seal_dir() {  # BACKUP_DIR — write its sealed.tsv from the files' current states
@@ -64,10 +64,10 @@ fx_check_seal() {  # BACKUP_DIR — exit 6, changing nothing, if a file differs 
   local f h changed=""
   [ -f "$1/sealed.tsv" ] || return 0
   while IFS="$(printf '\t')" read -r f h; do
-    [ "$(fx_state "$f")" = "$h" ] || changed="$changed, $(devward_tilde "$f")"
+    [ "$(fx_state "$f")" = "$h" ] || changed="$changed, $(fortkeep_tilde "$f")"
   done < "$1/sealed.tsv"
   [ -n "$changed" ] || return 0
-  echo "undo stopped: these files changed after the fix, and undoing would lose those edits: ${changed#, }; backup kept in $(devward_tilde "$1")" >&2
+  echo "undo stopped: these files changed after the fix, and undoing would lose those edits: ${changed#, }; backup kept in $(fortkeep_tilde "$1")" >&2
   exit 6
 }
 
@@ -110,8 +110,8 @@ fx_restore() {  # ID — undo the most recent apply that hasn't been undone
   dir="$(fx_latest_backup "$1")" || { echo "nothing to undo for $1" >&2; exit 5; }
   fx_check_seal "$dir"
   while IFS="$(printf '\t')" read -r f b; do
-    if [ "$b" = ABSENT ]; then rm -f "$f" || { echo "could not remove $(devward_tilde "$f")" >&2; bad=1; }
-    else cp -p "$dir/$b" "$f" || { echo "could not restore $(devward_tilde "$f")" >&2; bad=1; }; fi
+    if [ "$b" = ABSENT ]; then rm -f "$f" || { echo "could not remove $(fortkeep_tilde "$f")" >&2; bad=1; }
+    else cp -p "$dir/$b" "$f" || { echo "could not restore $(fortkeep_tilde "$f")" >&2; bad=1; }; fi
   done < "$dir/manifest.tsv"
   if [ "$bad" -ne 0 ]; then
     [ -f "$dir/sealed.tsv" ] && fx_seal_dir "$dir"  # a retry must not mistake this partial undo for the person's edits
@@ -121,7 +121,7 @@ fx_restore() {  # ID — undo the most recent apply that hasn't been undone
 }
 
 fx_log() {  # ID ACTION SUMMARY
-  local log="$DEVWARD_REPORTS/change-log.md"
+  local log="$FORTKEEP_REPORTS/change-log.md"
   [ -f "$log" ] || printf '| When (UTC) | Control | Action | What | Undo |\n|---|---|---|---|---|\n' > "$log"
   printf '| %s | %s | %s | %s | `fixes/macos/%s.sh undo` |\n' "$(date -u +%FT%TZ)" "$1" "$2" "$3" "$1" >> "$log"
 }

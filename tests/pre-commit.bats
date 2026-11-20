@@ -6,8 +6,8 @@ setup() {
   T="$BATS_TEST_TMPDIR/repo"; mkdir -p "$T/ci"
   cp "$REPO/ci/pre-commit.sh" "$REPO/ci/no-commit-to-main.sh" "$REPO/ci/denylist-scan.sh" "$REPO/ci/marker-scan.sh" "$T/ci/"
   git -C "$T" init -q -b work
-  printf 'acmecorp\n' > "$BATS_TEST_TMPDIR/denylist"; export DEVWARD_DENYLIST="$BATS_TEST_TMPDIR/denylist"
-  printf '%s' 'devward-fake-marker-7Q' | base64 > "$BATS_TEST_TMPDIR/markers.b64"; export DEVWARD_MARKERS="$BATS_TEST_TMPDIR/markers.b64"
+  printf 'acmecorp\n' > "$BATS_TEST_TMPDIR/denylist"; export FORTKEEP_DENYLIST="$BATS_TEST_TMPDIR/denylist"
+  printf '%s' 'fortkeep-fake-marker-7Q' | base64 > "$BATS_TEST_TMPDIR/markers.b64"; export FORTKEEP_MARKERS="$BATS_TEST_TMPDIR/markers.b64"
   stub gitleaks 'echo "gitleaks $*" >> "$BATS_TEST_TMPDIR/gitleaks.log"; exit "${GITLEAKS_RC:-0}"'
 }
 pc() { run bash -c "cd '$T' && ci/pre-commit.sh"; }
@@ -36,11 +36,11 @@ stage() { mkdir -p "$T/$(dirname "$1")"; echo "${2:-clean text}" > "$T/$1"; git 
   GITLEAKS_RC=1 pc; [ "$status" -eq 1 ]
 }
 @test "pre-commit: a joined marker refuses the commit, printing only file:line" {
-  stage d.js "x = devward-fake-marker-7Q"
+  stage d.js "x = fortkeep-fake-marker-7Q"
   pc; [ "$status" -eq 1 ]; [[ "$output" == *"d.js:1"* ]]
 }
 @test "pre-commit: a commit goes through when no denylist file exists" {
-  export DEVWARD_DENYLIST="$BATS_TEST_TMPDIR/none"
+  export FORTKEEP_DENYLIST="$BATS_TEST_TMPDIR/none"
   stage a.txt
   pc; [ "$status" -eq 0 ]
 }
@@ -51,7 +51,7 @@ stage() { mkdir -p "$T/$(dirname "$1")"; echo "${2:-clean text}" > "$T/$1"; git 
   [[ "$output" == *"b.txt:1"* ]]; [[ "$output" != *AcmeCorp* ]]
 }
 @test "scan-private, and so make release, fail when no denylist file exists" {
-  export DEVWARD_DENYLIST="$BATS_TEST_TMPDIR/none"
+  export FORTKEEP_DENYLIST="$BATS_TEST_TMPDIR/none"
   cp "$REPO/Makefile" "$T/"; stage a.txt
   run make -C "$T" --no-print-directory scan-private; [ "$status" -ne 0 ]; [[ "$output" == *"no denylist"* ]]
   # -o ci: take ci as done, so only scan-private stands between release and the signing script.
@@ -92,6 +92,6 @@ stage() { mkdir -p "$T/$(dirname "$1")"; echo "${2:-clean text}" > "$T/$1"; git 
   run git -C "$T" -c user.name=t -c user.email=t@example.com commit -q -m third; [ "$status" -ne 0 ]
   [[ "$output" == *no-commit-to-main* ]]
   git -C "$T" checkout -q work
-  stage c.txt "x = devward-fake-marker-7Q"
+  stage c.txt "x = fortkeep-fake-marker-7Q"
   run git -C "$T" -c user.name=t -c user.email=t@example.com commit -q -m fourth; [ "$status" -ne 0 ]; [[ "$output" == *"c.txt:1"* ]]
 }

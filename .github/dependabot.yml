@@ -1,6 +1,6 @@
 version: 2
 
-# GitHub Actions only: devward has no package dependencies, and its dev tools are pinned in .mise.toml.
+# GitHub Actions only: fortkeep has no package dependencies, and its dev tools are pinned in .mise.toml.
 # Weekly and grouped so one review covers a week of updates. The cooldown keeps a freshly published release out
 # until a hijacked or malicious publish has usually been found and pulled.
 updates:

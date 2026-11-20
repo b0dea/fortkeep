@@ -8,4 +8,4 @@
 
 **How to fix:** set your DNS servers to `1.1.1.2` and `1.0.0.2` (Cloudflare with malware blocking, free) or `9.9.9.9` (Quad9, free), or use NextDNS (paid, with a free tier) with its malware blocklists on.
 
-**What the agent is doing:** reading which DNS servers macOS uses. If they aren't on its list of known filtering services, it makes one DNS lookup of `malware.testcategory.com` and passes if your DNS blocks it; only if that gets no answer at all, it looks up `example.com` to tell a block from no network. `docs/what-devward-touches.md` lists every network use.
+**What the agent is doing:** reading which DNS servers macOS uses. If they aren't on its list of known filtering services, it makes one DNS lookup of `malware.testcategory.com` and passes if your DNS blocks it; only if that gets no answer at all, it looks up `example.com` to tell a block from no network. `docs/what-fortkeep-touches.md` lists every network use.

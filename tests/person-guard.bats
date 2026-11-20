@@ -1,6 +1,6 @@
 load helpers
 
-# Decision 16: a person's session (no DEVWARD_DEV) is allow-listed. Each call is the JSON the agent sends, fed to the
+# Decision 16: a person's session (no FORTKEEP_DEV) is allow-listed. Each call is the JSON the agent sends, fed to the
 # hook .claude/settings.json runs for every tool. The A1-A9 reproductions from the security review must all be refused.
 setup() {
   setup_env; person_session
@@ -19,14 +19,14 @@ sh_() { call Bash "$(jq -cn --arg c "$1" '{command:$c}')" "${2:-$REPO}" "${3:-de
 read_() { call Read "$(jq -cn --arg p "$1" '{file_path:$p}')"; }
 write_() { call Write "$(jq -cn --arg p "$1" '{file_path:$p, content:"x"}')"; }
 allowed() { run "$@"; [ "$status" -eq 0 ] || { echo "refused: $*: $output"; return 1; }; }
-refused() { run "$@"; [ "$status" -eq 2 ] || { echo "allowed: $*"; return 1; }; [[ "$output" == *"Blocked by devward"* ]]; }
+refused() { run "$@"; [ "$status" -eq 2 ] || { echo "allowed: $*"; return 1; }; [[ "$output" == *"Blocked by fortkeep"* ]]; }
 
 @test "A1: a look-alike letter (U+017F, which APFS folds to s) passes no guard" {
   refused write_ "reports/.approval$(printf '\xc5\xbf')/BL-RC-01.apply"
   refused sh_ "mkdir -p reports/.approval$(printf '\xc5\xbf') && date +%s > reports/.approval$(printf '\xc5\xbf')/BL-SC-02.apply"
   refused sh_ "cat private-path$(printf '\xc5\xbf')"
   refused read_ "private-path$(printf '\xc5\xbf')"
-  printf '~/Private\n' > "$DEVWARD_PRIVATE_PATHS"; mkdir -p "$HOME/Private"
+  printf '~/Private\n' > "$FORTKEEP_PRIVATE_PATHS"; mkdir -p "$HOME/Private"
   refused read_ "$HOME/Priva$(printf '\xc5\xbf')e/a.txt"
   refused sh_ "echo x >> ~/.z$(printf '\xc5\xbf')hrc"
   refused sh_ "checks/private.$(printf '\xc5\xbf')h remove ~/Private"
@@ -107,23 +107,23 @@ refused() { run "$@"; [ "$status" -eq 2 ] || { echo "allowed: $*"; return 1; }; 
   mkdir -p "$HOME/.claude"; refused write_ "$HOME/.claude/projects/$ENC/memory/MEMORY.md"
   p="$(printf '*** Begin Patch\n*** Add File: %s/projects/%s/memory/m.md\n+x\n*** End Patch' "$CLAUDE_CONFIG_DIR" "$ENC")"
   refused call apply_patch "$(jq -cn --arg p "$p" '{command:$p}')"
-  export DEVWARD_DEV=1  # a development session keeps its memory
+  export FORTKEEP_DEV=1  # a development session keeps its memory
   allowed write_ "$CLAUDE_CONFIG_DIR/projects/$ENC/memory/m.md"
-  unset DEVWARD_DEV
+  unset FORTKEEP_DEV
   refused write_ "/private/tmp/claude-$(id -u)/-Users-someone-other/s/notes.md"
   refused write_ "$CLAUDE_CONFIG_DIR/settings.json"
   refused write_ "$HOME/.zshrc"
 }
-@test "DEVWARD_DEV=1 without the marker gets the allow-list; no person's session can write the marker (A14)" {
-  export DEVWARD_DEV=1
+@test "FORTKEEP_DEV=1 without the marker gets the allow-list; no person's session can write the marker (A14)" {
+  export FORTKEEP_DEV=1
   allowed sh_ 'ls'
-  rm "$HOME/.config/devward/dev"
+  rm "$HOME/.config/fortkeep/dev"
   refused sh_ 'ls'
   refused write_ "$REPO/checks/run.sh"
-  unset DEVWARD_DEV
-  refused write_ "$HOME/.config/devward/dev"
-  refused write_ "~/.config/devward/dev"
-  p="$(printf '*** Begin Patch\n*** Add File: %s/.config/devward/dev\n+x\n*** End Patch' "$HOME")"
+  unset FORTKEEP_DEV
+  refused write_ "$HOME/.config/fortkeep/dev"
+  refused write_ "~/.config/fortkeep/dev"
+  p="$(printf '*** Begin Patch\n*** Add File: %s/.config/fortkeep/dev\n+x\n*** End Patch' "$HOME")"
   refused call apply_patch "$(jq -cn --arg p "$p" '{command:$p}')"
 }
 @test "a patch header hidden behind Unicode space, or written without a space, is still checked" {
@@ -193,7 +193,7 @@ refused() { run "$@"; [ "$status" -eq 2 ] || { echo "allowed: $*"; return 1; }; 
   refused call Glob '{"pattern":"/Users/*"}'
   refused call Grep '{"pattern":"x","path":"teach"}' "$HOME"
 }
-@test "the shell runs one devward script per command: no other program, operator, expansion or quoting trick" {
+@test "the shell runs one fortkeep script per command: no other program, operator, expansion or quoting trick" {
   for c in 'ls' 'cat controls/controls.json' 'git status' 'jq -r .teach reports/config.json' 'id -F' \
     'checks/run.sh; ls' 'checks/run.sh && ls' 'checks/run.sh | cat' 'checks/run.sh > reports/x' 'checks/run.sh 2>&1' \
     'checks/run.sh < /dev/null' 'checks/run.sh --only $ID' 'checks/run.sh --only "$(id -F)"' 'checks/run.sh `x`' \

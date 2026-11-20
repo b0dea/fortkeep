@@ -1,9 +1,9 @@
 #!/bin/bash
 # Fails if any tracked (or staged) file contains a full malware marker. Markers are decoded only in memory.
-# Usage: ci/marker-scan.sh [--staged]   (markers: $DEVWARD_MARKERS, default ci/markers.b64)
+# Usage: ci/marker-scan.sh [--staged]   (markers: $FORTKEEP_MARKERS, default ci/markers.b64)
 # Exit: 0 clean, 1 hits or no markers, 2 scan error.
 cd "$(dirname "$0")/.." || exit 1
-markers="${DEVWARD_MARKERS:-ci/markers.b64}"
+markers="${FORTKEEP_MARKERS:-ci/markers.b64}"
 if [ ! -s "$markers" ]; then echo "marker-scan: no markers file at $markers" >&2; exit 1; fi
 decoded() { while IFS= read -r l; do [ -n "$l" ] && { printf '%s' "$l" | base64 --decode; echo; }; done < "$markers"; }
 if [ -z "$(decoded | tr -d '[:space:]')" ]; then echo "marker-scan: no markers decoded" >&2; exit 1; fi

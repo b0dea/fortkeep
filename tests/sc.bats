@@ -34,7 +34,7 @@ shims_first() { printf 'export PATH="$HOME/.safe-chain/shims:$PATH"\n' | tee "$H
 @test "BL-SC-01 verify fails → FAIL; verify hangs → ERROR" {
   VERIFY_RC=1 chk BL-SC-01; [ "$(field status)" = FAIL ]
   printf '#!/bin/bash\nsleep 20\n' > "$SC/shims/npm"
-  DEVWARD_VERIFY_TIMEOUT=1 chk BL-SC-01; [ "$(field status)" = ERROR ]
+  FORTKEEP_VERIFY_TIMEOUT=1 chk BL-SC-01; [ "$(field status)" = ERROR ]
 }
 @test "BL-SC-01 tries the test package in an empty folder of its own, with its install scripts off, and removes it afterwards" {
   chk BL-SC-01; [ "$(field status)" = PASS ]; [[ "$(field evidence)" == *"test package was refused"* ]]
@@ -49,7 +49,7 @@ shims_first() { printf 'export PATH="$HOME/.safe-chain/shims:$PATH"\n' | tee "$H
 }
 @test "BL-SC-01 the test package fails without Safe Chain's refusal, or hangs → ERROR" {
   PKG=offline chk BL-SC-01; [ "$(field status)" = ERROR ]; [[ "$(field evidence)" == *"without Safe Chain's refusal"* ]]
-  PKG=hang DEVWARD_TEST_PACKAGE_TIMEOUT=1 chk BL-SC-01; [ "$(field status)" = ERROR ]; [[ "$(field evidence)" == *"did not finish in 1s"* ]]
+  PKG=hang FORTKEEP_TEST_PACKAGE_TIMEOUT=1 chk BL-SC-01; [ "$(field status)" = ERROR ]; [[ "$(field evidence)" == *"did not finish in 1s"* ]]
   [ -z "$(ls -A "$TMPDIR")" ]
 }
 @test "BL-SC-02 shims first in every zsh type → PASS" {
@@ -81,7 +81,7 @@ shims_first() { printf 'export PATH="$HOME/.safe-chain/shims:$PATH"\n' | tee "$H
 }
 @test "BL-SC-02 shells that hang → ERROR" {
   echo 'sleep 5' > "$HOME/.zshenv"
-  DEVWARD_SHELL_TIMEOUT=1 chk BL-SC-02; [ "$(field status)" = ERROR ]
+  FORTKEEP_SHELL_TIMEOUT=1 chk BL-SC-02; [ "$(field status)" = ERROR ]
 }
 apps() {  # fake ps: each argument is "NAME|PATH" for one app launched by launchd; PATH "-" shows no environment
   : > "$BATS_TEST_TMPDIR/apps"; n=100
@@ -94,11 +94,11 @@ case "$1" in
         while IFS="|" read -r pid name p; do printf "%s 1 %s /Applications/%s.app/Contents/MacOS/%s\n" "$pid" "$me" "$name" "$name"; done < "$A" ;;
   -Eww) pid="$5"; while IFS="|" read -r id name p; do [ "$id" = "$pid" ] || continue
           if [ "$p" = - ]; then echo "/Applications/$name.app/Contents/MacOS/$name"
-          else echo "/Applications/$name.app/Contents/MacOS/$name HOME=/x DEVWARD_FAKE_SECRET=not-a-real-value-0000 PATH=$p TMPDIR=/t"; fi; done < "$A" ;;
+          else echo "/Applications/$name.app/Contents/MacOS/$name HOME=/x FORTKEEP_FAKE_SECRET=not-a-real-value-0000 PATH=$p TMPDIR=/t"; fi; done < "$A" ;;
 esac'
 }
 userconf() {  # PATH_VALUE MTIME — launchd's stored user config; boot time is fixed at 1700000000
-  C="$DEVWARD_SYSROOT/private/var/db/com.apple.xpc.launchd/config"; mkdir -p "$C"; rm -f "$C/user.plist"
+  C="$FORTKEEP_SYSROOT/private/var/db/com.apple.xpc.launchd/config"; mkdir -p "$C"; rm -f "$C/user.plist"
   plutil -create xml1 "$C/user.plist"; plutil -insert PathEnvironmentVariable -string "$1" "$C/user.plist"
   touch -t "$2" "$C/user.plist"
   stub sysctl 'echo "{ sec = 1700000000, usec = 0 } Tue Nov 14 22:13:20 2023"'
@@ -122,7 +122,7 @@ userconf() {  # PATH_VALUE MTIME — launchd's stored user config; boot time is 
 @test "BL-SC-03 reports only which apps, never another environment value or any PATH" {
   apps "Code|/usr/bin:/bin:/usr/sbin:/sbin" "Tool|/opt/x/bin:/usr/bin" "Cursor|$SC/shims:/usr/bin"
   chk BL-SC-03; [ "$(field status)" = FAIL ]
-  [[ "$output" != *not-a-real-value* ]]; [[ "$output" != *DEVWARD_FAKE_SECRET* ]]; [[ "$output" != */opt/x/bin* ]]
+  [[ "$output" != *not-a-real-value* ]]; [[ "$output" != *FORTKEEP_FAKE_SECRET* ]]; [[ "$output" != */opt/x/bin* ]]
   [[ "$output" != *TMPDIR* ]]; [[ "$output" != *"$SC"* ]]
   userconf "$SC/shims:/usr/bin:/bin" 202301010000; apps "Cursor|$SC/shims:/usr/bin" "Bar|/usr/bin:/bin:/usr/sbin:/sbin"
   chk BL-SC-03; [ "$(field status)" = PASS ]; [[ "$output" != *not-a-real-value* ]]; [[ "$output" != *"$SC"* ]]
@@ -145,7 +145,7 @@ userconf() {  # PATH_VALUE MTIME — launchd's stored user config; boot time is 
 }
 @test "BL-SC-03 a launchd config folder that can't be searched and no app → ERROR with evidence" {
   apps "Notes|-"
-  C="$DEVWARD_SYSROOT/private/var/db/com.apple.xpc.launchd/config"; mkdir -p "$C"; chmod 000 "$C"
+  C="$FORTKEEP_SYSROOT/private/var/db/com.apple.xpc.launchd/config"; mkdir -p "$C"; chmod 000 "$C"
   chk BL-SC-03; chmod 755 "$C"
   [ "$(field status)" = ERROR ]; [ -n "$(field evidence)" ]
 }
@@ -198,7 +198,7 @@ userconf() {  # PATH_VALUE MTIME — launchd's stored user config; boot time is 
 }
 @test "BL-SC-04 shell that hangs → ERROR with evidence" {
   echo 'sleep 5' > "$HOME/.zshenv"
-  DEVWARD_SHELL_TIMEOUT=1 chk BL-SC-04; [ "$(field status)" = ERROR ]; [ -n "$(field evidence)" ]
+  FORTKEEP_SHELL_TIMEOUT=1 chk BL-SC-04; [ "$(field status)" = ERROR ]; [ -n "$(field evidence)" ]
 }
 @test "BL-SC-04 broken shell (exit 3 in start-up file) → ERROR, not FAIL" {
   echo 'exit 3' > "$HOME/.zshenv"
@@ -277,12 +277,12 @@ chk_clean() { run env PATH="$BATS_TEST_TMPDIR/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 }
 @test "BL-SC-02 a FAIL also names the shell types that timed out" {
   echo 'sleep 5' > "$HOME/.zlogin"
-  DEVWARD_SHELL_TIMEOUT=1 chk BL-SC-02; [ "$(field status)" = FAIL ]
+  FORTKEEP_SHELL_TIMEOUT=1 chk BL-SC-02; [ "$(field status)" = FAIL ]
   [[ "$(field note)" == *"Not first in: zsh -c"* ]]; [[ "$(field note)" == *"Timed out: zsh -lc"* ]]
 }
 @test "BL-SC-04 a FAIL also names the shells that timed out" {
   echo 'sleep 5' > "$HOME/.zlogin"
-  DEVWARD_SHELL_TIMEOUT=1 chk BL-SC-04; [ "$(field status)" = FAIL ]; [[ "$(field note)" == *"Timed out or failed to start: zsh -lc"* ]]
+  FORTKEEP_SHELL_TIMEOUT=1 chk BL-SC-04; [ "$(field status)" = FAIL ]; [[ "$(field note)" == *"Timed out or failed to start: zsh -lc"* ]]
 }
 @test "BL-SC-05 a FAIL also names the files it couldn't read" {
   [ "$(id -u)" -ne 0 ] || skip "root reads everything"
@@ -300,7 +300,7 @@ chk_clean() { run env PATH="$BATS_TEST_TMPDIR/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 @test "BL-SC-03 a parent of the launchd config folder that can't be searched and no app → ERROR with evidence" {
   [ "$(id -u)" -ne 0 ] || skip "root reads everything"
   apps "Notes|-"
-  L="$DEVWARD_SYSROOT/private/var/db/com.apple.xpc.launchd"; mkdir -p "$L/config"; chmod 000 "$L"
+  L="$FORTKEEP_SYSROOT/private/var/db/com.apple.xpc.launchd"; mkdir -p "$L/config"; chmod 000 "$L"
   chk BL-SC-03; chmod 755 "$L"
   [ "$(field status)" = ERROR ]; [ -n "$(field evidence)" ]
 }

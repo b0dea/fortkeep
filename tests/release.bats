@@ -15,14 +15,14 @@ warned() { start; [[ "$msg" == *"WARNING"*"$1"*"Don't run fixes; reinstall a sig
 
 @test "a signed release with nothing changed starts with no warning, and the release is recorded as run" {
   clean
-  [ "$(cat "$HOME/.config/devward/highest-release")" = v0.1.0 ]
+  [ "$(cat "$HOME/.config/fortkeep/highest-release")" = v0.1.0 ]
 }
 @test "a release that can't be recorded as run says so at session start: downgrade warnings and signer rollover stop" {
-  chmod 500 "$HOME/.config/devward"
-  run "$H/session-start.sh" </dev/null; chmod 700 "$HOME/.config/devward"   # writable again before any check fails
+  chmod 500 "$HOME/.config/fortkeep"
+  run "$H/session-start.sh" </dev/null; chmod 700 "$HOME/.config/fortkeep"   # writable again before any check fails
   [ "$status" -eq 0 ]; msg="$(jq -r .systemMessage <<<"$output")"
   [[ "$msg" == *"WARNING"*"could not record"* ]]
-  [ ! -e "$HOME/.config/devward/highest-release" ]
+  [ ! -e "$HOME/.config/fortkeep/highest-release" ]
 }
 @test "a commit after the release is not a release, so committing can't hide a change (A2)" {
   echo evil >> "$T/checks/run.sh"; commit "$T"
@@ -32,7 +32,7 @@ warned() { start; [[ "$msg" == *"WARNING"*"$1"*"Don't run fixes; reinstall a sig
   ssh-keygen -q -t ed25519 -N '' -C other -f "$BATS_TEST_TMPDIR/other"
   git -C "$T" tag -d v0.1.0 >/dev/null
   git -C "$T" -c user.name=t -c user.email=t@example.com -c gpg.format=ssh -c user.signingkey="$BATS_TEST_TMPDIR/other" \
-    tag -s -m "b0dea/devward v0.1.0" v0.1.0
+    tag -s -m "b0dea/fortkeep v0.1.0" v0.1.0
   warned "not on a signed release"
 }
 @test "a release that names its own new signer doesn't vouch for itself: the signers this Mac trusted first decide" {
@@ -41,12 +41,12 @@ warned() { start; [[ "$msg" == *"WARNING"*"$1"*"Don't run fixes; reinstall a sig
   printf 'evil namespaces="git" %s\n' "$(cut -d' ' -f1,2 "$BATS_TEST_TMPDIR/evil.pub")" >> "$T/.github/allowed_signers"
   echo evil >> "$T/checks/run.sh"; commit "$T"
   git -C "$T" -c user.name=t -c user.email=t@example.com -c gpg.format=ssh -c user.signingkey="$BATS_TEST_TMPDIR/evil" \
-    tag -s -m "b0dea/devward v999.0.0" v999.0.0
+    tag -s -m "b0dea/fortkeep v999.0.0" v999.0.0
   warned "not on a signed release"
-  [ "$(cat "$HOME/.config/devward/highest-release")" = v0.1.0 ]
+  [ "$(cat "$HOME/.config/fortkeep/highest-release")" = v0.1.0 ]
   # a release a trusted key signed may name the next signers
   echo next >> "$T/controls/controls.json"; commit "$T"; sign_release "$T" v0.2.0
-  clean; [ "$(cat "$HOME/.config/devward/highest-release")" = v0.2.0 ]
+  clean; [ "$(cat "$HOME/.config/fortkeep/highest-release")" = v0.2.0 ]
 }
 @test "the local-changes warning names the file an agent added" {
   mkdir -p "$T/.claude"; echo '{}' > "$T/.claude/settings.local.json"
@@ -99,10 +99,10 @@ warned() { start; [[ "$msg" == *"WARNING"*"$1"*"Don't run fixes; reinstall a sig
 }
 @test "a release older than one this Mac ran warns (A11)" {
   echo next >> "$T/controls/controls.json"; commit "$T"; sign_release "$T" v0.2.0
-  clean; [ "$(cat "$HOME/.config/devward/highest-release")" = v0.2.0 ]
+  clean; [ "$(cat "$HOME/.config/fortkeep/highest-release")" = v0.2.0 ]
   git -C "$T" checkout -q --detach v0.1.0
   start; [[ "$msg" == *"WARNING"*"v0.1.0, older than v0.2.0"* ]]
-  [ "$(cat "$HOME/.config/devward/highest-release")" = v0.2.0 ]
+  [ "$(cat "$HOME/.config/fortkeep/highest-release")" = v0.2.0 ]
 }
 @test "Claude Code in bypass, auto or accept-edits mode is warned about at session start (A4)" {
   for m in bypassPermissions acceptEdits auto; do
@@ -113,45 +113,45 @@ warned() { start; [[ "$msg" == *"WARNING"*"$1"*"Don't run fixes; reinstall a sig
   [[ "$(jq -r .systemMessage <<<"$output")" != *WARNING* ]]
 }
 @test "a development session says so, names the marker it found, and points to CONTRIBUTING.md instead of /posture" {
-  export DEVWARD_DEV=1
+  export FORTKEEP_DEV=1
   start
-  [[ "$msg" == *"development session"* ]]; [[ "$msg" == *"~/.config/devward/dev is present"* ]]
+  [[ "$msg" == *"development session"* ]]; [[ "$msg" == *"~/.config/fortkeep/dev is present"* ]]
   [[ "$msg" == *CONTRIBUTING.md* ]]; [[ "$msg" != *"/posture"* ]]
 }
-@test "DEVWARD_DEV=1 without the marker ~/.config/devward/dev is a person's session: a fix needs a signed release (A14)" {
-  export DEVWARD_DEV=1; rm "$HOME/.config/devward/dev"
-  start; [[ "$msg" != "devward development session"* ]]; [[ "$msg" == *"/posture"* ]]; [[ "$msg" == *"~/.config/devward/dev, which is missing"* ]]
+@test "FORTKEEP_DEV=1 without the marker ~/.config/fortkeep/dev is a person's session: a fix needs a signed release (A14)" {
+  export FORTKEEP_DEV=1; rm "$HOME/.config/fortkeep/dev"
+  start; [[ "$msg" != "fortkeep development session"* ]]; [[ "$msg" == *"/posture"* ]]; [[ "$msg" == *"~/.config/fortkeep/dev, which is missing"* ]]
   echo '# x' >> "$T/checks/lib/common.sh"
   mkdir -p "$T/reports/.approvals"; date +%s > "$T/reports/.approvals/BL-RC-01.apply"
   run /bin/bash "$T/fixes/macos/BL-RC-01.sh" apply; [ "$status" -eq 4 ]; [[ "$output" == *"not exactly a signed release"* ]]
-  : > "$HOME/.config/devward/dev"; date +%s > "$T/reports/.approvals/BL-RC-01.apply"
+  : > "$HOME/.config/fortkeep/dev"; date +%s > "$T/reports/.approvals/BL-RC-01.apply"
   run /bin/bash "$T/fixes/macos/BL-RC-01.sh" apply; [ "$status" -eq 0 ]
 }
 @test "the marker counts from the account's own home outside the suite, and only from the test's HOME inside it (A14)" {
   . "$REPO/checks/lib/mode.sh"
-  export DEVWARD_DEV=1
-  devward_dev_session
-  rm "$HOME/.config/devward/dev"; ! devward_dev_session   # whatever the real home holds
-  : > "$HOME/.config/devward/dev"
-  want=1; [ -f "$(/usr/bin/perl -e 'print +(getpwuid($<))[7]')/.config/devward/dev" ] && want=0
-  run env -u BATS_TEST_TMPDIR /bin/bash -c '. "$1"; devward_dev_session' _ "$REPO/checks/lib/mode.sh"; [ "$status" -eq "$want" ]
-  unset DEVWARD_DEV; ! devward_dev_session
+  export FORTKEEP_DEV=1
+  fortkeep_dev_session
+  rm "$HOME/.config/fortkeep/dev"; ! fortkeep_dev_session   # whatever the real home holds
+  : > "$HOME/.config/fortkeep/dev"
+  want=1; [ -f "$(/usr/bin/perl -e 'print +(getpwuid($<))[7]')/.config/fortkeep/dev" ] && want=0
+  run env -u BATS_TEST_TMPDIR /bin/bash -c '. "$1"; fortkeep_dev_session' _ "$REPO/checks/lib/mode.sh"; [ "$status" -eq "$want" ]
+  unset FORTKEEP_DEV; ! fortkeep_dev_session
 }
 @test "the test-suite switch can't be faked from a folder an agent in a person's session may write (A14)" {
   . "$REPO/checks/lib/mode.sh"
   fake() {  # DIR — that folder poses as a test's: the suite's marker, a HOME below it, and the development marker
-    mkdir -p "$1/home/.config/devward"; : > "$1/.devward-test"; : > "$1/home/.config/devward/dev"
-    BATS_TEST_TMPDIR="$1" HOME="$1/home" DEVWARD_DEV=1 /bin/bash -c '. "$1"; devward_under_test || devward_dev_session' _ "$REPO/checks/lib/mode.sh"
+    mkdir -p "$1/home/.config/fortkeep"; : > "$1/.fortkeep-test"; : > "$1/home/.config/fortkeep/dev"
+    BATS_TEST_TMPDIR="$1" HOME="$1/home" FORTKEEP_DEV=1 /bin/bash -c '. "$1"; fortkeep_under_test || fortkeep_dev_session' _ "$REPO/checks/lib/mode.sh"
   }
   run fake "$BATS_TEST_TMPDIR/ccd/plans/x"; [ "$status" -ne 0 ]       # a plan folder
-  mkdir -p "/private/tmp/claude-$(id -u)"; S="$(mktemp -d "/private/tmp/claude-$(id -u)/devward-test.XXXXXX")"  # agents' scratch
+  mkdir -p "/private/tmp/claude-$(id -u)"; S="$(mktemp -d "/private/tmp/claude-$(id -u)/fortkeep-test.XXXXXX")"  # agents' scratch
   run fake "$S/scratch"; rc=$status; rm -rf "$S"; [ "$rc" -ne 0 ]
   run fake "$BATS_TEST_TMPDIR/ok"; [ "$status" -eq 0 ]
 }
 @test "A22: the test-suite switch needs bats as an ancestor, so a folder no list names still can't fake it" {
   . "$REPO/checks/lib/mode.sh"
-  F="$BATS_TEST_TMPDIR/anywhere"; mkdir -p "$F/home/.config/devward"; : > "$F/.devward-test"; : > "$F/home/.config/devward/dev"
-  check='. "$1"; devward_under_test; echo $? > "$2"'
+  F="$BATS_TEST_TMPDIR/anywhere"; mkdir -p "$F/home/.config/fortkeep"; : > "$F/.fortkeep-test"; : > "$F/home/.config/fortkeep/dev"
+  check='. "$1"; fortkeep_under_test; echo $? > "$2"'
   BATS_TEST_TMPDIR="$F" HOME="$F/home" run /bin/bash -c "$check" _ "$REPO/checks/lib/mode.sh" "$BATS_TEST_TMPDIR/rc-child"
   [ "$(cat "$BATS_TEST_TMPDIR/rc-child")" = 0 ]   # under bats
   # The same, but detached from bats: its parent exits first, so it is no longer below the test runner.
@@ -179,7 +179,7 @@ warned() { start; [[ "$msg" == *"WARNING"*"$1"*"Don't run fixes; reinstall a sig
 }
 @test "managed-settings.sh prints the root-owned files from the verified release (A10)" {
   mkdir -p "$HOME/.claude"
-  DEVWARD_CLAUDE_DIRS="$HOME/.claude" run /bin/bash "$T/checks/managed-settings.sh"; [ "$status" -eq 0 ]
+  FORTKEEP_CLAUDE_DIRS="$HOME/.claude" run /bin/bash "$T/checks/managed-settings.sh"; [ "$status" -eq 0 ]
   [ "$(jq -S .permissions <<<"$output")" = "$(jq -S .permissions "$REPO/templates/managed-settings.json")" ]
   run /bin/bash "$T/checks/managed-settings.sh" guard; [ "$status" -eq 0 ]
   [ "$output" = "$(cat "$REPO/templates/agent-guard.sh")" ]

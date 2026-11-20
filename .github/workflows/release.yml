@@ -47,13 +47,13 @@ jobs:
           # this repo and this tag.
           . checks/lib/common.sh
           . checks/lib/repo.sh
-          devward_release_signed "$PWD" "$TAG" "$PWD/.github/allowed_signers" \
+          fortkeep_release_signed "$PWD" "$TAG" "$PWD/.github/allowed_signers" \
             || fail "$TAG is not signed by a key in its own .github/allowed_signers, so a new install would refuse it"
           # A copy on the previous release checks this one against that release's signers.
-          prev="$(devward_releases "$PWD" | awk -v t="$TAG" 'found { print; exit } $0 == t { found = 1 }' || true)"
+          prev="$(fortkeep_releases "$PWD" | awk -v t="$TAG" 'found { print; exit } $0 == t { found = 1 }' || true)"
           if [ -n "$prev" ]; then
             git show "refs/tags/$prev:.github/allowed_signers" > "$RUNNER_TEMP/previous-signers"
-            devward_release_signed "$PWD" "$TAG" "$RUNNER_TEMP/previous-signers" \
+            fortkeep_release_signed "$PWD" "$TAG" "$RUNNER_TEMP/previous-signers" \
               || fail "$TAG is not signed by a key in $prev's .github/allowed_signers, so copies on $prev would refuse it"
           fi
           git merge-base --is-ancestor "refs/tags/$TAG^{commit}" origin/main || fail "$TAG is not on main"

@@ -29,7 +29,7 @@ scripts() {  # EVENT [MATCHER] — the hook scripts Codex runs for it, by file n
   [ "$(jq -r '.hooks.PostToolUse[] | select(.matcher == "AskUserQuestion") | .hooks[].command' "$S")" = '"$CLAUDE_PROJECT_DIR"/.claude/hooks/approval-recorder.sh' ]
 }
 @test "codex and opencode: sudo is refused and every fix script, in its one spelling, needs a confirmation" {
-  rules="$REPO/.codex/rules/devward.rules"
+  rules="$REPO/.codex/rules/fortkeep.rules"
   grep -q 'prefix_rule(pattern=\["sudo"\], decision="forbidden"' "$rules"
   for f in "$REPO"/fixes/macos/*.sh; do
     grep -qF "prefix_rule(pattern=[\"fixes/macos/${f##*/}\"], decision=\"prompt\"" "$rules"
@@ -38,7 +38,7 @@ scripts() {  # EVENT [MATCHER] — the hook scripts Codex runs for it, by file n
   [ "$(jq -r '.permission.bash | keys | join(" ")' "$REPO/opencode.json")" = "fixes/macos/* sudo *" ]  # no other spelling
   [ "$(jq -r '.permission.bash["sudo *"]' "$REPO/opencode.json")" = deny ]
 }
-@test "skills live in .agents/skills, internal to a devward checkout; .claude/skills points there; names fit every agent" {
+@test "skills live in .agents/skills, internal to a fortkeep checkout; .claude/skills points there; names fit every agent" {
   [ "$(readlink "$REPO/.claude/skills")" = ../.agents/skills ]
   n=0
   for f in "$REPO"/.agents/skills/*/SKILL.md; do

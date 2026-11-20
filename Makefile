@@ -1,4 +1,4 @@
-# devward — developer targets. People who only check their Mac never need make.
+# fortkeep — developer targets. People who only check their Mac never need make.
 # Every target carries a `## <Section>: <description>` comment; `##!` stars a frequent one in `make help`.
 
 # --- Shell & safety -----------------------------------------------------------
@@ -24,7 +24,7 @@ TESTS ?= tests
 # How many test files run at once (ci/run-tests.sh). Several agent sessions share a Mac: keep it at 4 or below.
 JOBS ?= 4
 export JOBS
-SH := $(sort $(wildcard $(shell git ls-files -co --exclude-standard '*.sh' bin/devward)))
+SH := $(sort $(wildcard $(shell git ls-files -co --exclude-standard '*.sh' bin/fortkeep)))
 
 # --- Help macro (sectioned, ##! = ⭐) -----------------------------------------
 define print_help_section
@@ -46,7 +46,7 @@ endef
 .PHONY: help install lock hooks dev clean build controls lint format test test-stock controls-check scan scan-private ci push-check check release
 
 help: ## Meta: Show this help
-	@printf "$(GREEN)%s$(NC)\n\n" "devward developer targets"
+	@printf "$(GREEN)%s$(NC)\n\n" "fortkeep developer targets"
 	$(call print_help_section,Dev — set up and run:,Dev:)
 	$(call print_help_section,Build — generated files:,Build:)
 	$(call print_help_section,Quality — lint / test / scan:,Quality:)
@@ -113,7 +113,7 @@ scan: ## Quality: gitleaks over the whole history, then the marker scan
 	ci/marker-scan.sh
 
 # Maintainers only: it needs a list that lives outside the repo, so contributors' gates leave it out.
-scan-private: ## Quality: Scan for terms you never want committed, such as employer or client names (list: ~/.config/devward/denylist)
+scan-private: ## Quality: Scan for terms you never want committed, such as employer or client names (list: ~/.config/fortkeep/denylist)
 	ci/denylist-scan.sh
 
 ci: ##! Quality: Lint, controls, the tests (also with stock tools) and the scans; run it before merging

@@ -4,8 +4,8 @@
 #         bool}), and nothing when there are none
 #   list  every overlay's name, one per line
 . "$(dirname "$0")/lib/common.sh"
-CONTROLS="${DEVWARD_CONTROLS:-$DEVWARD_REPO/controls/controls.json}"
-CONFIG="${DEVWARD_CONFIG:-$DEVWARD_REPORTS/config.json}"
+CONTROLS="${FORTKEEP_CONTROLS:-$FORTKEEP_REPO/controls/controls.json}"
+CONFIG="${FORTKEEP_CONFIG:-$FORTKEEP_REPORTS/config.json}"
 if [ $# -ne 1 ] || { [ "$1" != new ] && [ "$1" != list ]; }; then echo "usage: $0 new | list" >&2; exit 2; fi
 known="$(jq -c '[.[].layer | select(startswith("overlay:")) | ltrimstr("overlay:")] | unique' "$CONTROLS" 2>/dev/null)" \
   || { echo "could not read controls: $CONTROLS" >&2; exit 2; }

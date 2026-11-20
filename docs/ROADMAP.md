@@ -1,6 +1,6 @@
 # Roadmap
 
-What's left to build. What devward doesn't stop yet is in the [threat model](threat-model.md#known-limits).
+What's left to build. What fortkeep doesn't stop yet is in the [threat model](threat-model.md#known-limits).
 
 ## Next: after 0.1.0
 

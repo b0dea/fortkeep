@@ -10,8 +10,8 @@ REPO="${CLAUDE_PROJECT_DIR:-$(cd "$HERE/../.." && pwd)}"
 input="$(cat)"
 # Only the agent this hook runs in may be above it. In an agent another agent started (codex exec, claude -p or
 # opencode run, inside a session) the first agent writes the "person's" messages. /bin/ps is fixed on purpose.
-if [ "$(devward_agent_runs /bin/ps)" -gt 1 ]; then
-  echo "devward: no approval recorded: this agent was started by another agent" >&2; exit 0
+if [ "$(fortkeep_agent_runs /bin/ps)" -gt 1 ]; then
+  echo "fortkeep: no approval recorded: this agent was started by another agent" >&2; exit 0
 fi
 # A private folder and an accept reason are named in the question; Codex has none, so there the typed answer names
 # them after the words.

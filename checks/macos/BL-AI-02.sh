@@ -3,14 +3,14 @@
 . "$(dirname "$0")/../lib/apps.sh"
 . "$(dirname "$0")/../lib/agents.sh"
 ID=BL-AI-02
-dirs="$(devward_claude_dirs)"; cx=""; devward_codex_present && cx=1
+dirs="$(fortkeep_claude_dirs)"; cx=""; fortkeep_codex_present && cx=1
 if [ -z "$dirs" ] && [ -z "$cx" ]; then
-  if devward_claude_private_skipped; then devward_claude_excluded_error "$ID"; else devward_result "$ID" NA "Neither Claude Code nor Codex is set up on this Mac"; fi
+  if fortkeep_claude_private_skipped; then fortkeep_claude_excluded_error "$ID"; else fortkeep_result "$ID" NA "Neither Claude Code nor Codex is set up on this Mac"; fi
   exit 0
 fi
-probes="$(devward_guard_probes)"
-res=""; [ -z "$dirs" ] || res="$(devward_guard_folders "$probes")"
-[ -z "$cx" ] || res="$res"$'\n'"$(devward_codex_guard "$probes")"
+probes="$(fortkeep_guard_probes)"
+res=""; [ -z "$dirs" ] || res="$(fortkeep_guard_folders "$probes")"
+[ -z "$cx" ] || res="$res"$'\n'"$(fortkeep_codex_guard "$probes")"
 pick() { printf '%s\n' "$res" | sed -n "s/^$1 / /p" | tr -d '\n'; }  # KIND — its folders, each after a space
 total="$(printf '%s\n' "$res" | grep -c '^folder ')"; good="$(printf '%s\n' "$res" | grep -c '^good ')"
 weak="$(pick weak)"; offd="$(pick off)"; local_only="$(pick local)"; mflag="$(pick managed-flag)"; mflag="${mflag# }"
@@ -28,8 +28,8 @@ case "$mflag" in
   allowManagedHooksOnly) [ -n "$weak" ] && add "The managed settings set allowManagedHooksOnly, so only managed hooks count." ;;
 esac
 [ -n "$undecided" ] && note="${note:+$note }Could not decide (unreadable settings or plugin list, a bad hook matcher or a hook that timed out):$undecided."
-note="$(devward_claude_note "${note% }")$priv"; note="${note# }"
+note="$(fortkeep_claude_note "${note% }")$priv"; note="${note# }"
 ev="The guard refuses every test bypass in $good of $total agent config folders"
-if [ -n "$weak" ] || [ -n "$missing" ]; then devward_result "$ID" FAIL "$ev" "$note"
-elif [ -n "$undecided" ] || { [ -n "$priv" ] && [ "$total" -eq 0 ]; }; then devward_result "$ID" ERROR "$ev" "$note"
-else devward_result "$ID" PASS "$ev" "$note"; fi
+if [ -n "$weak" ] || [ -n "$missing" ]; then fortkeep_result "$ID" FAIL "$ev" "$note"
+elif [ -n "$undecided" ] || { [ -n "$priv" ] && [ "$total" -eq 0 ]; }; then fortkeep_result "$ID" ERROR "$ev" "$note"
+else fortkeep_result "$ID" PASS "$ev" "$note"; fi

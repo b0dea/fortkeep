@@ -1,4 +1,4 @@
-# How devward orders and counts results, for every script that shows them. Load it with
+# How fortkeep orders and counts results, for every script that shows them. Load it with
 #   jq -L <this folder> --slurpfile c controls.json 'include "results"; ($c[0] | controls_by_id) as $ctl | ...'
 
 def controls_by_id: map({key: .id, value: .}) | from_entries;  # the controls list, as a map from id to control

@@ -1,7 +1,7 @@
 name: payload-scan
 
-# devward scanning itself. Fails any push or pull request that carries a whole malware marker (ci/marker-scan.sh)
-# or what devward's own repo scanner flags: the PolinRider / BeaverTail loader, a poisoned config or task file, a
+# fortkeep scanning itself. Fails any push or pull request that carries a whole malware marker (ci/marker-scan.sh)
+# or what fortkeep's own repo scanner flags: the PolinRider / BeaverTail loader, a poisoned config or task file, a
 # git hook that fetches code, or commits with forged dates or names. It is a checkout and two read-only scans, never
 # an install or a build, so a poisoned branch has no build step to run its payload through.
 #
@@ -31,7 +31,7 @@ jobs:
           fetch-depth: 0
       - name: no whole malware marker in a tracked file
         run: ci/marker-scan.sh
-      - name: devward's repo scanner finds nothing
+      - name: fortkeep's repo scanner finds nothing
         shell: bash
         run: |
           set -euo pipefail

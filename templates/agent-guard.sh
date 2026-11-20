@@ -10,7 +10,7 @@ case "$input" in *[![:space:]]*) ;; *) refuse "empty request" ;; esac
 J=/usr/bin/jq; [ -x "$J" ] || J="$(command -v jq)" || refuse "jq is missing"
 tool="$(printf '%s' "$input" | "$J" -r '.tool_name // ""' 2>/dev/null)" || refuse "could not read the request"
 dend='([/[:space:];&|)*?]|\[|$)'  # a folder name ends here: slash, separator, glob or end
-protected='\.zshrc|\.zprofile|\.zshenv|\.zlogin|\.bashrc|\.bash_profile|/\.profile|/\.claude/settings[^/]*\.json|\.claude\.json|managed-settings|agent-guard|/LaunchAgents'"$dend"'|/\.safe-chain'"$dend"'|/\.codex'"$dend"'|/\.config/devward'"$dend"'|/plugins/cache'"$dend"'|/plugins/installed_plugins\.json'
+protected='\.zshrc|\.zprofile|\.zshenv|\.zlogin|\.bashrc|\.bash_profile|/\.profile|/\.claude/settings[^/]*\.json|\.claude\.json|managed-settings|agent-guard|/LaunchAgents'"$dend"'|/\.safe-chain'"$dend"'|/\.codex'"$dend"'|/\.config/fortkeep'"$dend"'|/plugins/cache'"$dend"'|/plugins/installed_plugins\.json'
 lower() { printf '%s' "$1" | tr '[:upper:]' '[:lower:]'; }
 cp_dest() {  # SEGMENT — the last word of a cp command, past a trailing comment and redirects
   local w out="" skip=0
@@ -54,7 +54,7 @@ plain_words() {  # WORD… — none could expand into an option: no braces, glob
 # Exit 0 when a separator sits inside quotes, $'…' or ${…} or after a backslash, or a control byte appears:
 # the shell reads such a separator as text, but the segments below would split there. Fail closed only.
 # shellcheck disable=SC2016 # an awk program, not shell
-qsep='BEGIN { s = ENVIRON["DEVWARD_QS"]; n = length(s); q = ""; d = 0; st = ""; sep = ";&|()`\n"
+qsep='BEGIN { s = ENVIRON["FORTKEEP_QS"]; n = length(s); q = ""; d = 0; st = ""; sep = ";&|()`\n"
   if (s ~ /[\001-\010\013-\037\177]/) exit 0
   for (i = 1; i <= n; i++) { ch = substr(s, i, 1)
     if (q == "" && st != "") {
@@ -171,7 +171,7 @@ $(printf '%s' "$c3" | tr ';&|()`' '\n\n\n\n\n\n')
 EOF
     # Protected files: no redirect into one, and a segment naming one must start with a read-only command.
     printf '%s' "$c3" | grep -Eiq "(>|<>)[>&|!]*[[:space:]]*[^[:space:];&|]*($protected)" && refuse "editing the files that enforce these rules"
-    printf '%s' "$c3" | grep -Eiq "$protected" && DEVWARD_QS="$craw" LC_ALL=C awk "$qsep" && refuse "a quoted or escaped separator beside a protected path"
+    printf '%s' "$c3" | grep -Eiq "$protected" && FORTKEEP_QS="$craw" LC_ALL=C awk "$qsep" && refuse "a quoted or escaped separator beside a protected path"
     # xargs or a substitution could hand a protected path to any command (direct shim runs don't count).
     printf '%s' "$c2" | grep -Eiq "$protected" && printf '%s' "$c2" | grep -Eq '(^|[^A-Za-z0-9_])xargs([^A-Za-z0-9_]|$)|\$\(|`' && refuse "editing the files that enforce these rules"
     # shellcheck disable=SC2020 # six separators, one newline each

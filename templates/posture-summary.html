@@ -51,7 +51,7 @@ footer{color:var(--muted);background:var(--bg);font-size:.85rem}
 <div class="tally"><b>Result</b>{{TALLY}}</div>
 <p class="legend">PASS = met · FAIL = not met · ACCEPTED = not met, by the person&#x27;s recorded decision · NA = does not apply to this Mac · ERROR = could not be checked automatically.</p></section>
 <div class="wrap"><table><thead><tr><th>Control</th><th>Title</th><th>Level</th><th>Status</th></tr></thead><tbody>{{ROWS}}</tbody></table></div>
-<footer>This is a self-report, not proof. devward&#x27;s read-only checks ran on this Mac under the person&#x27;s own account, and anyone with that account could change the results or this page before sharing it: the summary is not tamper-evident. The version, commit and controls hash above say which checks produced it. It contains no file names, paths, hostnames or secrets, apart from the reasons the person wrote for ACCEPTED items.</footer>
+<footer>This is a self-report, not proof. fortkeep&#x27;s read-only checks ran on this Mac under the person&#x27;s own account, and anyone with that account could change the results or this page before sharing it: the summary is not tamper-evident. The version, commit and controls hash above say which checks produced it. It contains no file names, paths, hostnames or secrets, apart from the reasons the person wrote for ACCEPTED items.</footer>
 </main>
 <script>
 document.querySelectorAll('.tog').forEach(function(b){b.addEventListener('click',function(){var r=document.getElementById(b.getAttribute('aria-controls')),o=b.getAttribute('aria-expanded')!=='true';b.setAttribute('aria-expanded',o);r.hidden=!o;b.closest('tr').classList.toggle('open',o)})});

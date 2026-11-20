@@ -1,7 +1,7 @@
 #!/bin/bash
 # PreToolUse for every tool: Claude Code runs it for all of them, Codex for every local tool (not its hosted web search,
 # which .codex/config.toml turns off, nor write_stdin, which feeds a command already checked), the OpenCode plugin
-# for the tools it maps. A person's session (not devward_dev_session) is allow-listed: the shell runs only devward's own
+# for the tools it maps. A person's session (not fortkeep_dev_session) is allow-listed: the shell runs only fortkeep's own
 # scripts (allow-list), reads stay in this checkout and the agent's own folders, writes only in those folders, and
 # any other tool is refused unless it touches no file and runs no command. A development session keeps the
 # deny-list guards: bash-guard.sh, private-guard.sh and write-guard.sh.
@@ -14,7 +14,7 @@ tool="$(jq -r '.tool_name // "" | strings' <<<"$input")" || block "guard could n
 [ -n "$tool" ] || block "guard could not read the request"
 also() { local s; for s in "$@"; do "$HOOKS/$s.sh" <<<"$input" || exit "$?"; done; }  # SCRIPT... — run these guards too
 
-if devward_dev_session; then
+if fortkeep_dev_session; then
   case "$tool" in
     Bash) also bash-guard private-guard ;;
     Read|Grep|Glob) also private-guard ;;
@@ -87,7 +87,7 @@ shell() {
   [ -n "$cwd" ] || block "guard could not read the working folder"
   for w in "$cwd" "$(jq -r '.tool_input.workdir // empty' <<<"$input")"; do
     [ -n "$w" ] || continue
-    [ "$(real "$w")" = "$repo" ] || block "run devward's scripts from this repo's folder, $REPO, not from another folder"
+    [ "$(real "$w")" = "$repo" ] || block "run fortkeep's scripts from this repo's folder, $REPO, not from another folder"
   done
   if printf '%s' "$cmd" | grep -Eq '(^|[^A-Za-z0-9_.-])sudo([^A-Za-z0-9_.-]|$)'; then
     block "The agent never runs sudo. Give the person the exact command to type in the Terminal app, not in this chat."
@@ -106,14 +106,14 @@ shell() {
   fi
   case "${W[0]}" in
     checks/baseline.sh) block "only the person accepts a baseline: they type checks/baseline.sh accept in the Terminal app" ;;
-    checks/update.sh) block "the person updates devward: they type devward update in the Terminal app" ;;
+    checks/update.sh) block "the person updates fortkeep: they type fortkeep update in the Terminal app" ;;
     checks/private.sh)
-      [ "${W[1]:-}" != remove ] || block "only the person removes a private folder: they type devward private remove \"<path>\" in the Terminal app"
-      [ "${W[1]:-}" != add ] || ascii "${W[2]:-}" || block "a folder name with letters beyond ASCII can't be added from here: the person types devward private add \"<path>\" in the Terminal app" ;;
+      [ "${W[1]:-}" != remove ] || block "only the person removes a private folder: they type fortkeep private remove \"<path>\" in the Terminal app"
+      [ "${W[1]:-}" != add ] || ascii "${W[2]:-}" || block "a folder name with letters beyond ASCII can't be added from here: the person types fortkeep private add \"<path>\" in the Terminal app" ;;
     cat|head|tail|less|more|sed|awk|jq|grep|egrep|rg|ls|find|file|stat|wc|open)
       block "read files with your read tools, not the shell (in Codex, which has none: checks/show.sh <path>)" ;;
   esac
-  block "in a person's session the agent runs only devward's own scripts, one per command, from this repo's folder and spelled as the skills write them (the list is .claude/hooks/allow-list)"
+  block "in a person's session the agent runs only fortkeep's own scripts, one per command, from this repo's folder and spelled as the skills write them (the list is .claude/hooks/allow-list)"
 }
 
 search() {  # Grep and Glob: the folder they search

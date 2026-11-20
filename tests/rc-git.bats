@@ -97,7 +97,7 @@ hooks() { for e in post-checkout post-merge post-rewrite; do git config --global
 @test "BL-RC-03 an interactive shell that hangs → ERROR, not zero aliases" {
   git config --global push.default simple
   echo 'sleep 5' > "$HOME/.zshrc"
-  DEVWARD_SHELL_TIMEOUT=1 chk BL-RC-03; [ "$(field status)" = ERROR ]
+  FORTKEEP_SHELL_TIMEOUT=1 chk BL-RC-03; [ "$(field status)" = ERROR ]
 }
 @test "BL-RC-02 a login shell that exits non-zero → ERROR" {
   printf 'exit 3\n' >> "$HOME/.zlogin"

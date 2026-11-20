@@ -13,7 +13,7 @@ chk() { run env PATH="$BATS_TEST_TMPDIR/bin:/usr/bin:/bin:/usr/sbin:/sbin" /bin/
 }
 @test "GD-SC-01 a shell that times out → ERROR with evidence" {
   echo 'sleep 5' > "$HOME/.zshenv"
-  DEVWARD_SHELL_TIMEOUT=1 chk GD-SC-01; [ "$(field status)" = ERROR ]; [ -n "$(field evidence)" ]; [[ "$(field note)" == *Timed* ]]
+  FORTKEEP_SHELL_TIMEOUT=1 chk GD-SC-01; [ "$(field status)" = ERROR ]; [ -n "$(field evidence)" ]; [[ "$(field note)" == *Timed* ]]
 }
 @test "GD-SE-01 gh not installed → NA; expiry header → PASS with the date; none → FAIL; 401 → NA; body never printed" {
   chk GD-SE-01; [ "$(field status)" = NA ]
@@ -24,7 +24,7 @@ chk() { run env PATH="$BATS_TEST_TMPDIR/bin:/usr/bin:/bin:/usr/sbin:/sbin" /bin/
 }
 @test "GD-SE-01 no answer in time, other HTTP status or silent failure → ERROR with evidence" {
   stub gh 'sleep 5'
-  DEVWARD_GH_TIMEOUT=1 chk GD-SE-01; [ "$(field status)" = ERROR ]; [ -n "$(field evidence)" ]
+  FORTKEEP_GH_TIMEOUT=1 chk GD-SE-01; [ "$(field status)" = ERROR ]; [ -n "$(field evidence)" ]
   stub gh 'printf "HTTP/2.0 503 Service Unavailable\r\n\r\n"; exit 1'
   chk GD-SE-01; [ "$(field status)" = ERROR ]; [ -n "$(field evidence)" ]
   stub gh 'echo "error connecting to api.github.com" >&2; exit 1'
@@ -47,17 +47,17 @@ chk() { run env PATH="$BATS_TEST_TMPDIR/bin:/usr/bin:/bin:/usr/sbin:/sbin" /bin/
   rm "$HOME/sign.pub"; chk GD-GT-01; [ "$(field status)" = FAIL ]; [[ "$(field note)" == *missing* ]]
 }
 @test "GD-GT-01 no git, or an unreadable git config → ERROR with evidence" {
-  DEVWARD_GIT=/nonexistent/git chk GD-GT-01; [ "$(field status)" = ERROR ]; [ -n "$(field evidence)" ]
+  FORTKEEP_GIT=/nonexistent/git chk GD-GT-01; [ "$(field status)" = ERROR ]; [ -n "$(field evidence)" ]
   printf '[broken\n' > "$HOME/.gitconfig"
   chk GD-GT-01; [ "$(field status)" = ERROR ]; [ -n "$(field evidence)" ]
 }
-kk() { mkdir -p "$DEVWARD_REPORTS/knockknock"; printf '%s\n' "$2" > "$DEVWARD_REPORTS/knockknock/$1.json"; }  # NAME JSON — a scan
-B() { printf '%s\n' "$HOME/.config/devward/baseline${1:+/$1}"; }  # [NAME] — the accepted baselines folder, or one baseline in it
+kk() { mkdir -p "$FORTKEEP_REPORTS/knockknock"; printf '%s\n' "$2" > "$FORTKEEP_REPORTS/knockknock/$1.json"; }  # NAME JSON — a scan
+B() { printf '%s\n' "$HOME/.config/fortkeep/baseline${1:+/$1}"; }  # [NAME] — the accepted baselines folder, or one baseline in it
 kb() { mkdir -p "$(B)"; printf '%s\n' "$1" > "$(B knockknock.json)"; }  # JSON — the accepted KnockKnock baseline
 netstat_from() { stub netstat "cat '$REPO/tests/fixtures/netstat-$1.txt'"; }  # NAME — netstat -anv as macOS prints it
 @test "GD-RT-01 needs KnockKnock, a recent scan and a baseline; new items → FAIL" {
   chk GD-RT-01; [ "$(field status)" = FAIL ]; [[ "$(field evidence)" == *"not installed"* ]]
-  mkdir -p "$DEVWARD_SYSROOT/Applications/KnockKnock.app"
+  mkdir -p "$FORTKEEP_SYSROOT/Applications/KnockKnock.app"
   chk GD-RT-01; [ "$(field status)" = FAIL ]; [[ "$(field evidence)" == *"No KnockKnock scan"* ]]
   kk latest '{"Launch Items":[{"path":"/a"},{"path":"/b"}]}'
   chk GD-RT-01; [ "$(field status)" = FAIL ]; [[ "$(field evidence)" == *baseline* ]]
@@ -65,18 +65,18 @@ netstat_from() { stub netstat "cat '$REPO/tests/fixtures/netstat-$1.txt'"; }  # 
   chk GD-RT-01; [ "$(field status)" = PASS ]
   kk latest '{"Launch Items":[{"path":"/a"},{"path":"/b"},{"path":"/Library/LaunchAgents/new.plist"}]}'
   chk GD-RT-01; [ "$(field status)" = FAIL ]; [[ "$(field evidence)" == "1 new"* ]]; [[ "$(field note)" == *new.plist* ]]
-  touch -t 202001010000 "$DEVWARD_REPORTS/knockknock/latest.json"
+  touch -t 202001010000 "$FORTKEEP_REPORTS/knockknock/latest.json"
   chk GD-RT-01; [ "$(field status)" = FAIL ]; [[ "$(field evidence)" == *"days old"* ]]
 }
 @test "GD-RT-01 a scan or baseline that isn't valid JSON → ERROR with evidence" {
-  mkdir -p "$DEVWARD_SYSROOT/Applications/KnockKnock.app"
+  mkdir -p "$FORTKEEP_SYSROOT/Applications/KnockKnock.app"
   kk latest 'not json'; kb '{"x":[{"path":"/a"}]}'
   chk GD-RT-01; [ "$(field status)" = ERROR ]; [ -n "$(field evidence)" ]
   kk latest '{"x":[{"path":"/a"}]}'; kb 'not json'
   chk GD-RT-01; [ "$(field status)" = ERROR ]; [ -n "$(field evidence)" ]
 }
 @test "GD-RT-01 a scan with no items is ERROR, not PASS" {
-  mkdir -p "$DEVWARD_SYSROOT/Applications/KnockKnock.app"
+  mkdir -p "$FORTKEEP_SYSROOT/Applications/KnockKnock.app"
   kb '{"x":[{"path":"/a"}]}'
   kk latest '{}'
   chk GD-RT-01; [ "$(field status)" = ERROR ]; [[ "$(field evidence)" == *"no autostart items"* ]]
@@ -94,45 +94,45 @@ fakeps() {  # fake_ps (helpers.bash), and a copy of checks/ whose baseline.sh as
   netstat_from named  # accept also records the listeners: a fixed table, not this Mac's
   # The real script hard-codes /bin/ps; only this test copy of it points at the fake.
   mkdir -p "$BATS_TEST_TMPDIR/tree"; cp -R "$REPO/checks" "$BATS_TEST_TMPDIR/tree/"
-  sed -i '' "s#devward_require_person /bin/ps#devward_require_person $BATS_TEST_TMPDIR/bin/fakeps#" "$BATS_TEST_TMPDIR/tree/checks/baseline.sh"
+  sed -i '' "s#fortkeep_require_person /bin/ps#fortkeep_require_person $BATS_TEST_TMPDIR/bin/fakeps#" "$BATS_TEST_TMPDIR/tree/checks/baseline.sh"
   grep -q fakeps "$BATS_TEST_TMPDIR/tree/checks/baseline.sh"
   BL="$BATS_TEST_TMPDIR/tree/checks/baseline.sh"
 }
 term() {  # term ENV=VAL... — run the accept command on a pseudo-terminal that types accept
   run bash -c "(printf 'accept\n'; sleep 2) | env $* script -q /dev/null /bin/bash '$BL' accept"
 }
-@test "devward_agent_ancestor finds claude by name or path, not lookalikes" {
+@test "fortkeep_agent_ancestor finds claude by name or path, not lookalikes" {
   . "$REPO/checks/lib/agent.sh"
   fakeps
-  run devward_agent_ancestor /nonexistent/ps; [ "$status" -ne 0 ]  # ps trouble means "no agent found" here; the other checks still apply
-  FAKE_COMM=claude run devward_agent_ancestor "$BATS_TEST_TMPDIR/bin/fakeps"; [ "$status" -eq 0 ]
-  FAKE_COMM=/usr/local/bin/claude run devward_agent_ancestor "$BATS_TEST_TMPDIR/bin/fakeps"; [ "$status" -eq 0 ]
-  FAKE_COMM=/usr/bin/claudette run devward_agent_ancestor "$BATS_TEST_TMPDIR/bin/fakeps"; [ "$status" -ne 0 ]
-  FAKE_COMM=zsh run devward_agent_ancestor "$BATS_TEST_TMPDIR/bin/fakeps"; [ "$status" -ne 0 ]
+  run fortkeep_agent_ancestor /nonexistent/ps; [ "$status" -ne 0 ]  # ps trouble means "no agent found" here; the other checks still apply
+  FAKE_COMM=claude run fortkeep_agent_ancestor "$BATS_TEST_TMPDIR/bin/fakeps"; [ "$status" -eq 0 ]
+  FAKE_COMM=/usr/local/bin/claude run fortkeep_agent_ancestor "$BATS_TEST_TMPDIR/bin/fakeps"; [ "$status" -eq 0 ]
+  FAKE_COMM=/usr/bin/claudette run fortkeep_agent_ancestor "$BATS_TEST_TMPDIR/bin/fakeps"; [ "$status" -ne 0 ]
+  FAKE_COMM=zsh run fortkeep_agent_ancestor "$BATS_TEST_TMPDIR/bin/fakeps"; [ "$status" -ne 0 ]
 }
-@test "devward_agent_ancestor finds an npm-installed claude, whose comm is node, by its arguments" {
+@test "fortkeep_agent_ancestor finds an npm-installed claude, whose comm is node, by its arguments" {
   . "$REPO/checks/lib/agent.sh"
   fakeps
-  FAKE_COMM=node FAKE_ARGS="node $HOME/.npm-global/lib/node_modules/@anthropic-ai/claude-code/cli.js" run devward_agent_ancestor "$BATS_TEST_TMPDIR/bin/fakeps"; [ "$status" -eq 0 ]
-  FAKE_COMM=node FAKE_ARGS="node /opt/app/server.js" run devward_agent_ancestor "$BATS_TEST_TMPDIR/bin/fakeps"; [ "$status" -ne 0 ]
-  FAKE_COMM=node FAKE_ARGS="node /x/@anthropic-ai/claude-codex/cli.js" run devward_agent_ancestor "$BATS_TEST_TMPDIR/bin/fakeps"; [ "$status" -ne 0 ]
+  FAKE_COMM=node FAKE_ARGS="node $HOME/.npm-global/lib/node_modules/@anthropic-ai/claude-code/cli.js" run fortkeep_agent_ancestor "$BATS_TEST_TMPDIR/bin/fakeps"; [ "$status" -eq 0 ]
+  FAKE_COMM=node FAKE_ARGS="node /opt/app/server.js" run fortkeep_agent_ancestor "$BATS_TEST_TMPDIR/bin/fakeps"; [ "$status" -ne 0 ]
+  FAKE_COMM=node FAKE_ARGS="node /x/@anthropic-ai/claude-codex/cli.js" run fortkeep_agent_ancestor "$BATS_TEST_TMPDIR/bin/fakeps"; [ "$status" -ne 0 ]
 }
-@test "devward_agent_ancestor finds codex and opencode too, installed natively or through npm, not lookalikes" {
+@test "fortkeep_agent_ancestor finds codex and opencode too, installed natively or through npm, not lookalikes" {
   . "$REPO/checks/lib/agent.sh"
   fakeps
   for c in codex /opt/homebrew/Caskroom/codex/0.164.0/bin/codex "$HOME/.codex/packages/app-server-daemon/releases/0.164.0-aarch64-apple-darwin/bin/codex" \
            opencode /opt/homebrew/Cellar/opencode/1.19.4/bin/opencode; do
-    FAKE_COMM="$c" run devward_agent_ancestor "$BATS_TEST_TMPDIR/bin/fakeps"; [ "$status" -eq 0 ]
+    FAKE_COMM="$c" run fortkeep_agent_ancestor "$BATS_TEST_TMPDIR/bin/fakeps"; [ "$status" -eq 0 ]
   done
-  FAKE_COMM=node FAKE_ARGS="node $HOME/.npm-global/lib/node_modules/@openai/codex/bin/codex.js" run devward_agent_ancestor "$BATS_TEST_TMPDIR/bin/fakeps"; [ "$status" -eq 0 ]
-  FAKE_COMM=node FAKE_ARGS="node $HOME/.npm-global/lib/node_modules/opencode-ai/bin/opencode" run devward_agent_ancestor "$BATS_TEST_TMPDIR/bin/fakeps"; [ "$status" -eq 0 ]
+  FAKE_COMM=node FAKE_ARGS="node $HOME/.npm-global/lib/node_modules/@openai/codex/bin/codex.js" run fortkeep_agent_ancestor "$BATS_TEST_TMPDIR/bin/fakeps"; [ "$status" -eq 0 ]
+  FAKE_COMM=node FAKE_ARGS="node $HOME/.npm-global/lib/node_modules/opencode-ai/bin/opencode" run fortkeep_agent_ancestor "$BATS_TEST_TMPDIR/bin/fakeps"; [ "$status" -eq 0 ]
   for c in /usr/bin/codexer /usr/local/bin/myopencode; do
-    FAKE_COMM="$c" run devward_agent_ancestor "$BATS_TEST_TMPDIR/bin/fakeps"; [ "$status" -ne 0 ]
+    FAKE_COMM="$c" run fortkeep_agent_ancestor "$BATS_TEST_TMPDIR/bin/fakeps"; [ "$status" -ne 0 ]
   done
 }
 @test "baseline.sh fixes /bin/ps and reads no environment variable for it" {
-  grep -q 'devward_require_person /bin/ps' "$REPO/checks/baseline.sh"
-  run grep -n 'DEVWARD_PS' "$REPO/checks/baseline.sh" "$REPO/checks/lib/agent.sh"; [ "$status" -ne 0 ]
+  grep -q 'fortkeep_require_person /bin/ps' "$REPO/checks/baseline.sh"
+  run grep -n 'FORTKEEP_PS' "$REPO/checks/baseline.sh" "$REPO/checks/lib/agent.sh"; [ "$status" -ne 0 ]
 }
 @test "baseline.sh accepts in a terminal after the person types accept" {
   fakeps
@@ -173,7 +173,7 @@ term() {  # term ENV=VAL... — run the accept command on a pseudo-terminal that
 }
 @test "baseline.sh accepts exactly the scan it showed" {
   fakeps
-  kk latest '{"x":[{"path":"/a"}]}'; K="$DEVWARD_REPORTS/knockknock"; cp "$K/latest.json" "$BATS_TEST_TMPDIR/shown"
+  kk latest '{"x":[{"path":"/a"}]}'; K="$FORTKEEP_REPORTS/knockknock"; cp "$K/latest.json" "$BATS_TEST_TMPDIR/shown"
   # The swap waits until baseline.sh's private copy holds the shown scan (no fixed sleep to lose under load),
   # then lands before accept is typed; the feeder stays until the baseline appears (at most 30 s each).
   cat > "$BATS_TEST_TMPDIR/feed" <<EOF
@@ -190,7 +190,7 @@ EOF
 }
 @test "GD-SC-01 a FAIL also names the shell types that timed out" {
   echo 'sleep 5' > "$HOME/.zlogin"
-  DEVWARD_SHELL_TIMEOUT=1 chk GD-SC-01; [ "$(field status)" = FAIL ]; [[ "$(field note)" == *"Timed out or failed to start: zsh -lc"* ]]
+  FORTKEEP_SHELL_TIMEOUT=1 chk GD-SC-01; [ "$(field status)" = FAIL ]; [[ "$(field note)" == *"Timed out or failed to start: zsh -lc"* ]]
 }
 @test "baseline.sh run directly ignores BASH_ENV" {
   printf 'touch "%s/sourced"\n' "$BATS_TEST_TMPDIR" > "$BATS_TEST_TMPDIR/benv.sh"
@@ -203,7 +203,7 @@ EOF
   fakeps
   . "$REPO/checks/lib/agent.sh"
   stub tr 'cat >/dev/null'
-  FAKE_COMM=claude run devward_agent_ancestor "$BATS_TEST_TMPDIR/bin/fakeps"; [ "$status" -eq 0 ]
+  FAKE_COMM=claude run fortkeep_agent_ancestor "$BATS_TEST_TMPDIR/bin/fakeps"; [ "$status" -eq 0 ]
   stub tr 'cat'
   kk latest '{"x":[{"path":"/a\u001b[2Jb"}]}'
   term
@@ -221,7 +221,7 @@ EOF
   grep -q 'make install' "$REPO/AGENTS.md"; grep -q 'make ci' "$REPO/AGENTS.md"
   grep -q 'checks/baseline.sh accept' "$REPO/AGENTS.md"
 }
-@test "devward_terminal_ancestor accepts each listed terminal and sshd when program path and real name agree (a tripwire, not a boundary)" {
+@test "fortkeep_terminal_ancestor accepts each listed terminal and sshd when program path and real name agree (a tripwire, not a boundary)" {
   . "$REPO/checks/lib/agent.sh"
   fakeps
   for t in /System/Applications/Utilities/Terminal.app/Contents/MacOS/Terminal /Applications/iTerm.app/Contents/MacOS/iTerm2 \
@@ -229,29 +229,29 @@ EOF
     /Applications/WezTerm.app/Contents/MacOS/wezterm-gui /Applications/kitty.app/Contents/MacOS/kitty \
     /Applications/Alacritty.app/Contents/MacOS/alacritty /Applications/Warp.app/Contents/MacOS/stable \
     /usr/sbin/sshd /usr/libexec/sshd-session; do
-    FAKE_TERM="$t" run devward_terminal_ancestor "$BATS_TEST_TMPDIR/bin/fakeps" "$HOME"; [ "$status" -eq 0 ]
+    FAKE_TERM="$t" run fortkeep_terminal_ancestor "$BATS_TEST_TMPDIR/bin/fakeps" "$HOME"; [ "$status" -eq 0 ]
   done
   for t in /usr/bin/login /opt/homebrew/bin/tmux /Applications/Terminal.app.copy/Contents/MacOS/x /Applications/Notes.app/Contents/MacOS/Notes \
     /tmp/x/Ghostty.app/Contents/MacOS/ghostty /tmp/iTermServer-x /tmp/sshd sshd "$HOME/x/Applications/kitty.app/Contents/MacOS/kitty"; do
-    FAKE_TERM="$t" run devward_terminal_ancestor "$BATS_TEST_TMPDIR/bin/fakeps" "$HOME"; [ "$status" -ne 0 ]
+    FAKE_TERM="$t" run fortkeep_terminal_ancestor "$BATS_TEST_TMPDIR/bin/fakeps" "$HOME"; [ "$status" -ne 0 ]
   done
-  run devward_terminal_ancestor /nonexistent/ps; [ "$status" -ne 0 ]
+  run fortkeep_terminal_ancestor /nonexistent/ps; [ "$status" -ne 0 ]
 }
-@test "devward_terminal_ancestor refuses a spoofed program path, and takes the home folder from the directory service, not HOME" {
+@test "fortkeep_terminal_ancestor refuses a spoofed program path, and takes the home folder from the directory service, not HOME" {
   . "$REPO/checks/lib/agent.sh"
   fakeps
-  FAKE_TERM_UCOMM=sleep run devward_terminal_ancestor "$BATS_TEST_TMPDIR/bin/fakeps" "$HOME"; [ "$status" -ne 0 ]
-  FAKE_TERM=/Applications/kitty.app/Contents/MacOS/kitty FAKE_TERM_UCOMM=sleep run devward_terminal_ancestor "$BATS_TEST_TMPDIR/bin/fakeps" "$HOME"; [ "$status" -ne 0 ]
+  FAKE_TERM_UCOMM=sleep run fortkeep_terminal_ancestor "$BATS_TEST_TMPDIR/bin/fakeps" "$HOME"; [ "$status" -ne 0 ]
+  FAKE_TERM=/Applications/kitty.app/Contents/MacOS/kitty FAKE_TERM_UCOMM=sleep run fortkeep_terminal_ancestor "$BATS_TEST_TMPDIR/bin/fakeps" "$HOME"; [ "$status" -ne 0 ]
   # No second argument, as in production: a fake ~/Applications under an overridden HOME doesn't count.
-  FAKE_TERM="$HOME/Applications/kitty.app/Contents/MacOS/kitty" run devward_terminal_ancestor "$BATS_TEST_TMPDIR/bin/fakeps"; [ "$status" -ne 0 ]
-  FAKE_TERM="$HOME/Library/Application Support/iTerm2/iTermServer-3.6.4" run devward_terminal_ancestor "$BATS_TEST_TMPDIR/bin/fakeps"; [ "$status" -ne 0 ]
-  FAKE_TERM="$HOME/Applications/kitty.app/Contents/MacOS/kitty" run devward_terminal_ancestor "$BATS_TEST_TMPDIR/bin/fakeps" "$HOME"; [ "$status" -eq 0 ]
+  FAKE_TERM="$HOME/Applications/kitty.app/Contents/MacOS/kitty" run fortkeep_terminal_ancestor "$BATS_TEST_TMPDIR/bin/fakeps"; [ "$status" -ne 0 ]
+  FAKE_TERM="$HOME/Library/Application Support/iTerm2/iTermServer-3.6.4" run fortkeep_terminal_ancestor "$BATS_TEST_TMPDIR/bin/fakeps"; [ "$status" -ne 0 ]
+  FAKE_TERM="$HOME/Applications/kitty.app/Contents/MacOS/kitty" run fortkeep_terminal_ancestor "$BATS_TEST_TMPDIR/bin/fakeps" "$HOME"; [ "$status" -eq 0 ]
   h="$BATS_TEST_TMPDIR/some one"
-  FAKE_TERM="$h/Applications/kitty.app/Contents/MacOS/kitty" run devward_terminal_ancestor "$BATS_TEST_TMPDIR/bin/fakeps" "$h"; [ "$status" -eq 0 ]
-  FAKE_TERM="$h/Library/Application Support/iTerm2/iTermServer-3.6.4" run devward_terminal_ancestor "$BATS_TEST_TMPDIR/bin/fakeps" "$h"; [ "$status" -eq 0 ]
+  FAKE_TERM="$h/Applications/kitty.app/Contents/MacOS/kitty" run fortkeep_terminal_ancestor "$BATS_TEST_TMPDIR/bin/fakeps" "$h"; [ "$status" -eq 0 ]
+  FAKE_TERM="$h/Library/Application Support/iTerm2/iTermServer-3.6.4" run fortkeep_terminal_ancestor "$BATS_TEST_TMPDIR/bin/fakeps" "$h"; [ "$status" -eq 0 ]
   # A colon in the program path can't smuggle a name into the match.
-  FAKE_TERM="$HOME/Library/Application Support/iTerm2/iTermServer:iTermServer" FAKE_TERM_UCOMM=bash run devward_terminal_ancestor "$BATS_TEST_TMPDIR/bin/fakeps" "$HOME"; [ "$status" -ne 0 ]
-  FAKE_TERM="/Applications/kitty.app/Contents/MacOS/x:kitty" FAKE_TERM_UCOMM=kitty run devward_terminal_ancestor "$BATS_TEST_TMPDIR/bin/fakeps" "$HOME"; [ "$status" -ne 0 ]
+  FAKE_TERM="$HOME/Library/Application Support/iTerm2/iTermServer:iTermServer" FAKE_TERM_UCOMM=bash run fortkeep_terminal_ancestor "$BATS_TEST_TMPDIR/bin/fakeps" "$HOME"; [ "$status" -ne 0 ]
+  FAKE_TERM="/Applications/kitty.app/Contents/MacOS/x:kitty" FAKE_TERM_UCOMM=kitty run fortkeep_terminal_ancestor "$BATS_TEST_TMPDIR/bin/fakeps" "$HOME"; [ "$status" -ne 0 ]
 }
 @test "baseline.sh refuses when no terminal app or sshd started it, naming the accepted terminals" {
   fakeps
@@ -278,7 +278,7 @@ EOF
   chk GD-RT-02; [ "$(field status)" = ERROR ]; [ "$(field evidence)" = "Your baselines aren't plain files in a plain folder" ]
   rm "$(B listeners.txt)"; mv "$BATS_TEST_TMPDIR/l" "$(B listeners.txt)"; chmod 000 "$(B listeners.txt)"
   chk GD-RT-02; chmod 644 "$(B listeners.txt)"
-  [ "$(field status)" = ERROR ]; [ "$(field note)" = "~/.config/devward/baseline/listeners.txt is not readable" ]
+  [ "$(field status)" = ERROR ]; [ "$(field note)" = "~/.config/fortkeep/baseline/listeners.txt is not readable" ]
 }
 @test "GD-RT-02 a table with only a pid column (macOS before 15, and 15.8) names each program from ps" {
   netstat_from pid
@@ -354,7 +354,7 @@ ctl_home() {  # agent control files: Claude settings with a guard hook, a Codex 
   . "$REPO/checks/lib/common.sh"; . "$REPO/checks/lib/agents.sh"; . "$REPO/checks/lib/baselines.sh"
   ctl_home; S="$HOME/.claude/settings.json"
   old="$(jq -cS '{hooks, permissions, disableAllHooks, enabledPlugins, env}' "$S" | shasum -a 256 | cut -c1-64)"
-  [ "$(printf 'claude\t%s\n' "$S" | devward_control_hashes)" = "$S	claude	$old" ]
+  [ "$(printf 'claude\t%s\n' "$S" | fortkeep_control_hashes)" = "$S	claude	$old" ]
 }
 @test "GD-AI-01 counts each enabled plugin's hooks.json and the scripts it runs, but never opens a private plugin folder" {
   ctl_home; fakeps
@@ -367,16 +367,16 @@ ctl_home() {  # agent control files: Claude settings with a guard hook, a Codex 
   chk GD-AI-01; [ "$(field status)" = PASS ]; [[ "$(field evidence)" == "7 agent control file(s)"* ]]
   echo 'exit 1' >> "$P/hooks/check.sh"
   chk GD-AI-01; [ "$(field status)" = FAIL ]; [ "$(field note)" = "changed ~/.claude/plugins/cache/m/guard/1.0/hooks/check.sh" ]
-  echo "$P" > "$DEVWARD_PRIVATE_PATHS"; chmod 000 "$P/hooks/hooks.json"
+  echo "$P" > "$FORTKEEP_PRIVATE_PATHS"; chmod 000 "$P/hooks/hooks.json"
   chk GD-AI-01; chmod 644 "$P/hooks/hooks.json"
   [ "$(field status)" = PASS ]; [ "$(field note)" = "(a private folder was excluded)" ]
 }
 @test "GD-AI-01 skips a private folder and says so; an unreadable control file is named" {
   [ "$(id -u)" -ne 0 ] || skip "root reads everything"
   ctl_home; fakeps; term
-  echo "$HOME/.codex" > "$DEVWARD_PRIVATE_PATHS"
+  echo "$HOME/.codex" > "$FORTKEEP_PRIVATE_PATHS"
   chk GD-AI-01; [ "$(field status)" = PASS ]; [[ "$(field note)" == *"a private folder was excluded"* ]]; [[ "$(field note)" != *codex* ]]
-  : > "$DEVWARD_PRIVATE_PATHS"
+  : > "$FORTKEEP_PRIVATE_PATHS"
   chmod 000 "$HOME/.codex/rules/a.rules"
   chk GD-AI-01; chmod 644 "$HOME/.codex/rules/a.rules"
   [ "$(field status)" = FAIL ]; [[ "$(field note)" == *"Could not read: ~/.codex/rules/a.rules"* ]]
@@ -409,7 +409,7 @@ ctl_home() {  # agent control files: Claude settings with a guard hook, a Codex 
   [[ "$output" == *"baseline accepted"* ]]
   [ "$(stat -f %Lp "$(B)")" = 700 ]
   for f in knockknock.json listeners.txt control-files.txt; do [ "$(stat -f %Lp "$(B "$f")")" = 600 ]; done
-  [ ! -e "$DEVWARD_REPORTS/baseline" ]; [ ! -e "$DEVWARD_REPORTS/knockknock/baseline.json" ]
+  [ ! -e "$FORTKEEP_REPORTS/baseline" ]; [ ! -e "$FORTKEEP_REPORTS/knockknock/baseline.json" ]
   rm -r "$(B)"; mkdir "$BATS_TEST_TMPDIR/elsewhere"; ln -s "$BATS_TEST_TMPDIR/elsewhere" "$(B)"
   term
   [[ "$output" == *"isn't a plain file in a plain folder"* ]]; [ -z "$(ls -A "$BATS_TEST_TMPDIR/elsewhere")" ]
@@ -420,7 +420,7 @@ ctl_home() {  # agent control files: Claude settings with a guard hook, a Codex 
 commit() { git -C "$1" add -A && git -C "$1" -c user.email=t@example.invalid -c user.name=t commit -qm x; }
 repo() { mkdir -p "$1"; git init -q "$1"; echo hello > "$1/README.md"; commit "$1"; }  # DIR — a throwaway repo
 gap() { printf 'module.exports = {};%60s%s\n' '' "require('./x')" > "$1/postcss.config.js"; commit "$1"; }  # code after 60 spaces
-sweep() { DEVWARD_WEEKLY_RUN=1 chk GD-RC-01; }  # the weekly run: always sweeps
+sweep() { FORTKEEP_WEEKLY_RUN=1 chk GD-RC-01; }  # the weekly run: always sweeps
 @test "GD-RC-01 no repos in the code folders → NA; clean repos → PASS; a poisoned one → FAIL naming repo, file and rule" {
   sweep; [ "$(field status)" = NA ]
   repo "$HOME/dev/app"; repo "$HOME/Projects/team/site"
@@ -437,7 +437,7 @@ sweep() { DEVWARD_WEEKLY_RUN=1 chk GD-RC-01; }  # the weekly run: always sweeps
   repo "$HOME/dev/app"
   sweep; [ "$(field status)" = FAIL ]; [ "$(field evidence)" = "1 repo-poisoning indicator(s) in 1 repo(s) or extension folder(s)" ]
   [[ "$(field note)" == "~/.vscode/extensions:pub.ext-1.0.0/dist/extension.js:1 (payload markers: v2-string"* ]]
-  echo "$HOME/.vscode" > "$DEVWARD_PRIVATE_PATHS"
+  echo "$HOME/.vscode" > "$FORTKEEP_PRIVATE_PATHS"
   sweep; [ "$(field status)" = PASS ]; [ "$(field evidence)" = "1 repo(s) swept, none flagged" ]; [ "$(field note)" = "(a private folder was excluded)" ]
 }
 @test "GD-RC-01 also sweeps ~/Desktop and ~/Downloads, and names the code folders it looked in" {
@@ -455,7 +455,7 @@ sweep() { DEVWARD_WEEKLY_RUN=1 chk GD-RC-01; }  # the weekly run: always sweeps
 @test "GD-RC-01 without Apple's Command Line Tools is ERROR saying so, and stores nothing" {
   repo "$HOME/dev/app"; stub xcode-select 'exit 2'
   sweep; [ "$(field status)" = ERROR ]; [[ "$(field evidence)" == *"Command Line Tools"* ]]
-  [[ "$(field note)" == *"xcode-select --install"* ]]; [ ! -e "$HOME/.config/devward/repo-sweep.json" ]
+  [[ "$(field note)" == *"xcode-select --install"* ]]; [ ! -e "$HOME/.config/fortkeep/repo-sweep.json" ]
 }
 @test "GD-RC-01 a code folder macOS won't let it read is ERROR naming it, not a PASS" {
   [ "$(id -u)" -ne 0 ] || skip "root reads everything"
@@ -481,11 +481,11 @@ sweep() { DEVWARD_WEEKLY_RUN=1 chk GD-RC-01; }  # the weekly run: always sweeps
   commit "$HOME/dev/app"
   sweep; [ "$(field status)" = FAIL ]
   [[ "$(field note)" == *"app:package.json (lifecycle script postinstall looks like a loader: download piped into a shell (88 chars))"* ]]
-  [[ "$output" != *"$T"* ]]; ! grep -qF "$T" "$HOME/.config/devward/repo-sweep.json"
+  [[ "$output" != *"$T"* ]]; ! grep -qF "$T" "$HOME/.config/fortkeep/repo-sweep.json"
   chk GD-RC-01; [ "$(field status)" = FAIL ]; [[ "$output" != *"$T"* ]]
 }
 @test "GD-RC-01 skips private folders, hidden folders and node_modules, and finds repos at most four levels down" {
-  repo "$HOME/dev/secret/x"; gap "$HOME/dev/secret/x"; echo "$HOME/dev/secret" > "$DEVWARD_PRIVATE_PATHS"
+  repo "$HOME/dev/secret/x"; gap "$HOME/dev/secret/x"; echo "$HOME/dev/secret" > "$FORTKEEP_PRIVATE_PATHS"
   repo "$HOME/dev/app/node_modules/dep"; gap "$HOME/dev/app/node_modules/dep"
   repo "$HOME/dev/a/b/c/d/e"; gap "$HOME/dev/a/b/c/d/e"
   repo "$HOME/dev/a/b/c/ok"
@@ -496,12 +496,12 @@ sweep() { DEVWARD_WEEKLY_RUN=1 chk GD-RC-01; }  # the weekly run: always sweeps
 @test "GD-RC-01 never reads or names the files of a private folder inside a repo, by either spelling of it" {
   repo "$HOME/dev/app"; mkdir -p "$HOME/dev/app/clients/c1"
   p1='Cot%3'; p2='t=shtP'; printf 'var s = "%s%s";\n' "$p1" "$p2" > "$HOME/dev/app/clients/c1/m.js"; commit "$HOME/dev/app"
-  echo "$HOME/dev/nothing-here" > "$DEVWARD_PRIVATE_PATHS"  # a private entry that doesn't exist excludes nothing
+  echo "$HOME/dev/nothing-here" > "$FORTKEEP_PRIVATE_PATHS"  # a private entry that doesn't exist excludes nothing
   sweep; [ "$(field status)" = FAIL ]; [[ "$(field note)" != *"private folder"* ]]
-  ln -s "$HOME/dev/app/clients" "$HOME/clients-link"; echo "$HOME/clients-link" > "$DEVWARD_PRIVATE_PATHS"
+  ln -s "$HOME/dev/app/clients" "$HOME/clients-link"; echo "$HOME/clients-link" > "$FORTKEEP_PRIVATE_PATHS"
   sweep; [ "$(field status)" = PASS ]; [ "$(field note)" = "(a private folder was excluded)" ]
-  [[ "$output" != *clients* ]]; ! grep -q clients "$HOME/.config/devward/repo-sweep.json"
-  echo "$HOME/dev/app/clients" > "$DEVWARD_PRIVATE_PATHS"
+  [[ "$output" != *clients* ]]; ! grep -q clients "$HOME/.config/fortkeep/repo-sweep.json"
+  echo "$HOME/dev/app/clients" > "$FORTKEEP_PRIVATE_PATHS"
   sweep; [ "$(field status)" = PASS ]; [ "$(field note)" = "(a private folder was excluded)" ]; [[ "$output" != *clients* ]]
 }
 @test "GD-RC-01 never follows a folder swapped for a symlink out of the repo, into a private folder or anywhere else" {
@@ -509,9 +509,9 @@ sweep() { DEVWARD_WEEKLY_RUN=1 chk GD-RC-01; }  # the weekly run: always sweeps
   p1='Cot%3'; p2='t=shtP'
   mkdir -p "$HOME/vault" "$HOME/elsewhere"
   printf 'var s = "%s%s";\n' "$p1" "$p2" > "$HOME/vault/m.js"; cp "$HOME/vault/m.js" "$HOME/elsewhere/m.js"
-  rm -rf "$HOME/dev/app/lib"; ln -s "$HOME/vault" "$HOME/dev/app/lib"; echo "$HOME/vault" > "$DEVWARD_PRIVATE_PATHS"
+  rm -rf "$HOME/dev/app/lib"; ln -s "$HOME/vault" "$HOME/dev/app/lib"; echo "$HOME/vault" > "$FORTKEEP_PRIVATE_PATHS"
   sweep; [ "$(field status)" = PASS ]; [ "$(field note)" = "(a private folder was excluded)" ]; [[ "$output" != *vault* ]]
-  rm "$HOME/dev/app/lib"; ln -s "$HOME/elsewhere" "$HOME/dev/app/lib"; : > "$DEVWARD_PRIVATE_PATHS"
+  rm "$HOME/dev/app/lib"; ln -s "$HOME/elsewhere" "$HOME/dev/app/lib"; : > "$FORTKEEP_PRIVATE_PATHS"
   sweep; [ "$(field status)" = PASS ]; [ -z "$(field note)" ]
 }
 @test "GD-RC-01 flags an auto-run task committed as a symlink to a file in the repo" {
@@ -526,7 +526,7 @@ sweep() { DEVWARD_WEEKLY_RUN=1 chk GD-RC-01; }  # the weekly run: always sweeps
   PYTHONPATH="$BATS_TEST_TMPDIR/py" sweep; [ "$(field status)" = PASS ]; [ ! -e "$BATS_TEST_TMPDIR/imported" ]
 }
 @test "GD-RC-01 never opens a repo that is private under another spelling" {
-  repo "$HOME/dev/app"; gap "$HOME/dev/app"; ln -s "$HOME/dev/app" "$HOME/app-link"; echo "$HOME/app-link" > "$DEVWARD_PRIVATE_PATHS"
+  repo "$HOME/dev/app"; gap "$HOME/dev/app"; ln -s "$HOME/dev/app" "$HOME/app-link"; echo "$HOME/app-link" > "$FORTKEEP_PRIVATE_PATHS"
   sweep; [ "$(field status)" = NA ]; [[ "$(field note)" == *"(a private folder was excluded)" ]]
 }
 @test "GD-RC-01 runs nothing from the repos it reads" {
@@ -540,7 +540,7 @@ sweep() { DEVWARD_WEEKLY_RUN=1 chk GD-RC-01; }  # the weekly run: always sweeps
   repo "$HOME/dev/app"; mkdir -p "$HOME/dev/broken/.git"
   sweep; [ "$(field status)" = ERROR ]; [[ "$(field note)" == *"Could not list the files of 1 repo(s): "*"/dev/broken."* ]]
   rm -rf "$HOME/dev/broken"
-  DEVWARD_SWEEP_TIMEOUT=1 sweep; [ "$(field status)" = ERROR ]; [[ "$(field note)" == *"time ran out after 0 of 1"* ]]
+  FORTKEEP_SWEEP_TIMEOUT=1 sweep; [ "$(field status)" = ERROR ]; [[ "$(field note)" == *"time ran out after 0 of 1"* ]]
 }
 @test "GD-RC-01 a repo whose history it can't read is ERROR, not PASS" {
   repo "$HOME/dev/app"; echo 0123456789012345678901234567890123456789 > "$HOME/dev/app/.git/refs/heads/broken"
@@ -558,21 +558,21 @@ sweep() { DEVWARD_WEEKLY_RUN=1 chk GD-RC-01; }  # the weekly run: always sweeps
 @test "GD-RC-01 sweeps in the weekly run or when nothing is stored; other runs report the stored result with its age" {
   repo "$HOME/dev/app"
   chk GD-RC-01; [ "$(field status)" = PASS ]; [ "$(field evidence)" = "1 repo(s) swept, none flagged" ]
-  [ "$(jq -r .status "$HOME/.config/devward/repo-sweep.json")" = PASS ]
+  [ "$(jq -r .status "$HOME/.config/fortkeep/repo-sweep.json")" = PASS ]
   gap "$HOME/dev/app"
   chk GD-RC-01; [ "$(field status)" = PASS ]; [ "$(field evidence)" = "1 repo(s) swept, none flagged (weekly sweep, 0 day(s) ago)" ]
   sweep; [ "$(field status)" = FAIL ]; [ "$(field evidence)" = "1 repo-poisoning indicator(s) in 1 repo(s)" ]
   chk GD-RC-01; [ "$(field status)" = FAIL ]; [ "$(field evidence)" = "1 repo-poisoning indicator(s) in 1 repo(s) (weekly sweep, 0 day(s) ago)" ]
   [[ "$(field note)" == *"/if-red"* ]]
-  jq '.time -= 9 * 86400' "$HOME/.config/devward/repo-sweep.json" > "$BATS_TEST_TMPDIR/s"; mv "$BATS_TEST_TMPDIR/s" "$HOME/.config/devward/repo-sweep.json"
+  jq '.time -= 9 * 86400' "$HOME/.config/fortkeep/repo-sweep.json" > "$BATS_TEST_TMPDIR/s"; mv "$BATS_TEST_TMPDIR/s" "$HOME/.config/fortkeep/repo-sweep.json"
   chk GD-RC-01; [ "$(field status)" = FAIL ]; [ "$(field evidence)" = "The weekly sweep hasn't run: the last one is 9 days old" ]
-  echo '{"status":"PASS"}' > "$HOME/.config/devward/repo-sweep.json"
+  echo '{"status":"PASS"}' > "$HOME/.config/fortkeep/repo-sweep.json"
   chk GD-RC-01; [ "$(field status)" = ERROR ]; [ -n "$(field evidence)" ]
-  rm "$HOME/.config/devward/repo-sweep.json"; mkdir "$HOME/.config/devward/repo-sweep.json.tmp"  # the result can't be written
+  rm "$HOME/.config/fortkeep/repo-sweep.json"; mkdir "$HOME/.config/fortkeep/repo-sweep.json.tmp"  # the result can't be written
   chk GD-RC-01; [ "$(field status)" = FAIL ]; [[ "$(field note)" == *"Could not store this result in "*"so the next review sweeps again."* ]]
 }
 @test "GD-RC-01 a stored result dated more than a day ahead is ERROR, not a PASS that never goes stale" {
-  repo "$HOME/dev/app"; S="$HOME/.config/devward/repo-sweep.json"
+  repo "$HOME/dev/app"; S="$HOME/.config/fortkeep/repo-sweep.json"
   sweep; [ "$(field status)" = PASS ]
   jq '.time += 3600' "$S" > "$BATS_TEST_TMPDIR/s"; mv "$BATS_TEST_TMPDIR/s" "$S"
   chk GD-RC-01; [ "$(field status)" = PASS ]; [[ "$(field evidence)" == *"(weekly sweep, 0 day(s) ago)" ]]  # clock skew
@@ -580,7 +580,7 @@ sweep() { DEVWARD_WEEKLY_RUN=1 chk GD-RC-01; }  # the weekly run: always sweeps
   chk GD-RC-01; [ "$(field status)" = ERROR ]; [[ "$(field evidence)" == *"dated in the future"* ]]
 }
 @test "GD-RC-01 never reads or writes its stored result through a symlink" {
-  repo "$HOME/dev/app"; S="$HOME/.config/devward/repo-sweep.json"; E="$BATS_TEST_TMPDIR/elsewhere"; mkdir -p "$E" "${S%/*}"
+  repo "$HOME/dev/app"; S="$HOME/.config/fortkeep/repo-sweep.json"; E="$BATS_TEST_TMPDIR/elsewhere"; mkdir -p "$E" "${S%/*}"
   jq -nc --argjson t "$(date +%s)" '{status: "PASS", evidence: "forged", note: "", time: $t}' > "$E/r.json"; ln -s "$E/r.json" "$S"
   chk GD-RC-01; [ "$(field status)" = ERROR ]; [[ "$(field evidence)" == *"isn't a plain file"* ]]; [[ "$output" != *forged* ]]
   sweep; [ "$(field status)" = PASS ]; [[ "$(field note)" == *"Could not store this result"* ]]; [[ "$(jq -r .evidence "$E/r.json")" = forged ]]
@@ -604,9 +604,9 @@ sweep() { DEVWARD_WEEKLY_RUN=1 chk GD-RC-01; }  # the weekly run: always sweeps
   head -c 5000 /dev/zero | tr '\0' ' ' > "$P/lib/cli.js"; ln -s "$P/bin/npm-cli.js" "$BATS_TEST_TMPDIR/bin/npm"
   sweep; [ "$(field status)" = FAIL ]; [[ "$(field note)" == *"/pkg/npm/lib/cli.js:lib/cli.js (npm's cli.js is 5000 bytes"* ]]
 }
-@test "GD-RC-01 finds the npm on the person's PATH (DEVWARD_USER_PATH), not only on the one devward runs with" {
+@test "GD-RC-01 finds the npm on the person's PATH (FORTKEEP_USER_PATH), not only on the one fortkeep runs with" {
   P="$BATS_TEST_TMPDIR/pkg/npm"; mkdir -p "$P/bin" "$P/lib" "$BATS_TEST_TMPDIR/user-bin"; : > "$P/bin/npm-cli.js"
   head -c 5000 /dev/zero | tr '\0' ' ' > "$P/lib/cli.js"; ln -s "$P/bin/npm-cli.js" "$BATS_TEST_TMPDIR/user-bin/npm"
-  DEVWARD_USER_PATH="$BATS_TEST_TMPDIR/user-bin:/usr/bin:/bin" sweep
+  FORTKEEP_USER_PATH="$BATS_TEST_TMPDIR/user-bin:/usr/bin:/bin" sweep
   [ "$(field status)" = FAIL ]; [[ "$(field note)" == *"/pkg/npm/lib/cli.js:lib/cli.js (npm's cli.js is 5000 bytes"* ]]
 }

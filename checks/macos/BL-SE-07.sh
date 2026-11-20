@@ -1,7 +1,7 @@
 #!/bin/bash
 . "$(dirname "$0")/../lib/common.sh"
 ID=BL-SE-07
-if devward_is_private "$HOME/.ssh"; then devward_result "$ID" ERROR "Could not check ~/.ssh" "a private folder was excluded"; exit 0; fi
+if fortkeep_is_private "$HOME/.ssh"; then fortkeep_result "$ID" ERROR "Could not check ~/.ssh" "a private folder was excluded"; exit 0; fi
 total=0; old=""; unread=""; nu=0
 for f in "$HOME/.ssh"/*; do
   [ -f "$f" ] || continue
@@ -11,7 +11,7 @@ for f in "$HOME/.ssh"/*; do
   total=$((total + 1))
   [ -n "$(find "$f" -mtime +365 2>/dev/null)" ] && old="$old $(basename "$f")"
 done
-if [ -n "$old" ]; then devward_result "$ID" FAIL "Key files older than a year in ~/.ssh" "Older than a year:$old${unread:+. Could not read:$unread}"
-elif [ -n "$unread" ]; then devward_result "$ID" ERROR "Could not read $nu file(s) in ~/.ssh" "Could not read:$unread"
-elif [ "$total" -eq 0 ]; then devward_result "$ID" PASS "No private key files in ~/.ssh"
-else devward_result "$ID" PASS "All $total key files in ~/.ssh are less than a year old"; fi
+if [ -n "$old" ]; then fortkeep_result "$ID" FAIL "Key files older than a year in ~/.ssh" "Older than a year:$old${unread:+. Could not read:$unread}"
+elif [ -n "$unread" ]; then fortkeep_result "$ID" ERROR "Could not read $nu file(s) in ~/.ssh" "Could not read:$unread"
+elif [ "$total" -eq 0 ]; then fortkeep_result "$ID" PASS "No private key files in ~/.ssh"
+else fortkeep_result "$ID" PASS "All $total key files in ~/.ssh are less than a year old"; fi

@@ -26,7 +26,7 @@ homebrew() {  # a fake Homebrew whose vulns command exists
 }
 @test "BL-SN-01 a login shell that hangs → ERROR with evidence" {
   printf 'sleep 30\n' > "$HOME/.zlogin"
-  DEVWARD_SHELL_TIMEOUT=1 chk BL-SN-01; [ "$(field status)" = ERROR ]; [ -n "$(field evidence)" ]
+  FORTKEEP_SHELL_TIMEOUT=1 chk BL-SN-01; [ "$(field status)" = ERROR ]; [ -n "$(field evidence)" ]
 }
 @test "BL-SN-01 a brew whose location cannot be resolved → ERROR with evidence" {
   for t in osv-scanner pip-audit gitleaks cosign shellcheck actionlint; do stub "$t" 'exit 0'; done
@@ -39,17 +39,17 @@ homebrew() {  # a fake Homebrew whose vulns command exists
 }
 @test "BL-SN-02 a login shell that hangs → ERROR with evidence" {
   printf 'sleep 30\n' > "$HOME/.zlogin"
-  DEVWARD_SHELL_TIMEOUT=1 chk BL-SN-02; [ "$(field status)" = ERROR ]; [ -n "$(field evidence)" ]
+  FORTKEEP_SHELL_TIMEOUT=1 chk BL-SN-02; [ "$(field status)" = ERROR ]; [ -n "$(field evidence)" ]
 }
 @test "BL-IS-01 an app or a CLI counts; none → FAIL" {
   chk BL-IS-01; [ "$(field status)" = FAIL ]
-  mkdir -p "$DEVWARD_SYSROOT/Applications/OrbStack.app"; chk BL-IS-01; [ "$(field status)" = PASS ]; [[ "$(field evidence)" == *OrbStack* ]]
-  rm -r "$DEVWARD_SYSROOT/Applications/OrbStack.app"; stub colima 'exit 0'
+  mkdir -p "$FORTKEEP_SYSROOT/Applications/OrbStack.app"; chk BL-IS-01; [ "$(field status)" = PASS ]; [[ "$(field evidence)" == *OrbStack* ]]
+  rm -r "$FORTKEEP_SYSROOT/Applications/OrbStack.app"; stub colima 'exit 0'
   chk BL-IS-01; [ "$(field status)" = PASS ]; [[ "$(field evidence)" == *colima* ]]
 }
 @test "BL-IS-01 a login shell that hangs and no app → ERROR; an app still counts" {
   printf 'sleep 30\n' > "$HOME/.zlogin"
-  DEVWARD_SHELL_TIMEOUT=1 chk BL-IS-01; [ "$(field status)" = ERROR ]; [ -n "$(field evidence)" ]
-  mkdir -p "$DEVWARD_SYSROOT/Applications/UTM.app"
-  DEVWARD_SHELL_TIMEOUT=1 chk BL-IS-01; [ "$(field status)" = PASS ]
+  FORTKEEP_SHELL_TIMEOUT=1 chk BL-IS-01; [ "$(field status)" = ERROR ]; [ -n "$(field evidence)" ]
+  mkdir -p "$FORTKEEP_SYSROOT/Applications/UTM.app"
+  FORTKEEP_SHELL_TIMEOUT=1 chk BL-IS-01; [ "$(field status)" = PASS ]
 }

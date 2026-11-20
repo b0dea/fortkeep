@@ -3,10 +3,10 @@
 . "$(dirname "$0")/../lib/fix.sh"
 ID=BL-SC-02
 fx_require_approval "$ID" "${1:-}"
-DEST="$HOME/.config/devward/path-front.sh"
-MARK="# devward BL-SC-02"
-LINE="[ -r \"\$HOME/.config/devward/path-front.sh\" ] && . \"\$HOME/.config/devward/path-front.sh\"  $MARK"
-passes() { [ "$(/bin/bash -p "$DEVWARD_REPO/checks/macos/$1.sh" | jq -r .status)" = PASS ]; }
+DEST="$HOME/.config/fortkeep/path-front.sh"
+MARK="# fortkeep BL-SC-02"
+LINE="[ -r \"\$HOME/.config/fortkeep/path-front.sh\" ] && . \"\$HOME/.config/fortkeep/path-front.sh\"  $MARK"
+passes() { [ "$(/bin/bash -p "$FORTKEEP_REPO/checks/macos/$1.sh" | jq -r .status)" = PASS ]; }
 changed=0
 stop() {  # MESSAGE — finish as MANUAL; changes made so far are logged and can be undone
   [ "$changed" -eq 1 ] && { fx_seal "$ID"; fx_log "$ID" apply "Safe Chain shims first and age gate pinned (partly)"; }
@@ -20,17 +20,17 @@ case "$1" in
       if [ -f "$HOME/.bash_profile" ]; then printf '%s\n' "$HOME/.bash_profile"
       elif [ -f "$HOME/.profile" ]; then printf '%s\n' "$HOME/.profile"; fi
       [ -f "$HOME/.bashrc" ] && printf '%s\n' "$HOME/.bashrc")"
-    mkdir -p "$(dirname "$DEST")" || stop "could not create $(devward_tilde "$(dirname "$DEST")")"
-    if ! cmp -s "$DEVWARD_REPO/fixes/files/path-front.sh" "$DEST"; then
-      fx_backup "$ID" "$DEST" || stop "could not back up $(devward_tilde "$DEST")"
-      cp "$DEVWARD_REPO/fixes/files/path-front.sh" "$DEST" || stop "could not write $(devward_tilde "$DEST")"
+    mkdir -p "$(dirname "$DEST")" || stop "could not create $(fortkeep_tilde "$(dirname "$DEST")")"
+    if ! cmp -s "$FORTKEEP_REPO/fixes/files/path-front.sh" "$DEST"; then
+      fx_backup "$ID" "$DEST" || stop "could not back up $(fortkeep_tilde "$DEST")"
+      cp "$FORTKEEP_REPO/fixes/files/path-front.sh" "$DEST" || stop "could not write $(fortkeep_tilde "$DEST")"
       changed=1
     fi
     while IFS= read -r f; do
       [ -n "$f" ] || continue
       grep -qF "$MARK" "$f" 2>/dev/null && continue
-      fx_backup "$ID" "$f" || stop "could not back up $(devward_tilde "$f")"
-      printf '\n%s\n' "$LINE" >> "$f" || stop "could not update $(devward_tilde "$f")"
+      fx_backup "$ID" "$f" || stop "could not back up $(fortkeep_tilde "$f")"
+      printf '\n%s\n' "$LINE" >> "$f" || stop "could not update $(fortkeep_tilde "$f")"
       changed=1
     done <<EOF
 $targets
@@ -38,7 +38,7 @@ EOF
     [ "$changed" -eq 1 ] && { fx_seal "$ID"; fx_log "$ID" apply "Safe Chain shims first and age gate pinned in shell start-up files"; }
     changed=0
     if passes BL-SC-02 && passes BL-SC-04; then echo "done: the shims come first in every shell type; open a new Terminal window to use them"; exit 0; fi
-    stop "the line is in place, but something later in a start-up file still changes PATH or the age gate. Move the line marked devward to the very end of each file listed by the BL-SC-02 check, then re-check" ;;
+    stop "the line is in place, but something later in a start-up file still changes PATH or the age gate. Move the line marked fortkeep to the very end of each file listed by the BL-SC-02 check, then re-check" ;;
   undo)
     # Removes only what apply added: the marked line in each start-up file, then the PATH file if
     # it's still as apply left it. A failure stops before the PATH file, so a retry is safe.
@@ -54,11 +54,11 @@ EOF
       fx_drop_blank_created "$dir" "$f" || bad=1
     done < "$dir/manifest.tsv"
     if [ "$bad" -eq 0 ] && [ "$dest" -eq 1 ]; then
-      if fx_unchanged "$dir" "$DEST"; then fx_restore_file "$dir" "$DEST" || bad=1; else kept="$(devward_tilde "$DEST")"; fi
+      if fx_unchanged "$dir" "$DEST"; then fx_restore_file "$dir" "$DEST" || bad=1; else kept="$(fortkeep_tilde "$DEST")"; fi
     fi
-    if [ "$bad" -ne 0 ]; then echo "undo incomplete; backup kept in $(devward_tilde "$dir")" >&2; exit 6; fi
+    if [ "$bad" -ne 0 ]; then echo "undo incomplete; backup kept in $(fortkeep_tilde "$dir")" >&2; exit 6; fi
     mv "$dir/manifest.tsv" "$dir/manifest.restored.tsv"
-    fx_log "$ID" undo "removed the devward line from shell start-up files"
+    fx_log "$ID" undo "removed the fortkeep line from shell start-up files"
     if [ -n "$kept" ]; then echo "undo stopped for $kept: your later edits stopped the undo there, so it was left as it is; the line in your start-up files was removed" >&2; exit 6; fi
     echo "restored" ;;
 esac

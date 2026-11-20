@@ -2,15 +2,15 @@
 . "$(dirname "$0")/../lib/common.sh"
 . "$(dirname "$0")/../lib/browsers.sh"
 ID=BL-BR-01
-profiles="$(devward_profiles)"; pn="$(devward_profiles_note)"
-[ -n "$profiles" ] || { devward_result "$ID" NA "No Chrome-family or Firefox profiles (Safari keeps passwords in the Keychain)" "${pn# }"; exit 0; }
-command -v jq >/dev/null 2>&1 || { devward_result "$ID" ERROR "Couldn't read browser settings" "jq is not available$pn"; exit 0; }
+profiles="$(fortkeep_profiles)"; pn="$(fortkeep_profiles_note)"
+[ -n "$profiles" ] || { fortkeep_result "$ID" NA "No Chrome-family or Firefox profiles (Safari keeps passwords in the Keychain)" "${pn# }"; exit 0; }
+command -v jq >/dev/null 2>&1 || { fortkeep_result "$ID" ERROR "Couldn't read browser settings" "jq is not available$pn"; exit 0; }
 cant() { unread="$unread, $1 ($(basename "$2"))"; }  # BROWSER PROFILE — noted; the caller skips the profile
 policy_off() {  # BROWSER — 0 when a managed policy turns it off, 1 when not, 2 when the policy file is unreadable
   local b f v
   case "$1" in Chrome) b=com.google.Chrome ;; Brave) b=com.brave.Browser ;; Edge) b=com.microsoft.Edge ;;
     Arc) b=company.thebrowser.Browser ;; Chromium) b=org.chromium.Chromium ;; Vivaldi) b=com.vivaldi.Vivaldi ;; *) return 1 ;; esac
-  f="$(devward_path "/Library/Managed Preferences/$b.plist")"
+  f="$(fortkeep_path "/Library/Managed Preferences/$b.plist")"
   [ -e "$f" ] || return 1
   plutil -lint "$f" >/dev/null 2>&1 || return 2
   v="$(plutil -extract PasswordManagerEnabled raw "$f" 2>/dev/null)"
@@ -57,7 +57,7 @@ done <<EOF2
 $profiles
 EOF2
 left="${kept:+. Passwords still saved (turning the manager off does not delete them): ${kept#, }; move them to your password manager, then delete them in the browser}"
-if [ -n "$on" ]; then devward_result "$ID" FAIL "Built-in password manager on in some browser profiles" "On (the browser's default counts as on) in: ${on#, }$left${unread:+. Could not read: ${unread#, }}$pn"
-elif [ -n "$kept" ]; then devward_result "$ID" FAIL "Built-in password manager off, but passwords are still saved in some browser profiles" "${left#. }${unread:+. Could not read: ${unread#, }}$pn"
-elif [ -n "$unread" ]; then devward_result "$ID" ERROR "Couldn't read the settings of ${unread#, }" "The settings file is unreadable or damaged$pn"
-else devward_result "$ID" PASS "Built-in password manager off in all $total browser profiles" "${pn# }"; fi
+if [ -n "$on" ]; then fortkeep_result "$ID" FAIL "Built-in password manager on in some browser profiles" "On (the browser's default counts as on) in: ${on#, }$left${unread:+. Could not read: ${unread#, }}$pn"
+elif [ -n "$kept" ]; then fortkeep_result "$ID" FAIL "Built-in password manager off, but passwords are still saved in some browser profiles" "${left#. }${unread:+. Could not read: ${unread#, }}$pn"
+elif [ -n "$unread" ]; then fortkeep_result "$ID" ERROR "Couldn't read the settings of ${unread#, }" "The settings file is unreadable or damaged$pn"
+else fortkeep_result "$ID" PASS "Built-in password manager off in all $total browser profiles" "${pn# }"; fi

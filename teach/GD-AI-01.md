@@ -4,7 +4,7 @@
 
 **Real attack:** In August 2025 malicious versions of the Nx build tool ran an npm `postinstall` script that stole credentials and added a `sudo shutdown -h 0` line to `~/.zshrc` and `~/.bashrc`, so every new Terminal window ran the attacker's command. The changed hash of each file shows that edit ([source](https://github.com/nrwl/nx/security/advisories/GHSA-cxm3-wv7p-598c)).
 
-**Check it yourself:** `shasum -a 256 ~/.zshrc ~/.gitconfig` and compare with the hashes in `~/.config/devward/baseline/control-files.txt`. For Claude Code's own `settings.json`, only what steers the agent counts (hooks, permissions, `disableAllHooks`, enabled plugins, `env`, and the keys that run a command: `statusLine`, `apiKeyHelper`, `awsAuthRefresh`, `awsCredentialExport`, `otelHeadersHelper`), and of `~/.claude.json` only its `mcpServers`, because the rest changes for unrelated reasons.
+**Check it yourself:** `shasum -a 256 ~/.zshrc ~/.gitconfig` and compare with the hashes in `~/.config/fortkeep/baseline/control-files.txt`. For Claude Code's own `settings.json`, only what steers the agent counts (hooks, permissions, `disableAllHooks`, enabled plugins, `env`, and the keys that run a command: `statusLine`, `apiKeyHelper`, `awsAuthRefresh`, `awsCredentialExport`, `otelHeadersHelper`), and of `~/.claude.json` only its `mcpServers`, because the rest changes for unrelated reasons.
 
 **How to fix:** look at what changed in each file listed. If you made the change (or an update did), open the Terminal app, `cd` to this repo, and run `checks/baseline.sh accept`: it shows every changed, added or removed file and asks you to type `accept`. If you didn't, undo the change and type `/if-red`. The agent can't accept a baseline for you, on purpose.
 

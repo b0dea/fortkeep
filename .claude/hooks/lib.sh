@@ -1,11 +1,11 @@
 #!/bin/bash
 # Source it, don't run it. Shared by the guards: refusals, physical paths compared as APFS compares them, and the
 # agent's own scratch, plan and memory folders. The caller sets cwd (the request's working folder) before real().
-block() { echo "Blocked by devward: $1" >&2; exit 2; }
+block() { echo "Blocked by fortkeep: $1" >&2; exit 2; }
 HOOKS="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO="${CLAUDE_PROJECT_DIR:-$(cd "$HOOKS/../.." && pwd)}"
 # shellcheck source=checks/lib/mode.sh
-. "$HOOKS/../../checks/lib/mode.sh"  # devward_dev_session: DEVWARD_DEV=1 and the person's marker
+. "$HOOKS/../../checks/lib/mode.sh"  # fortkeep_dev_session: FORTKEEP_DEV=1 and the person's marker
 
 fold() {  # TEXT on stdin — as APFS compares names: NFC, upper case, lower case, NFC again (as cockpit does), so a
   # look-alike such as U+017F (long s) or the Kelvin sign compares equal to the letter it opens

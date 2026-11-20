@@ -1,5 +1,5 @@
 name: Feature request
-description: Something devward should check, explain or fix, and does not.
+description: Something fortkeep should check, explain or fix, and does not.
 labels: ["enhancement"]
 body:
   - type: markdown
