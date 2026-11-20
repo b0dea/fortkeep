@@ -9,6 +9,10 @@ What's left to build. What fortkeep doesn't stop yet is in the [threat model](th
 - **Measure a run.** How long a full check takes on a reference Mac, and which checks are slow.
 - **A versioned indicator pack.** Malware indicators that update without a new release, each with its public source,
   and a cross-check against public malicious-package data when a release is built.
+- **A daily light check.** An optional daily run of only the urgent checks (live malware, poisoned repos), which are
+  quick; the full review stays weekly.
+- **A CI template for your repos.** `fortkeep ci-template` prints a ready GitHub workflow that scans every push and
+  pull request for the same malware indicators, so a poisoned commit is caught before anyone clones it.
 - **More agents**, as they gain hooks that can carry the guards.
 
 ## Follow-ups
