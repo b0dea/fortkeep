@@ -102,6 +102,8 @@ Checks are meant not to use the network, so a run says nothing about you to anyo
 - **The installer:** clones fortkeep from GitHub (Homebrew also downloads the release's source archive).
 - **`checks/update.sh` (`fortkeep update`):** fetches the release tags from fortkeep's git remote, only when you run
   it.
+- **`fortkeep ci-template`:** sends nothing; it prints a GitHub workflow. Once you add that to a repo, it runs on
+  GitHub's machines, which fetch your repo and this fortkeep release from GitHub to scan it.
 - **The weekly check (`checks/weekly.sh`):** `brew update`, then `brew vulns`, which use Homebrew's own servers.
   When KnockKnock is installed, its scan runs with VirusTotal turned off (`-skipVT`).
 

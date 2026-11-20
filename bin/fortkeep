@@ -34,6 +34,7 @@ Commands
   fortkeep summary [--name NAME]             a posture summary you can share
   fortkeep update                            move to the newest signed release
   fortkeep version [--json]                  which release this is, and where
+  fortkeep ci-template                       a GitHub workflow that scans every push and pull request of your repo
   fortkeep accept ID "reason" | --remove ID  keep a failed control as it is, with your reason
   fortkeep private add|remove|count          folders every check skips
   fortkeep baseline accept                   accept what is on this Mac now as your baseline
@@ -256,6 +257,17 @@ version() {
   echo "folder         $SELF"
 }
 
+# A GitHub Actions workflow, on stdout, that runs this release's repo scanner over every push and pull request. It
+# pins the release by its commit, so only a signed release can make one: a development copy has no release to pin.
+ci_template() {
+  local commit
+  [ $# -eq 0 ] || die "usage: fortkeep ci-template"
+  fortkeep_verify_release "$SELF" \
+    || die "this copy is not a signed release ($FORTKEEP_RELEASE_PROBLEM), so there is no release for the workflow to pin. Run it from a signed release (fortkeep update)." 1
+  commit="$(fortkeep_git "$SELF" rev-parse -q --verify 'HEAD^{commit}')" || die "could not read this copy's commit" 1
+  sed -e "s/{{TAG}}/$FORTKEEP_RELEASE_TAG/g" -e "s/{{COMMIT}}/$commit/g" "$SELF/templates/fortkeep-scan.yml"
+}
+
 uninstall() {
   local id kind what blocks="" stays="" answer d c dirs=() link ours=""
   [ $# -eq 0 ] || die "usage: fortkeep uninstall"
@@ -320,6 +332,7 @@ case "${1:-}" in
   scan) shift; scan "$@" ;;
   update) shift; exec "$SELF/checks/update.sh" "$@" ;;
   version) shift; version "$@" ;;
+  ci-template) shift; ci_template "$@" ;;
   accept) shift; exec "$SELF/checks/accept.sh" "$@" ;;
   private) shift; exec "$SELF/checks/private.sh" "$@" ;;
   baseline) shift; exec "$SELF/checks/baseline.sh" "$@" ;;
