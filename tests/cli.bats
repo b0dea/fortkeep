@@ -426,3 +426,11 @@ EOF
   [[ "$output" == *"$T"* ]]
   [ ! -e "$BATS_TEST_TMPDIR/sudo-ran" ]
 }
+
+@test "check typed at a keyboard asks run.sh for the long limits; piped or run by an agent, it doesn't" {
+  printf '#!/bin/bash\necho "{\\"id\\":\\"BL-OS-02\\",\\"status\\":\\"FAIL\\",\\"evidence\\":\\"long=${FORTKEEP_LONG_RUN:-no}\\",\\"note\\":\\"\\"}"\n' > "$T/checks/fake/BL-OS-02.sh"
+  run "$T/bin/fortkeep" check </dev/null; [[ "$output" == *"long=no"* ]]
+  pty "export NO_COLOR=1; $(printf '%q' "$T/bin/fortkeep") check"
+  [[ "$output" == *"long=1"* ]]
+}
+

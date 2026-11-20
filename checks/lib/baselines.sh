@@ -174,7 +174,7 @@ fortkeep_control_diff() {
 
 fortkeep_sweep_seconds() {  # COUNT [weekly] — seconds the repo sweep gets for COUNT repos, npm installs and extension
   # folders: about two each (a second or so is usual), never under 140, and at most 6 minutes in a normal run, which
-  # an agent waits for. The weekly run gets three times that.
+  # an agent waits for. The weekly run, or a check typed at a keyboard (long), gets three times that.
   local t=$(( 15 + 2 * $1 ))
   [ "$t" -ge 140 ] || t=140
   [ "$t" -le 360 ] || t=360
