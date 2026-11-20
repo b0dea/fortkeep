@@ -322,3 +322,11 @@ setup() { setup_env; . "$REPO/checks/lib/common.sh"; }
   [[ "$output" == *ok*rc=0* ]]
   [ $(( $(date +%s) - start )) -lt 6 ]
 }
+
+@test "fortkeep_sweep_seconds gives the repo sweep time for the repos there are, within what one check may take" {
+  . "$REPO/checks/lib/baselines.sh"
+  [ "$(fortkeep_sweep_seconds 10)" -eq 140 ]    # never less than before
+  [ "$(fortkeep_sweep_seconds 147)" -eq 309 ]   # about two seconds a repo
+  [ "$(fortkeep_sweep_seconds 5000)" -eq 360 ]  # a normal run stays within minutes
+  [ "$(fortkeep_sweep_seconds 147 weekly)" -eq 927 ]; [ "$(fortkeep_sweep_seconds 5000 weekly)" -eq 1080 ]
+}

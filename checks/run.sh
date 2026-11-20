@@ -12,19 +12,23 @@ CONFIG="${FORTKEEP_CONFIG:-$FORTKEEP_REPORTS/config.json}"
 ACCEPTED="${FORTKEEP_ACCEPTED:-$FORTKEEP_REPO/accepted.json}"
 TIMEOUT=20
 ONLY=""
-usage="usage: $0 [--only ID]... [--timeout SECONDS] [--weekly]"
+usage="usage: $0 [--only ID]... [--timeout SECONDS] [--weekly] [--long]"
+unset FORTKEEP_LONG_RUN  # only --long sets it, even where the environment is kept (the tests)
 while [ $# -gt 0 ]; do
   case "$1" in
     --only) [ $# -ge 2 ] || { echo "$usage" >&2; exit 2; }; ONLY="$ONLY $2"; shift 2 ;;
     --timeout) [ $# -ge 2 ] || { echo "$usage" >&2; exit 2; }; TIMEOUT="$2"; shift 2 ;;
     --weekly) FORTKEEP_WEEKLY_RUN=1; export FORTKEEP_WEEKLY_RUN; shift ;;
+    --long) FORTKEEP_LONG_RUN=1; export FORTKEEP_LONG_RUN; shift ;;
     *) echo "$usage" >&2; exit 2 ;;
   esac
 done
 # The weekly job (weekly.sh passes --weekly) runs while KnockKnock or Spotlight load the Mac: every limit triples,
 # and shell probes get 30 s unless the caller chose a value.
+# A long run (fortkeep check typed at a keyboard, which can wait) triples them too; an agent's shell call can't wait.
 factor=1
 if [ -n "${FORTKEEP_WEEKLY_RUN:-}" ]; then factor=3; FORTKEEP_SHELL_TIMEOUT="${FORTKEEP_SHELL_TIMEOUT:-30}"; export FORTKEEP_SHELL_TIMEOUT; fi
+[ -z "${FORTKEEP_LONG_RUN:-}" ] || factor=3
 
 jq -e 'type == "array"' "$CONTROLS" >/dev/null 2>&1 || { echo "controls file missing or not a JSON array: $CONTROLS" >&2; exit 2; }
 overlays='[]'

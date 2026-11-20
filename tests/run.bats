@@ -323,6 +323,17 @@ said_private() { mkdir -p "$T/reports/.approvals"; printf '%s\n' "$1" > "$T/repo
   run "$T/checks/configure.sh" --teach
   [ "$status" -eq 2 ]
 }
+@test "a long run (fortkeep check typed at a keyboard) triples each time limit and tells the checks; shell probes keep 10 s" {
+  mk slow2 'sleep 3; echo "{\"id\":\"BL-OS-07\",\"status\":\"PASS\",\"evidence\":\"x\",\"note\":\"\"}"'
+  mk lg '. "$FORTKEEP_REPO/checks/lib/shells.sh"; echo "{\"id\":\"BL-OS-08\",\"status\":\"PASS\",\"evidence\":\"${FORTKEEP_LONG_RUN:-no} $FORTKEEP_SHELL_TIMEOUT\",\"note\":\"\"}"'
+  echo '[{"id":"BL-OS-07","title":"S","layer":"baseline","level":"NICE","source":"§1","check":"checks/fake/slow2.sh","timeout":2},
+         {"id":"BL-OS-08","title":"T","layer":"baseline","level":"NICE","source":"§1","check":"checks/fake/lg.sh"}]' > "$FORTKEEP_CONTROLS"
+  run "$T/checks/run.sh"; [ "$status" -eq 0 ]
+  [ "$(res BL-OS-07 status)" = ERROR ]; [ "$(res BL-OS-08 evidence)" = "no 10" ]
+  sleep 1; run "$T/checks/run.sh" --long; [ "$status" -eq 0 ]
+  [ "$(res BL-OS-07 status)" = PASS ]; [ "$(res BL-OS-08 evidence)" = "1 10" ]
+  sleep 1; FORTKEEP_LONG_RUN=1 run "$T/checks/run.sh"; [ "$(res BL-OS-08 evidence)" = "no 10" ]  # only the flag, never the caller
+}
 @test "a weekly run triples each time limit and gives shell probes 30 s, unless the caller set them" {
   mk slow2 'sleep 3; echo "{\"id\":\"BL-OS-07\",\"status\":\"PASS\",\"evidence\":\"x\",\"note\":\"\"}"'
   mk st '. "$FORTKEEP_REPO/checks/lib/shells.sh"; echo "{\"id\":\"BL-OS-08\",\"status\":\"PASS\",\"evidence\":\"$FORTKEEP_SHELL_TIMEOUT\",\"note\":\"\"}"'

@@ -171,3 +171,13 @@ fortkeep_control_diff() {
     { k = $1 FS $2; seen[k] = 1; if (!(k in b)) print "added\t" k; else if (b[k] != $3) print "changed\t" k }
     END { for (k in b) if (!(k in seen)) print "removed\t" k }' <(printf '%s\n' "$base") <(printf '%s\n' "$2") | LC_ALL=C sort -t$'\t' -k2
 }
+
+fortkeep_sweep_seconds() {  # COUNT [weekly] — seconds the repo sweep gets for COUNT repos, npm installs and extension
+  # folders: about two each (a second or so is usual), never under 140, and at most 6 minutes in a normal run, which
+  # an agent waits for. The weekly run, or a check typed at a keyboard (long), gets three times that.
+  local t=$(( 15 + 2 * $1 ))
+  [ "$t" -ge 140 ] || t=140
+  [ "$t" -le 360 ] || t=360
+  [ -z "${2:-}" ] || t=$(( t * 3 ))
+  printf '%s\n' "$t"
+}

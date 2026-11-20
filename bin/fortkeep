@@ -146,6 +146,9 @@ check() {
     esac
   done
   for id in ${ids[@]+"${ids[@]}"}; do set -- "$@" --only "$id"; done
+  # Typed at a keyboard, the person can wait: the slow checks (the repo sweep) get longer. An agent's run has no
+  # keyboard on stdin.
+  [ ! -t 0 ] || set -- "$@" --long
   # run.sh's own summary would mix with the table or the JSON: all of its output goes to stderr, with its progress.
   # At a terminal, its progress becomes one updating line and its summary is left out: the table says it all.
   # It starts with the person's PATH, as the agent's /posture does: the checks inspect that PATH (which pip3 or
