@@ -4,7 +4,7 @@ setup() { setup_env; AS="$HOME/Library/Application Support"; }
 # As run.sh records it, so a check that something outside stops (an EDR) shows why. That is never a pass of the test,
 # even one expecting ERROR: the check didn't run.
 chk() {
-  run /bin/bash -c '. "$1/checks/lib/common.sh"; out="$(fortkeep_timeout 60 /bin/bash "$1/checks/macos/$2.sh")"; fortkeep_check_verdict "$2" $? "$out" 60' _ "$REPO" "$1"
+  run /bin/bash -c '. "$1/checks/lib/common.sh"; out="$(fortkeep_timeout 60 /bin/bash -p "$1/checks/macos/$2.sh")"; fortkeep_check_verdict "$2" $? "$out" 60' _ "$REPO" "$1"
   printf '%s\n' "$output"
   case "$output" in *'"Something outside fortkeep stopped this check'*) return 1 ;; esac
 }

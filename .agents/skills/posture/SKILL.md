@@ -58,8 +58,7 @@ settings, skip steps 1–4 and go to "New overlays" below.
    - macOS may ask whether fortkeep's checks may open the Desktop, Documents or Downloads folder: two checks look
      there for key files and cloned repos. Allowing it is fine; declining makes those checks ERROR;
    - a security tool on the Mac may stop a check; that check then says "Something outside fortkeep stopped this
-     check". It is not a failure of the Mac: the person asks whoever manages that tool for an exclusion, and never
-     turns the tool off.
+     check". It is not a failure of the Mac: `/fix` helps them ask for an exclusion for that one check.
    Then `checks/run.sh`, read `reports/latest/results.json` and run `checks/diff.sh`.
 2. **Urgent first.** Look up each FAIL's control in `controls/controls.json`. With an urgent FAIL (AGENTS.md, "How
    results work"), show the score, then follow that rule; the review stops there.

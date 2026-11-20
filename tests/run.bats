@@ -335,12 +335,21 @@ said_private() { mkdir -p "$T/reports/.approvals"; printf '%s\n' "$1" > "$T/repo
   sleep 1; "$T/checks/run.sh" --only BL-OS-02 2> "$BATS_TEST_TMPDIR/err" >/dev/null
   [[ "$(cat "$BATS_TEST_TMPDIR/err")" =~ ^fortkeep:\ 1/1\ BL-OS-02\ \([0-9]+s\ so\ far\)$ ]]
 }
-@test "a check that a signal stops is an ERROR saying something outside fortkeep stopped it" {
+@test "a check that a signal stops is an ERROR naming the security tools running here and asking for a narrow exclusion" {
   mk ok 'kill -KILL $$'
+  stub systemextensionsctl 'printf "1 extension(s)\n--- com.apple.system_extension.endpoint_security\n*\t*\tX4MF6H9XZ6\tcom.crowdstrike.falcon.Agent (8.12/215.05)\tFalcon Sensor\t[activated enabled]\n"'
   run "$T/checks/run.sh"; [ "$status" -eq 0 ]
   [ "$(res BL-OS-01 status)" = ERROR ]
-  [[ "$(res BL-OS-01 evidence)" == "Something outside fortkeep stopped this check (signal KILL)."*"never turn it off."* ]]
+  ev="$(res BL-OS-01 evidence)"
+  [[ "$ev" == "Something outside fortkeep stopped this check (signal KILL)"*"Falcon Sensor"* ]]
+  [[ "$ev" == *"this one check"*"docs/security-tools.md"*"not the whole fortkeep folder"*"never turn it off."* ]]
   [[ "$(res BL-OS-03 evidence)" == *"timed out"* ]]
+  # No security tool found: the same advice, naming none
+  stub systemextensionsctl 'printf "0 extension(s)\n"'
+  sleep 1; run "$T/checks/run.sh"; [ "$status" -eq 0 ]
+  ev="$(res BL-OS-01 evidence)"
+  [[ "$ev" == "Something outside fortkeep stopped this check (signal KILL). "*"docs/security-tools.md"* ]]
+  [[ "$ev" != *"running on this Mac"* ]]
 }
 
 @test "a fake command earlier on the caller's PATH, an exported function or BASH_ENV can't answer for a system tool" {

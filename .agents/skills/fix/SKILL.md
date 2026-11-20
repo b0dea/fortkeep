@@ -34,8 +34,12 @@ next control in the queue.
 
 There is nothing to fix yet. In a sentence or two, explain what stopped the check, from its evidence and note. Then
 ask whether to check it again: `checks/run.sh --only <ID>`. If the evidence says "Something outside fortkeep stopped
-this check", a security tool on the Mac killed it: the person asks whoever manages that tool for an exclusion and
-never turns the tool off. Offer no fix for an ERROR. If the re-run gives a FAIL, handle it as a FAIL below.
+this check", a security tool on the Mac killed it, often one the evidence names. Read `docs/security-tools.md`: say in
+a sentence why that check looks suspicious to the tool (its table), then offer to fill in its message to forward,
+with the check's ID, what it reads, this copy's path to the check (the `macos` folder in this repo's `checks` folder, then `<ID>.sh`) and
+the time of the run (`run` in `reports/latest/results.json`). The person sends it to whoever manages the tool, or
+follows "On your own Mac". The exclusion is for that one check: never suggest excluding the fortkeep folder or
+turning the tool off. Offer no fix for an ERROR. If the re-run gives a FAIL, handle it as a FAIL below.
 
 ## a) Script fix (`fix` is a path)
 

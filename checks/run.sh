@@ -4,6 +4,7 @@
 # Started as `bash run.sh`: start again in privileged mode, which ignores BASH_ENV, ENV and exported functions.
 case $- in *p*) ;; *) exec /usr/bin/env -u BASH_ENV -u ENV /bin/bash -p "$0" "$@" ;; esac
 case "$0" in */*) . "${0%/*}/lib/common.sh" ;; *) . ./lib/common.sh ;; esac
+. "$FORTKEEP_LIB_DIR/apps.sh"
 fortkeep_clean_start "$0" "$@"
 export FORTKEEP_USER_PATH
 CONTROLS="${FORTKEEP_CONTROLS:-$FORTKEEP_REPO/controls/controls.json}"
@@ -73,6 +74,7 @@ lines="$out_dir/.lines"
 # only, so stdout (the summary) and results.json stay the same. bin/fortkeep draws its progress line from these
 # (checks/lib/ui.sh, ui_progress): keep their form.
 n=0; start=$SECONDS
+unset tools  # set below, never by the caller's environment
 while IFS= read -r ctl; do
   [ -n "$ctl" ] || continue
   id="$(jq -r .id <<<"$ctl")"
@@ -83,7 +85,11 @@ while IFS= read -r ctl; do
   n=$((n + 1)); printf 'fortkeep: %d/%d %s (%ds so far)\n' "$n" "$expected" "$id" "$((SECONDS - start))" >&2
   fortkeep_timeout "$t" /usr/bin/env -u BASH_ENV -u ENV /bin/bash -p "$check" > "$out_dir/.out" 2>/dev/null </dev/null
   rc=$?
-  res="$(fortkeep_check_verdict "$id" "$rc" "$(cat "$out_dir/.out")" "$t")"
+  # Read once, and only when a check was killed: which security tools run here, for the ERROR to name.
+  if [ -z "${tools+x}" ] && fortkeep_signal_name "$rc" >/dev/null; then
+    tools="$(fortkeep_join "$(fortkeep_endpoint_running 2>/dev/null)" ', ')"
+  fi
+  res="$(fortkeep_check_verdict "$id" "$rc" "$(cat "$out_dir/.out")" "$t" "${tools:-}")"
   jq -c --argjson c "$ctl" --argjson acc "$accepted" '
     . + ($c | {id, title, layer, level, source})
     | if .status == "FAIL" and $acc[.id] != null then .status = "ACCEPTED" | .note = ($acc[.id].reason // "accepted") else . end

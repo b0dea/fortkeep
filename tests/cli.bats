@@ -176,10 +176,10 @@ Urgent: this may mean the Mac is compromised now. Read $T/docs/if-red.md before 
 }
 
 @test "check fits the table to the terminal's width" {
-  mk BL-SE-01 ERROR "Something outside fortkeep stopped this check (signal KILL). It is often a security tool mistaking a read-only check for malware; ask whoever manages it for an exclusion, and never turn it off."
+  mk BL-SE-01 ERROR "Something outside fortkeep stopped this check (signal KILL), most likely a security tool running on this Mac: Falcon Sensor. Security tools can mistake a read-only check for malware: ask whoever manages it to exclude this one check (docs/security-tools.md says what to ask for), not the whole fortkeep folder, and never turn it off."
   pty "export COLUMNS=60; $(printf '%q' "$T/bin/fortkeep") check"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"whoever manages it for an exclusion"* ]]
+  [[ "$output" == *"docs/security-tools.md"* ]]
   # Every line up to the closing ones, whose path is one long word and may be wider
   while IFS= read -r l; do
     [ "$l" != "${l#Urgent:}" ] && break

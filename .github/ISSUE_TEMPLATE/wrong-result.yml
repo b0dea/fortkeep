@@ -5,7 +5,10 @@ body:
   - type: markdown
     attributes:
       value: |
-        An indicator that flags something harmless belongs here too. Security problems do not; see
+        An indicator that flags something harmless belongs here too, and so does a check a security tool stopped
+        ("Something outside fortkeep stopped this check"): name the tool, and the exclusion that fixed it if one did,
+        so [docs/security-tools.md](https://github.com/b0dea/fortkeep/blob/main/docs/security-tools.md) can list it.
+        Security problems do not; see
         [SECURITY.md](https://github.com/b0dea/fortkeep/blob/main/SECURITY.md).
         Never paste `results.json` as it is: it holds file and folder names from your Mac.
   - type: input

@@ -127,6 +127,5 @@ A result that says "Something outside fortkeep stopped this check" means another
 could answer. It is usually a security tool (antivirus or endpoint protection) mistaking a read-only check for
 malware. It is not a sign that the Mac is unsafe, and that check simply has no answer this time.
 
-What to do: on a work Mac, ask your IT or security team to add an exclusion for the fortkeep folder. On your own Mac,
-look at the security tool's log or quarantine for fortkeep's check, and allow it there. Never turn the security tool
-off to make the check pass.
+What to do, and what not to ask for, is in [When a security tool stops a check](security-tools.md): an exclusion for
+that one check, never for the fortkeep folder, and never turning the security tool off.

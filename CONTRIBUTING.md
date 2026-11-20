@@ -61,8 +61,11 @@ CI (`.github/workflows/ci.yml`) runs the same steps on GitHub: lint, the control
 tests on macOS. `ci-ok` is the one required check. The payload scan runs fortkeep's own malware scanners over every
 push.
 
-On a Mac whose endpoint security (EDR) kills the browser wallet-extension check, `tests/br.bats` fails with exit
-code 137. That is the EDR stopping the check, not a test failure; CI runs it on clean runners.
+On a Mac whose endpoint security (EDR) kills the browser wallet-extension check, every `tests/br.bats` test that
+runs BL-BR-04 fails with "Something outside fortkeep stopped this check". That is the EDR, not the code; CI runs it on
+clean runners. The tests start checks as `/bin/bash -p <checkout>/checks/macos/<ID>.sh`, as a real run does, so the
+narrow exclusion in [docs/security-tools.md](docs/security-tools.md) can cover your checkout too. Expect your EDR to
+log detections from other tests as well, such as the guard tests that read a file's `..namedfork`.
 
 ## Add a control
 
