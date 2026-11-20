@@ -164,7 +164,7 @@ context. [controls/baseline-source.md](controls/baseline-source.md) is the full 
 |---|---|
 | macOS | FileVault, firewall with stealth mode, Gatekeeper, automatic updates, sharing off, immediate screen lock, Touch ID for `sudo` |
 | Malicious packages | [Safe Chain](https://github.com/AikidoSec/safe-chain) first on PATH in every shell, apps and the agent's own shell; a minimum package age; pnpm and bun blocking install scripts |
-| Repos and git | editor automatic tasks off; a git hook that scans what a clone or pull brings in; a sweep of the repos and editor extensions already on the Mac |
+| Repos and git | editor automatic tasks off; a git hook that scans what a clone or pull brings in and refuses a push that carries malware; a sweep of the repos and editor extensions already on the Mac |
 | AI coding agents | a guard before every agent command; the agent unable to edit its own controls; a root-owned copy of them; MCP servers pinned |
 | Secrets | SSH keys with a passphrase in a protected agent; no plaintext keys lying around; fine-grained tokens; short-lived cloud sessions; gitleaks before every commit |
 | Runtime | BlockBlock, KnockKnock, an outbound firewall, endpoint protection; new autostart items or listeners since your baseline |
@@ -187,6 +187,7 @@ fortkeep                                   a menu in a terminal; otherwise the h
 fortkeep check [--only ID]... [--json]     check this Mac (read-only); exit 1 when something fails
 fortkeep explain ID                        the short lesson for one control
 fortkeep scan FOLDER                       is this repo safe to open? scans it, or the repos in it (read-only)
+fortkeep ci-template                       a GitHub workflow that runs the same scan on every push and pull request
 fortkeep agent [claude|codex|opencode]     start your coding agent here, then type /posture
 fortkeep summary [--name NAME]             a posture summary you can share
 fortkeep update                            move to the newest signed release
@@ -206,6 +207,8 @@ fortkeep uninstall                         remove fortkeep's state, once its fix
   baseline.
 - **`summary`** is self-reported: anyone with your account could edit it before sharing.
 - **`update`** takes only signed releases; use it instead of `git pull`.
+- **`ci-template`** prints the workflow: `fortkeep ci-template > .github/workflows/fortkeep-scan.yml` in your repo.
+  It runs fortkeep's scanner, pinned to this release, so the workflow itself holds no malware markers.
 
 ## How it differs
 
@@ -275,6 +278,21 @@ Report a vulnerability privately, as [SECURITY.md](SECURITY.md) says; never in a
 
 [MIT](LICENSE). fortkeep's malware indicators are built from public research; the
 [credits](controls/baseline-source.md#credits) name the sources.
+
+fortkeep checks for, and recommends, these free and open tools. The baseline says why each one matters
+([`controls/baseline-source.md`](controls/baseline-source.md)):
+
+- [Safe Chain](https://github.com/AikidoSec/safe-chain): blocks malicious packages and very new versions at install.
+- [Objective-See](https://objective-see.org/tools.html): [BlockBlock](https://objective-see.org/products/blockblock.html),
+  KnockKnock, [LuLu](https://objective-see.org/products/lulu.html) and
+  [OverSight](https://objective-see.org/products/oversight.html).
+- [tirith](https://github.com/sheeki03/tirith): a terminal guard against pasted look-alike commands and `curl | bash`.
+- [gitleaks](https://github.com/gitleaks/gitleaks): secrets in commits and history.
+- [osv-scanner](https://github.com/google/osv-scanner): known vulnerabilities in a project's pinned dependencies.
+- [nuclei](https://github.com/projectdiscovery/nuclei): scans your own exposed services.
+- [Secretive](https://github.com/maxgoedjen/secretive): SSH keys kept in the Secure Enclave.
+- [Little Snitch](https://obdev.at/products/littlesnitch/) and [Micro Snitch](https://obdev.at/products/microsnitch/)
+  (paid), as alternatives to LuLu and OverSight.
 
 fortkeep is not affiliated with Apple, Anthropic, OpenAI, Aikido Security, 1Password, Objective-See, or any other
 vendor or project named here.

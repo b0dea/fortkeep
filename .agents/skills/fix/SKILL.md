@@ -23,7 +23,7 @@ then read `reports/latest/results.json`. Look up each result in `controls/contro
 One control at a time, in messages of its own. Open it with its marker in bold, then its status and the evidence
 in a few words:
 
-**Fix 2 of 5 · BL-RC-02 · Global git hook scans what a clone, pull or checkout brings in**
+**Fix 2 of 5 · BL-RC-02 · Global git hook scans what you clone, pull, check out or push**
 ✗ FAIL: no scanner installed.
 
 Then the path below that fits. Each ends by checking again with `checks/run.sh --only <ID>`: show the result as
@@ -110,7 +110,7 @@ When the queue is done, or the person picks `Stop fixing`, end with one table of
 
 | ID | What | Before → after |
 |---|---|---|
-| BL-RC-02 | Global git hook scans what a clone, pull or checkout brings in | ✗ FAIL → ✓ PASS |
+| BL-RC-02 | Global git hook scans what you clone, pull, check out or push | ✗ FAIL → ✓ PASS |
 | BL-OS-01 | FileVault on | ✗ FAIL, skipped |
 
 Then one line: every change made is in `reports/change-log.md`, with how to undo it.

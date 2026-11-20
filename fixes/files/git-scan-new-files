@@ -1,15 +1,25 @@
 #!/usr/bin/python3 -I
-# Sources (indicator family → public source), checked 2026-11-19:
+# Sources (indicator family → public source), checked 2026-11-20:
 #   HI v1-string, v2-string, seed, decoder-v1, decoder-v2, xor-key, version-tag, require-hijack —
 #     https://github.com/OpenSourceMalware/PolinRider
+#   HI version-tag values that start with a letter — https://github.com/OpenSourceMalware/PolinRider/issues/12,
+#     https://github.com/OpenSourceMalware/PolinRider/issues/13
 #   HI global-i, obfuscator-rotator, xor-key-eth, payload-header —
 #     https://opensourcemalware.com/blog/polinrider-is-a-b-testing-its-way-past-your-detections
 #   HI global-letter — https://github.com/orgs/community/discussions/188732, https://github.com/Improwised/polinrider-scanner
 #   HI npm-sec-v-tag, C2_PATH :443 paths — https://www.sonatype.com/blog/polinrider-loader-reappears-in-hijacked-npm-packages
+#   HI npm-sec-v-tag strains other than A10 — https://opensourcemalware.com/blog/polinrider-caused-dozens-of-npm-and-go-compromises,
+#     https://github.com/OpenSourceMalware/PolinRider/issues/12
 #   HI npm3-tag — https://opensourcemalware.com/blog/nullreceiver-dprk-c2-technique
+#   HI xor-key-ls, xor-key-boot, inject-tag, b64-loader-start, C2_PATH second-stage paths —
+#     https://blog.greenflagged.dev/posts/2026-11-03-adminide-stack-eth-dead-drop/,
+#     https://github.com/OpenSourceMalware/PolinRider/issues/13, https://blog.gitguardian.com/ghostaction-x-polinrider/,
+#     https://abnormal.ai/blog/polinrider-fake-coding-assignments
+#   HI xor-key-boot, C2_PATH /$/boot — https://opensourcemalware.com/blog/polinrider-caused-dozens-of-npm-and-go-compromises
 #   DEAD_DROP hosts — https://github.com/OpenSourceMalware/PolinRider
 #   GAP (code after a padded run), CFG file names — https://github.com/OpenSourceMalware/PolinRider,
 #     https://github.com/OpenSourceMalware/PolinRider/issues/9, https://github.com/orgs/community/discussions/197873
+#   CFG sanity.cli.ts, .graphqlrc.ts — https://github.com/OpenSourceMalware/PolinRider/issues/6
 #   EXEC_RULES piped or shell-run download — https://github.com/OpenSourceMalware/PolinRider,
 #     https://opensourcemalware.com/blog/lazarus-group-uses-git-hooks-to-hide-malware, https://attack.mitre.org/techniques/T1059/004/
 #   EXEC_RULES base64 decode — https://attack.mitre.org/techniques/T1140/
@@ -17,34 +27,50 @@
 #   EXEC_RULES inline python code — https://attack.mitre.org/techniques/T1059/006/
 #   EXEC_RULES font or image run as code — https://github.com/orgs/community/discussions/188732,
 #     https://github.com/heisdeku/clean-injected-loader
+#   EXEC_RULES .lkf and .orc fake fonts — https://blog.gitguardian.com/ghostaction-x-polinrider/,
+#     https://abnormal.ai/blog/polinrider-fake-coding-assignments
 #   EXEC_RULES PowerShell — https://attack.mitre.org/techniques/T1059/001/
 #   EXEC_RULES loader staging folder — https://opensourcemalware.com/blog/polinrider-malware-found-in-2025-npm-packages,
 #     https://github.com/Improwised/polinrider-scanner
 #   C2_WALLETS Tron and Aptos — https://github.com/OpenSourceMalware/PolinRider, https://github.com/orgs/community/discussions/188732
+#   C2_WALLETS third Aptos address — https://opensourcemalware.com/blog/polinrider-caused-dozens-of-npm-and-go-compromises
 #   C2_WALLETS NullReceiver wallet and recipient — https://opensourcemalware.com/blog/nullreceiver-dprk-c2-technique
 #   C2_WALLETS Ethereum loader wallet (1st) — https://www.sonatype.com/blog/polinrider-loader-reappears-in-hijacked-npm-packages
-#   C2_WALLETS 2nd entry — https://github.com/Improwised/polinrider-scanner (published as a defanged substring)
+#   C2_WALLETS 2nd entry — https://github.com/OpenSourceMalware/PolinRider/issues/8 (comment of 2026-07-20)
+#   C2_WALLETS ChainDrop resolver contract — https://unit42.paloaltonetworks.com/chaindrop-npm-worm-analysis/
 #   C2_IPS — https://github.com/orgs/community/discussions/188732, https://github.com/orgs/community/discussions/198490,
 #     https://opensourcemalware.com/blog/nullreceiver-dprk-c2-technique,
 #     https://opensourcemalware.com/blog/polinrider-malware-found-in-2025-npm-packages,
 #     https://www.ox.security/blog/polinrider-returns-hijacked-npm-packages-use-ethereum-blockchain-to-conceal-malware-infrastructure/,
 #     https://www.sonatype.com/blog/polinrider-loader-reappears-in-hijacked-npm-packages
-#   C2_IPS 15th entry — no public source found (as of 2026-11-19)
+#   C2_IPS 15th entry — https://opensourcemalware.com/blog/polinrider-caused-dozens-of-npm-and-go-compromises
+#   C2_IPS 103.179.142.155, 166.88.73.46, 193.247.144.38, 91.218.183.174 —
+#     https://www.stepsecurity.io/blog/accurasofthire-fake-interview-developer-machines,
+#     https://abnormal.ai/blog/polinrider-fake-coding-assignments
 #   C2_HOSTS first six, C2_PATH settings path — https://github.com/OpenSourceMalware/PolinRider
-#   C2_HOSTS auth-confirm-eight — https://github.com/heisdeku/clean-injected-loader,
-#     https://github.com/Syed-Bipul-Rahman/Security-Guard/issues/24
-#   C2_HOSTS auth-confirm-one to -seven — no public source found (as of 2026-11-19)
+#   C2_HOSTS auth-confirm-one to -eight — https://github.com/OpenSourceMalware/PolinRider/issues/6,
+#     https://github.com/heisdeku/clean-injected-loader, https://github.com/Syed-Bipul-Rahman/Security-Guard/issues/24
+#   C2_HOSTS accurasofthire.com — https://research.jfrog.com/post/accurasofthire-fake-interview/,
+#     https://www.stepsecurity.io/blog/accurasofthire-fake-interview-developer-machines
+#   C2_HOSTS ChainDrop hosts — https://unit42.paloaltonetworks.com/chaindrop-npm-worm-analysis/
 #   DENY tailwind animation packages — https://github.com/OpenSourceMalware/PolinRider
 #   DENY bianira-ui, fluid-type-ui, post-css-transfer, scrollbar-hide-plugin, tailwind-anim, tailwind-animation-founder,
 #     tailwindcss-anim — https://thehackernews.com/2026/08/trojanized-npm-packages-decode-c2-ip.html
-#   DENY @adminide-stack, @cdmbase, @pubngo-stack, cdeops, server-hemera-mongo —
-#     https://www.sonatype.com/blog/polinrider-loader-reappears-in-hijacked-npm-packages
+#   DENY @adminide-stack, @cdmbase, @pubngo-stack, cdeops, server-hemera-mongo (the hijacked versions) —
+#     https://www.sonatype.com/blog/polinrider-loader-reappears-in-hijacked-npm-packages,
+#     https://blog.greenflagged.dev/posts/2026-11-03-adminide-stack-eth-dead-drop/
 #   DENY contact-form and form-kit packages —
 #     https://www.ox.security/blog/polinrider-returns-hijacked-npm-packages-use-ethereum-blockchain-to-conceal-malware-infrastructure/
 #   DENY @common-stack/generate-plugin — https://www.sonatype.com/blog/hijacked-npm-package-attempts-to-deliver-polinrider-linked-rat
+#   DENY AccuraSoftHire look-alike tailwind packages — https://www.stepsecurity.io/blog/accurasofthire-fake-interview-developer-machines,
+#     https://research.jfrog.com/post/accurasofthire-fake-interview/
+#   DENY tailwindcss-form-styles — https://github.com/ossf/malicious-packages (MAL-2026-14568)
+#   DENY @joyfill, html-to-gutenberg, fetch-page-assets (the hijacked versions) —
+#     https://opensourcemalware.com/blog/polinrider-caused-dozens-of-npm-and-go-compromises
 #   ARTIFACTS temp_auto_push.bat, config.bat — https://github.com/OpenSourceMalware/PolinRider
 #   ARTIFACTS temp_interactive_push.bat, branch_structure.json, .gitignore entries, .llf payloads —
 #     https://opensourcemalware.com/blog/polinrider-is-a-b-testing-its-way-past-your-detections
+#   ARTIFACTS .lkf payloads — https://blog.gitguardian.com/ghostaction-x-polinrider/
 #   ARTIFACTS spellright.dict — https://opensourcemalware.com/blog/dprk-malware-microsoft-vscode-dictionary-files
 #   TASK_ID, folderOpen tasks — https://github.com/OpenSourceMalware/PolinRider,
 #     https://www.abstract.security/blog/contagious-interview-tracking-the-vs-code-tasks-infection-vector
@@ -54,6 +80,8 @@
 #     https://www.bitdefender.com/en-us/blog/labs/how-ai-agents-become-new-targets-in-github-malware-campaign
 #   AGENT_SETUP, INSTRUCTION_FILES — https://www.bitdefender.com/en-us/blog/labs/how-ai-agents-become-new-targets-in-github-malware-campaign,
 #     https://unit42.paloaltonetworks.com/chaindrop-npm-worm-analysis/
+#   AGENT_SETUP .vscode and .github setup scripts — https://unit42.paloaltonetworks.com/chaindrop-npm-worm-analysis/,
+#     https://safedep.io/miasma-worm-ai-coding-agent-config-injection/
 #   disableAllHooks (what the key does; no campaign seen setting it) — https://code.claude.com/docs/en/hooks
 #   lifecycle scripts that fetch or run code — https://unit42.paloaltonetworks.com/chaindrop-npm-worm-analysis/,
 #     https://github.com/nrwl/nx/security/advisories/GHSA-cxm3-wv7p-598c
@@ -61,16 +89,17 @@
 #     https://osv.dev/vulnerability/MAL-2026-19146
 #   git hooks (hook files, installed hooks, hook.* config) — https://opensourcemalware.com/blog/lazarus-group-uses-git-hooks-to-hide-malware,
 #     https://github.com/orgs/community/discussions/197873
-#   hooks padded past 3 MB — no public source found (as of 2026-11-19)
+#   hooks padded past 3 MB — no public source found (as of 2026-11-20)
 #   registry overrides — https://attack.mitre.org/techniques/T1195/001/
-#   .aikido overrides (what the keys do; no campaign seen) — https://github.com/AikidoSec/safe-chain
+#   .aikido overrides (what the keys do, and which a project file may set; no campaign seen) — https://github.com/AikidoSec/safe-chain
 #   forged commit dates — https://github.com/OpenSourceMalware/PolinRider
 #   text-direction characters in author names — https://github.com/orgs/community/discussions/197873
 #   editor extension folders — https://cursor.com/blog/claude-code-extension-security-notice, https://github.com/OpenSourceMalware/PolinRider
-"""Global git hook installed by fortkeep BL-RC-02: scans the files a git operation just brought in.
-Read-only, no network, always exits 0. With --sweep (GD-RC-01) it scans whole repos already on disk instead. Follows the PolinRider / BeaverTail indicator pack; marker strings are
+"""Global git hook installed by fortkeep BL-RC-02: scans the files a git operation just brought in, and as pre-push the
+files a push sends, refusing the push (exit 1) on a HIGH finding. Otherwise read-only, no network, and exits 0. With
+--sweep (GD-RC-01) it scans whole repos already on disk instead. Follows the PolinRider / BeaverTail indicator pack; marker strings are
 fragments so this file does not contain them (antivirus tools would quarantine it)."""
-import os, re, sys, json, subprocess, time, datetime, errno, collections, unicodedata
+import os, re, sys, json, subprocess, time, datetime, errno, collections, unicodedata, tempfile, posixpath, bisect
 
 T0 = time.time(); BUDGET = 8.0; MAXFILES = 400; MAXSIZE = 3_000_000
 DEADLINE = None  # a sweep's end: no git call it makes runs past it
@@ -84,6 +113,9 @@ hook = sys.argv[1] if len(sys.argv) > 1 else ''
 args = sys.argv[2:]
 G = 'glo' + 'bal'
 A10 = 'A1' + '0-'
+SEC_V = 'Sec' + '-V'
+INJECT_TAGS = ['M2606' + '30A', 'RS26' + '0605', 'NPM_WS' + '_SHIM', 'C2506' + '17A', 'C2506' + '18A', 'C2506' + '19A',
+               'C2506' + '20A', 'C2605' + '11A']
 
 # name, pattern, anchors: a pattern can match a line, as read or with long whitespace runs squeezed, only where the
 # text holds one of its anchors (literal, no whitespace).
@@ -94,15 +126,20 @@ HI = [
     ('decoder-v1', re.compile(r'_\$_[0-9a-f]{4}'), ['_$_']),
     ('decoder-v2', re.compile('function M' + r'Dy\('), ['M' + 'Dy(']),
     ('xor-key', re.compile(r'2\[g' + r'WfGj;<:-93Z\^C|m6:tTh\^D\)cBz\?NM\]'), ['2[g' + 'WfGj', 'm6:tTh']),
-    ('version-tag', re.compile(G + r'''\[['"](!|_V|_H)['"]\]\s*=\s*['"][0-9]'''), [G + '[']),
+    ('version-tag', re.compile(G + r'''\[['"](!|_V|_H)['"]\]\s*=\s*['"]A?[0-9]'''), [G + '[']),
     ('global-i', re.compile(G + r'''\.i\s*=\s*['"]A[0-9]{2}-'''), [G + '.i']),
     ('global-letter', re.compile(G + r'''\.[a-z]\s*=\s*['"][0-9]{1,2}-[0-9A-Za-z-]{2,}['"]'''), [G + '.']),
     ('require-hijack', re.compile(G + r'''(This)?\[['"]?[A-Za-z_$!][A-Za-z0-9_$]{0,15}['"]?\]\s*=\s*(require|module)\s*(;|,|$)'''), [G + '[', G + 'This[']),
     ('obfuscator-rotator', re.compile(r'return [A-Za-z_$][A-Za-z0-9_$]*=function\([A-Za-z_$][A-Za-z0-9_$]*,[A-Za-z_$][A-Za-z0-9_$]*\)\{[A-Za-z_$][A-Za-z0-9_$]*=[A-Za-z_$][A-Za-z0-9_$]*-0x[0-9a-f]+;'), ['=function(']),
-    ('npm-sec-v-tag', re.compile(A10 + 'npm_in' + 'ject|Sec' + r'''-V["']?\s*[:,]\s*["']''' + A10), [A10]),
+    ('npm-sec-v-tag', re.compile(A10 + 'npm_in' + 'ject|' + SEC_V + r'''["']?\s*[:,]\s*["']A[0-9]{1,2}-'''), [A10, SEC_V]),
     ('npm3-tag', re.compile(A10 + 'npm' + '3!'), [A10 + 'npm']),
     ('xor-key-eth', re.compile(re.escape('q4FZ' + 'kxX{!h,Sr3=@')), ['q4FZ' + 'kxX']),
+    ('xor-key-ls', re.compile(re.escape('y-p_' + '>d$0B&@^1aQk')), ['y-p_' + '>d$0B']),
+    ('xor-key-boot', re.compile(re.escape('ThZG' + '+0jfXE6VAGOJ')), ['ThZG' + '+0jf']),
     ('payload-header', re.compile('[Xx]-[Pp]ay' + 'load-[Bb]64'), ['ayload-']),
+    # The comment tags the second stage writes after what it appends to npm's cli.js and to editor startup files.
+    ('inject-tag', re.compile('|'.join(re.escape('/*' + t + '*/') for t in INJECT_TAGS)), ['/*' + t[:4] for t in INJECT_TAGS]),
+    ('b64-loader-start', re.compile('Z2xvYmFs' + 'LmkgPSAn'), ['Z2xvYmFs' + 'LmkgPSAn']),  # base64 of the global-i line's start
 ]
 # Real code has seven-digit numbers and _$_ names too: these count only in a file with a second marker.
 WEAK_HI = ('seed', 'decoder-v1')
@@ -113,7 +150,10 @@ def weigh(names):
 # beside a C2 wallet or after a padded gap they are a marker. Generic Ethereum RPC hosts stay out.
 DEAD_DROP = re.compile(r'api\.tron' + r'grid|tron' + r'grid\.io|fullnode\.mainnet\.apto' + r'slabs\.com/v1/|bsc-data' + r'seed\.binance\.org|bsc-rpc\.public' + r'node\.com')
 DEAD_DROP_ANCHORS = ['tron' + 'grid', 'apto' + 'slabs', 'bsc-data' + 'seed', 'bsc-rpc.public' + 'node']
-GAP = re.compile(r'(;|\}|\)|\]|`)[ \t]{40,}[^ \t/*]')
+# Code after a run of blanks that follows a statement's end, or a word (a codebase without semicolons ends a file on
+# `export default config`); and a run of blanks before a write to the global object, as every padded payload starts.
+# The lookbehind starts that second form only where a run starts, so a long run is not rescanned from each blank in it.
+GAP = re.compile(r'(?:[;})\]`]|\w)[ \t]{40,}[^ \t/*]|(?<![ \t])[ \t]{40,}' + G[:4])
 DOWNLOAD = re.compile(r'\b(?:curl|wget)\b')
 # A pipe into a shell or interpreter, by name or full path, through sudo or env.
 TO_SHELL = re.compile(r'\|\s*(?:sudo\s+)?(?:/[^\s|]{0,100}/)?(?:env\s+)?(?:(?:ba|z|da|k)?sh|node|python[0-9.]*)\b')
@@ -133,7 +173,7 @@ EXEC_RULES = [  # code that fetches or runs code, by rule, so a sweep can say wh
     ('base64 decode', re.compile(r'base64\s+(-d|--decode)').search),
     ('inline node code', re.compile(r'\bnode\s+-e\b').search),
     ('inline python code', re.compile(r'\bpython[0-9.]*\s+-c\b').search),
-    ('font or image file run as code', re.compile(r'node\s+(\./)?\S{1,300}\.(woff2?|ttf|otf|dict|png|jpg|ico|svg|llf)\b').search),
+    ('font or image file run as code', re.compile(r'node\s+(\./)?\S{1,300}\.(woff2?|ttf|otf|dict|png|jpg|ico|svg|llf|lkf|orc)\b').search),
     ('PowerShell', re.compile(r'powershell|Invoke-Expression|\biex\b').search),
     ('loader staging folder', re.compile(r'/tmp/\.npm|/tmp/\.pip').search),
 ]
@@ -178,31 +218,79 @@ SQUEEZE = re.compile(r'\s{40,}')
 C2_WALLETS = ['0x1eef0849eda15d87f64e51c73c8442cf3c8bcef3', '0x33ff3edaf55a8e03dcbc7cb40d498a49cd499891',
               '0x3f0e5781d0855fb460661ac63257376db1941b2bb522499e4757ecb3ebd5dce3', '0xa322e5f3d311d3080e6f0121063e9adc2490ef1a',
               '0xa658863ea658863e68656c6c6f6970626f742121', '0xbe037400670fbf1c32364f762975908dc43eeb38759263e7dfcdabc76380811e',
+              '0x533b2dbcaeff19cd1f799234a27b578d713d8fcaa341b7501e4526106483e0b1', '0xE1f2395ee43e45A1556EC6438a88c31B83493103',
               'TA48dct6rFW8BXsiLAtjFaVFoSuryMjD3v', 'TCqf6ZkaQD84vYsC2cuu1jRwB6JveTaRrF', 'TMfKQEd7TJJa5xNZJZ2Lep838vrzrs7mAP',
               'TXfxHUet9pJVU1BgVkBAbrES4YUc1nGzcG']
-C2_IPS = ['103.179.143.219', '136.0.9.8', '154.91.0.103', '166.88.134.62', '166.88.134.75', '166.88.134.82', '166.88.4.2',
-          '166.88.54.158', '181.214.149.148', '188.43.33.249', '198.105.127.210', '202.155.8.173', '23.27.120.142', '23.27.13.135',
-          '23.27.13.43', '23.27.13.72', '23.27.20.143', '23.27.20.187', '23.27.202.27', '95.135.181.151']
+C2_IPS = ['103.179.142.155', '103.179.143.219', '136.0.9.8', '154.91.0.103', '166.88.134.62', '166.88.134.75', '166.88.134.82',
+          '166.88.4.2', '166.88.54.158', '166.88.73.46', '181.214.149.148', '188.43.33.249', '193.247.144.38', '198.105.127.210',
+          '202.155.8.173', '23.27.120.142', '23.27.13.135', '23.27.13.43', '23.27.13.72', '23.27.20.143', '23.27.20.187',
+          '23.27.202.27', '91.218.183.174', '95.135.181.151']
 # The pack's dead-drop hosts are DEAD_DROP above, searched in every text file.
 C2_HOSTS = ['260120.vercel.app', 'default-configuration.vercel.app', 'vscode-settings-bootstrap.vercel.app',
             'vscode-settings-config.vercel.app', 'vscode-bootstrapper.vercel.app', 'vscode-load-config.vercel.app'] + \
-           ['auth-confirm-%s.vercel.app' % n for n in ('one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight')]
+           ['auth-confirm-%s.vercel.app' % n for n in ('one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight')] + \
+           ['accurasofthire.com', 'npm-cache.com', 'pypi-get.com', 'js-mirror.com', 'awqhnjewqjkl.icu']
 # The lookbehind keeps a leading [class]+ from rescanning a long run quadratically; it changes no match.
-C2_PATH = r'(?<![a-z0-9-])[a-z0-9-]+\.vercel\.app/settings/(mac|linux|win)\?flag=|:443/0x/c?ls\b'
-C2 = re.compile('|'.join([re.escape(x) for x in C2_HOSTS + C2_WALLETS] + [r'\b%s\b' % re.escape(ip) for ip in C2_IPS] + [C2_PATH]), re.I)
+C2_PATH = r'(?<![a-z0-9-])[a-z0-9-]+\.vercel\.app/settings/(mac|linux|win)\?flag=|:443/0x/(c?ls|clb|cb|js|npm-migrate)\b|/\$/boot\b'
+# A host as a whole name or a subdomain of it: npm-cache.com, not my-npm-cache.com or npm-cache.company.
+C2 = re.compile('|'.join([r'(?<![a-z0-9-])%s(?![a-z0-9-])' % re.escape(x) for x in C2_HOSTS] + [re.escape(x) for x in C2_WALLETS] +
+                         [r'\b%s\b' % re.escape(ip) for ip in C2_IPS] + [C2_PATH]), re.I)
 C2_WALLET = re.compile('|'.join(map(re.escape, C2_WALLETS)), re.I)
-C2_ANCHORS = [x.lower() for x in C2_HOSTS + C2_WALLETS + C2_IPS] + ['.vercel.app/settings/', ':443/0x/']
+C2_ANCHORS = [x.lower() for x in C2_HOSTS + C2_WALLETS + C2_IPS] + ['.vercel.app/settings/', ':443/0x/', '/$/boot']
 
-DENY = ['@adminide-stack/client-redux', '@adminide-stack/forms-core', '@adminide-stack/health-api-server',
-        '@adminide-stack/user-activity-browser', '@adminide-stack/utils', '@adminide-stack/yantra-help-browser',
-        '@cdmbase/wiki-browser', '@common-stack/generate-plugin', '@pubngo-stack/help-browser', 'bianira-ui', 'cdeops',
-        'fluid-type-ui', 'post-css-transfer', 'react-contact-forms', 'scrollbar-hide-plugin', 'server-hemera-mongo',
-        'tailwind-anim', 'tailwind-animation-founder', 'tailwind-animationbased', 'tailwind-autoanimation',
-        'tailwind-contact-forms', 'tailwind-form-core', 'tailwind-forms-kit', 'tailwind-input-kit', 'tailwind-mainanimation',
-        'tailwindcss-anim', 'tailwindcss-animate-style', 'tailwindcss-contact-form', 'tailwindcss-form-utils',
-        'tailwindcss-style-animate', 'tailwindcss-style-modify', 'tailwindcss-typography-style']
+# A package published only to carry malware, by name; a real project's hijacked release, as name@version, so its clean
+# releases stay clean.
+DENY = ['@adminide-stack/client-redux@0.0.16-18', '@adminide-stack/forms-core@5.1.9-alpha.3',
+        '@adminide-stack/health-api-server@0.0.18-alpha.465', '@adminide-stack/user-activity-browser@1.1.3-alpha.114',
+        '@adminide-stack/utils@0.0.16-129', '@adminide-stack/utils@0.0.16-130', '@adminide-stack/yantra-help-browser@12.0.194',
+        '@cdmbase/wiki-browser@12.0.18-alpha.53', '@common-stack/generate-plugin', '@joyfill/components@4.0.0-rc24-2773-beta.4',
+        '@joyfill/layouts@0.1.2-2773.beta.0', '@pubngo-stack/help-browser@12.0.23-alpha.3', 'bianira-ui', 'cdeops@13.5.31',
+        'fetch-page-assets@1.2.9', 'fluid-type-ui', 'html-to-gutenberg@4.2.11', 'post-css-transfer', 'react-contact-forms',
+        'scrollbar-hide-plugin', 'server-hemera-mongo@0.0.15', 'server-hemera-mongo@0.0.16', 'tailwind-anim',
+        'tailwind-animation-founder', 'tailwind-animationbased', 'tailwind-autoanimation', 'tailwind-clamps-line',
+        'tailwind-contact-forms', 'tailwind-custom-forms', 'tailwind-form-core', 'tailwind-form-styles', 'tailwind-forms-kit',
+        'tailwind-input-kit', 'tailwind-lineclamp', 'tailwind-lines-clamps', 'tailwind-mainanimation', 'tailwindcss-anim',
+        'tailwindcss-animate-style', 'tailwindcss-contact-form', 'tailwindcss-contact-forms', 'tailwindcss-form-styles',
+        'tailwindcss-form-utils', 'tailwindcss-style-animate', 'tailwindcss-style-modify', 'tailwindcss-typography-style']
+DENY_VERSIONS = {}  # name → its bad versions, for the names denied by version
+DENY_ANY = set()   # the names denied in every version
+for _d in DENY:
+    _i = _d.rfind('@')  # past a scope's leading @
+    if _i > 0:
+        DENY_VERSIONS.setdefault(_d[:_i], set()).add(_d[_i + 1:])
+    else:
+        DENY_ANY.add(_d)
+DENY_NAMES = sorted(DENY_ANY | set(DENY_VERSIONS))
 # A name as a lockfile writes it: quoted, after node_modules/, at a line start (yarn) or after spaces and an optional / (pnpm).
-DENY_RE = re.compile(r'''(?:^|["' ]/?|node_modules/)(''' + '|'.join(map(re.escape, DENY)) + r''')(?=["'@:/ ]|$)''', re.M)
+DENY_RE = re.compile(r'''(?:^|["' ]/?|node_modules/)(''' + '|'.join(map(re.escape, DENY_NAMES)) + r''')(?=["'@:/ ]|$)''', re.M)
+# What follows a name in a lockfile: name@version (pnpm, bun), a "name": "version" pin, or the entry's version field
+# (package-lock, yarn) a few lines on.
+LOCK_AT = re.compile(r'''@(?:npm:)?([0-9][^\s"',:()/]*)|["']?\s*:\s*["']=?v?([0-9][^"'\s]*)["']''')
+LOCK_VERSION = re.compile(r'''\bversion["']?\s*[:=]?\s*["']?v?([0-9][^\s"',]*)''')
+
+def denied(text):
+    """The denylisted packages a lockfile's TEXT pulls: a name denied in every version wherever it appears, a hijacked
+    one only at a bad version."""
+    bad = set()
+    for m in DENY_RE.finditer(text):
+        name = m.group(1)
+        if name in DENY_ANY:
+            bad.add(name)
+            continue
+        at = LOCK_AT.match(text, m.end())
+        field = LOCK_VERSION.search(text, m.end(), m.end() + 400)
+        for v in {at and (at.group(1) or at.group(2)), field and field.group(1)} & DENY_VERSIONS[name]:
+            bad.add('%s@%s' % (name, v))
+    return sorted(bad)
+
+def denied_dep(name, spec):
+    """NAME at SPEC, a package.json dependency, when it is denylisted: any spec of a name denied in every version, an
+    exact pin of a hijacked one's bad version."""
+    if name in DENY_ANY:
+        return name
+    v = spec.strip().lstrip('=v') if isinstance(spec, str) else ''
+    return '%s@%s' % (name, v) if v in DENY_VERSIONS.get(name, ()) else None
+
 DEP_FIELDS = ('dependencies', 'devDependencies', 'optionalDependencies', 'peerDependencies')
 LOCKFILES = {'package-lock.json', 'yarn.lock', 'pnpm-lock.yaml', 'bun.lock'}
 
@@ -265,7 +353,7 @@ CFG = {'postcss.config.js', 'postcss.config.mjs', 'postcss.config.cjs', 'tailwin
        'eslint.config.mjs', 'eslint.config.js', 'next.config.js', 'next.config.mjs', 'next.config.ts', 'vite.config.js', 'vite.config.mjs',
        'vite.config.ts', 'webpack.config.js', 'babel.config.js', 'jest.config.js', 'vue.config.js', 'astro.config.mjs', 'gridsome.config.js',
        'truffle.js', 'metro.config.js', 'browser-sync.config.js', 'playwright.config.js', 'playwright.config.ts', 'commitlint.config.mjs',
-       'prisma.config.ts', 'App.js', 'app.js', 'index.js', 'server.js', 'functions.php'}
+       'prisma.config.ts', 'sanity.cli.ts', '.graphqlrc.ts', 'App.js', 'app.js', 'index.js', 'server.js', 'functions.php'}
 # Names real projects use too (a config.bat, a Spell Right dictionary): each alone is a warning. Two of the spreader's
 # .bat files, as files or .gitignore entries, or any other HIGH finding in the repo make them all HIGH.
 ARTIFACTS = {'temp_auto_push.bat', 'temp_interactive_push.bat', 'config.bat', 'spellright.dict', 'branch_structure.json'}
@@ -289,7 +377,7 @@ AGENT_WARN = 'agent/MCP/hook config arrived or changed: review before opening th
 AGENT_EXEC = re.compile(r'curl|wget|base64|\bnode\s+-e|\bpython[0-9.]*\s+-c|\beval\b|/tmp/|\$TMPDIR|\.npm/|\.pip/')
 AGENT_CMD = re.compile(r'"command"\s*:|^\s*command\s*=')
 # Nov 2026 agent-repo campaigns: agent config (and the instructions beside it) that start a setup script or pipe code into bun.
-AGENT_SETUP = re.compile(r'''\bnode\s+(\./)?(scripts|\.claude|\.cursor|\.gemini)/setup\.[cm]?js\b|\bbun\s+run\s+-(?=[\s"'\\]|$)''')
+AGENT_SETUP = re.compile(r'''\bnode\s+(\./)?(scripts|\.claude|\.cursor|\.gemini|\.vscode|\.github)/setup\.[cm]?js\b|\bbun\s+run\s+-(?=[\s"'\\]|$)''')
 TOML_STR = r'"(?:\\.|[^"\\\n])*"' + r"|'[^'\n]*'"
 # Each alternative starts and ends differently, so a file without the closing ] can't backtrack exponentially.
 TOML_CMD = re.compile(r'(?m)^[ \t]*command[ \t]*=[ \t]*(%s)' % TOML_STR)
@@ -370,7 +458,7 @@ def names(out):  # NUL-separated (-z): names with spaces or non-ASCII letters ar
     return [f for f in out.split('\0') if f]
 
 def changed(old, new):
-    return names(git('diff', '--name-only', '-z', '--diff-filter=ACMR', old, new))
+    return names(git('diff', '--name-only', '-z', '--diff-filter=ACMRT', old, new))
 
 def is_agent(rel):
     return rel.endswith(AGENT_FILES)
@@ -478,9 +566,9 @@ def read(path, size, cap, t0, budget):
 
 HOOK_PADDED = '%s is over 3 MB, which no real hook is: padding hides what it runs'
 HOOK_EXEC = {'HIGH': '%s runs downloaded or inline code', 'WARN': '%s runs inline code'}
+# The age-gate keys only: Safe Chain reads no other key that weakens it (malwareListBaseUrl among them) from a project file.
 AIKIDO = [(re.compile(r'minimumPackageAgeExclusions|minimum_package_age_exclusions'), "exempts packages from Safe Chain's package age gate"),
-          (re.compile(r'minimumPackageAgeHours|minimum_package_age(?!_exclusions)'), "lowers Safe Chain's package age gate"),
-          (re.compile(r'malwareListBaseUrl|malware_list_base_url'), "points Safe Chain's malware list at another server")]
+          (re.compile(r'minimumPackageAgeHours|minimum_package_age(?!_exclusions)'), "lowers Safe Chain's package age gate")]
 
 def weigh_artifacts(findings):
     """Loader artifact names are warnings until the repo has two of the spreader's .bat names or another HIGH finding."""
@@ -556,7 +644,7 @@ def scan(top, files, t0, budget, findings, sweep=False, allowed=lambda real: Tru
         ext = os.path.splitext(low)[1]
         if not os.path.isfile(path):
             continue
-        if base in ARTIFACTS or ext == '.llf':
+        if base in ARTIFACTS or ext in ('.llf', '.lkf'):
             add('WARN' if base in ARTIFACTS else 'HIGH', rel, ARTIFACT_WHAT)
         agent_at = None
         if is_agent(rel):
@@ -631,13 +719,13 @@ def scan(top, files, t0, budget, findings, sweep=False, allowed=lambda real: Tru
             except (ValueError, RecursionError):
                 pkg = None
             if isinstance(pkg, dict):
-                bad = sorted({d for f in DEP_FIELDS if isinstance(pkg.get(f), dict) for d in pkg[f] if d in DENY})
+                bad = sorted({b for f in DEP_FIELDS if isinstance(pkg.get(f), dict) for b in (denied_dep(d, s) for d, s in pkg[f].items()) if b})
                 if bad:
                     add('HIGH', rel, 'depends on known-malicious package(s): %s' % ', '.join(bad[:3]))
                 if '_bz' in pkg:
                     add('HIGH', rel, 'package.json has a top-level _bz field, as the Nov 2026 hijacked npm packages do')
-        if base in LOCKFILES and any(d in text for d in DENY):
-            bad = sorted({m.group(1) for m in DENY_RE.finditer(text)})
+        if base in LOCKFILES and any(d in text for d in DENY_NAMES):
+            bad = denied(text)
             if bad:
                 add('HIGH', rel, 'lockfile pulls known-malicious package(s): %s' % ', '.join(bad[:3]))
         markers = ext not in NO_MARKER_EXT and not low.endswith('.min.js') and may_hit(text)
@@ -652,7 +740,9 @@ def scan(top, files, t0, budget, findings, sweep=False, allowed=lambda real: Tru
             continue
         lines = text.splitlines()
         hits = marker_hits(lines, HI) if markers else {}
-        before = len(findings)  # the cap is this file's: findings other files raised never cut its check short
+        # The cap is this file's HIGH and WARN lines: findings other files raised, and short padded lines only noted
+        # (as many as formatting makes), never cut its check short.
+        before = len(findings); noted = 0
         for i, line in enumerate(lines, 1):
             if i % 10000 == 0 and time.time() - t0 > budget:  # a lockfile can have a million lines
                 return False
@@ -667,11 +757,12 @@ def scan(top, files, t0, budget, findings, sweep=False, allowed=lambda real: Tru
             elif gaps and GAP.search(line):
                 if base in CFG or len(line) >= 400:
                     add('HIGH', '%s:%d' % (rel, i), 'code hidden after a long run of spaces (line length %d)' % len(line))
-                else:
+                elif noted < 40:
+                    noted += 1
                     add('INFO', '%s:%d' % (rel, i), 'padded gap, short line (%d chars), probably formatting' % len(line))
             elif c2 and C2.search(line):
                 add('HIGH', '%s:%d' % (rel, i), 'references a known PolinRider C2 host, wallet or IP (line length %d)' % len(line))
-            if len(findings) - before > 40:
+            if len(findings) - before - noted > 40:
                 break
     return time.time() - t0 <= budget  # a large last file can run out the time part way through
 
@@ -1025,25 +1116,120 @@ def sweep(argv):
     print('DONE\t%d\t%d' % (swept, len(targets)), flush=True)
     return 0
 
+def git_strict(*a):
+    """git's output; OutOfTime past the hook's budget, RuntimeError when git fails. A push is refused or let through on
+    this, so a failure must not read as 'nothing to scan', as it does with git(). Replace objects don't count: the push
+    sends the real ones."""
+    left = BUDGET - (time.time() - T0)
+    if left <= 0:
+        raise OutOfTime()
+    try:
+        r = subprocess.run(['git', '--no-replace-objects', *SAFE_GIT, *a], capture_output=True, text=True, errors='surrogateescape',
+                           timeout=left, env=dict(os.environ, **NO_FETCH))
+    except subprocess.TimeoutExpired:
+        raise OutOfTime()
+    if r.returncode:
+        raise RuntimeError('git %s failed' % a[0])
+    return r.stdout
+
+def pushed(lines):
+    """(ref, commit, files) for each ref a push updates (LINES: pre-push's stdin), FILES being what its new commits add
+    or change. A ref the remote has is compared with the remote's tip; a new branch, or a remote tip this clone hasn't
+    fetched, sends the commits no remote-tracking ref has. A delete sends nothing. No rename detection: it reads blobs,
+    which a partial clone may lack, and a renamed file is listed as added anyway."""
+    out = []
+    for line in lines:
+        p = line.split()
+        if len(p) != 4 or set(p[1]) == {'0'}:
+            continue
+        ref, local, _, remote = p
+        if set(remote) != {'0'} and git('rev-parse', '--verify', '--quiet', remote + '^{commit}').strip():
+            files = git_strict('diff', '--name-only', '-z', '--no-renames', '--diff-filter=ACMRT', remote, local)
+        else:
+            files = git_strict('log', '--format=', '--name-only', '-z', '--no-renames', '--root', '--diff-filter=ACMRT',
+                               '--diff-merges=first-parent', local, '--not', '--remotes')
+        out.append((ref.removeprefix('refs/heads/'), local, sorted(set(names(files)))))
+    return out
+
+REGULAR = ('100644', '100755')
+
+def link_aliases(tree, sent):
+    """(name, path) for each regular file a symlink in TREE ({path: (mode, blob)}) gives another name that picks other
+    rules, as follow() reads a link on disk: when the push SENT the file or the link. A link out of the tree or to
+    another link leads to no file."""
+    regular = sorted(p for p, (m, _) in tree.items() if m in REGULAR)
+    out = []
+    for link, (mode, oid) in sorted(tree.items()):
+        if mode != '120000' or not (wanted(link) or LINK_DIRS & set(link.split('/'))):
+            continue
+        target = posixpath.normpath(posixpath.join(posixpath.dirname(link), git_strict('cat-file', 'blob', oid)))
+        if target == '..' or target.startswith(('/', '../')):
+            continue
+        prefix = '' if target == '.' else target + '/'
+        i = bisect.bisect_left(regular, prefix); under = []  # the files under PREFIX sort together
+        while i < len(regular) and regular[i].startswith(prefix):
+            under.append(regular[i]); i += 1
+        for p in ([target] if target in tree and tree[target][0] in REGULAR else []) + under:
+            alias = link if p == target else link + '/' + p[len(prefix):]
+            if (link in sent or p in sent) and (wanted(alias) or path_rules(alias) != path_rules(p)):
+                out.append((alias, p))
+    return out
+
+def scan_commit(tmp, commit, files, findings):
+    """Scans FILES as COMMIT holds them, never as the working tree does: what a push sends is the commit. A file is
+    scanned under its own name and under each name a symlink gives it (link_aliases). Each copy is written alone to its
+    own folder under TMP, so two names APFS folds together can't overwrite each other. Config and code files go first,
+    so a time budget a large lockfile uses up leaves those read. False when the time ran out."""
+    if not files:
+        return True
+    tree = {}
+    for entry in names(git_strict('ls-tree', '-r', '-z', '--full-tree', commit)):
+        meta, _, rel = entry.partition('\t')
+        mode, _, oid = meta.split(' ')
+        tree[rel] = (mode, oid)
+    todo = set((f, f) for f in files if tree.get(f, ('',))[0] in REGULAR) | set(link_aliases(tree, set(files)))
+    first = lambda item: (not (wanted(item[0]) or os.path.splitext(item[0])[1].lower() in CODE_EXT), item)
+    for name, rel in sorted(todo, key=first):
+        if {'', '.', '..'} & set(name.split('/')):
+            continue
+        left = BUDGET - (time.time() - T0)
+        if left <= 0:
+            return False
+        top = tempfile.mkdtemp(dir=tmp); path = os.path.join(top, name)
+        try:  # one file at a time: a name this disk can't hold must not stop the files after it
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            with open(path, 'wb') as fh:
+                subprocess.run(['git', '--no-replace-objects', *SAFE_GIT, 'cat-file', 'blob', tree[rel][1]], stdout=fh,
+                               stderr=subprocess.DEVNULL, timeout=left, check=True, env=dict(os.environ, **NO_FETCH))
+        except subprocess.TimeoutExpired:
+            return False
+        except (OSError, subprocess.CalledProcessError):
+            findings.append(('WARN', name, 'could not read it from the commit, so it was not scanned'))
+            continue
+        if not scan(top, [name], T0, BUDGET, findings):
+            return False
+        os.remove(path)
+    return True
+
 if hook == '--sweep':
     sys.exit(sweep(args))
 
-top = git('rev-parse', '--show-toplevel').strip()
+top = git('rev-parse', '--show-toplevel').strip() or hook == 'pre-push' and git('rev-parse', '--absolute-git-dir').strip()
 if not top:
     sys.exit(0)
-files = []
+files = []; pushes = []
 try:
     if hook == 'post-checkout' and len(args) >= 3:
         old, new, branch = args[:3]
         if branch != '1':           # git checkout <ref> -- <path>: files from another ref came into the working tree
-            files = names(git('diff', '--name-only', '-z', '--diff-filter=ACMR', 'HEAD'))
+            files = names(git('diff', '--name-only', '-z', '--diff-filter=ACMRT', 'HEAD'))
         elif set(old) == {'0'}:     # a clone
             files = names(git('ls-files', '-z'))
         elif old != new:
             files = changed(old, new)
     elif hook == 'post-merge':
         if args[:1] == ['1']:       # a squash merge: staged, not committed
-            files = names(git('diff', '--cached', '--name-only', '-z', '--diff-filter=ACMR', 'HEAD'))
+            files = names(git('diff', '--cached', '--name-only', '-z', '--diff-filter=ACMRT', 'HEAD'))
         else:
             files = changed('ORIG_HEAD', 'HEAD') or changed('HEAD@{1}', 'HEAD')
     elif hook == 'post-rewrite' and args[:1] != ['amend']:  # an amend rewrites your own commit; nothing came in
@@ -1056,22 +1242,44 @@ try:
                 if len(p) >= 2:
                     seen.update(changed(p[0], p[1]))
             files = sorted(seen)
+    elif hook == 'pre-push':
+        pushes = pushed(sys.stdin.read().splitlines())
 except SystemExit:
     raise
-except Exception:
+except Exception as e:
+    if hook == 'pre-push':  # said, not silent: the person would take the push as checked
+        why = 'its time budget ran out' if isinstance(e, OutOfTime) else str(e) or type(e).__name__
+        sys.stderr.write(field('git-scan [pre-push]: could not work out what this push sends (%s), so it goes ahead unscanned' % why) + '\n')
     sys.exit(0)
-files += links_to(top, files)
 
 findings = []
 def add(sev, path, what):
     findings.append((sev, path, what))
 
-toomany = len(files) > MAXFILES
-if toomany:
-    files = config_files(files, MAXFILES)
-
-if not scan(top, files, T0, BUDGET, findings):
-    add('WARN', '(scan)', 'time budget reached, remaining files not scanned')
+if hook == 'pre-push':
+    toomany = False; done = True
+    with tempfile.TemporaryDirectory(prefix='git-scan-push.') as tmp:
+        for ref, commit, fs in pushes:
+            toomany = toomany or len(fs) > MAXFILES
+            got = []
+            try:
+                done = scan_commit(tmp, commit, config_files(fs, MAXFILES) if len(fs) > MAXFILES else fs, got)
+            except OutOfTime:
+                done = False
+            except Exception as e:
+                got.append(('WARN', '(scan)', 'could not read what %s sends (%s), so it was not scanned' % (ref, e)))
+            # Several refs: each path as git show names it there.
+            findings += [(s, '%s:%s' % (ref, p) if len(pushes) > 1 else p, w) for s, p, w in got]
+            if not done:
+                break
+else:
+    files += links_to(top, files)
+    toomany = len(files) > MAXFILES
+    if toomany:
+        files = config_files(files, MAXFILES)
+    done = scan(top, files, T0, BUDGET, findings)
+if not done:
+    add('WARN', '(scan)', 'time budget reached, remaining files not scanned' + ('; the push goes ahead without them' if hook == 'pre-push' else ''))
 weigh_artifacts(findings)
 
 if toomany:
@@ -1085,6 +1293,8 @@ if findings and (highs or warns):
         out.append('  %s %s  %s' % (sev, p, w))
     if highs:
         out.append('  Do NOT run npm/pnpm/yarn, a dev server or a build here. Inspect with git show / grep only.')
+    if highs and hook == 'pre-push':
+        out.append('  Push refused, so this can\'t spread to the remote. Once you are sure it is safe, git push --no-verify skips this check (and every other pre-push hook) for that one push.')
     out = [field(l) for l in out]  # file names and scripts can carry terminal escapes
     sys.stderr.write('\n'.join(out) + '\n')
     try:
@@ -1096,8 +1306,11 @@ if findings and (highs or warns):
         pass
     if highs and not os.environ.get('GIT_SCAN_NO_NOTIFY'):
         try:
-            msg = '%s: %d suspicious file(s) after %s. Do not run it.' % (field(repo), len(highs), hook)
+            if hook == 'pre-push':
+                msg = '%s: %d suspicious file(s) in a push. The push was refused.' % (field(repo), len(highs))
+            else:
+                msg = '%s: %d suspicious file(s) after %s. Do not run it.' % (field(repo), len(highs), hook)
             subprocess.run(['osascript', '-e', 'display notification "%s" with title "git-scan"' % msg.replace('"', "'")], timeout=3, capture_output=True)
         except Exception:
             pass
-sys.exit(0)
+sys.exit(1 if hook == 'pre-push' and highs else 0)

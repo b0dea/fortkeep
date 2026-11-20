@@ -188,6 +188,24 @@ userconf() {  # PATH_VALUE MTIME — launchd's stored user config; boot time is 
   printf 'export SAFE_CHAIN_MINIMUM_PACKAGE_AGE_HOURS=168\nexport SAFE_CHAIN_MINIMUM_PACKAGE_AGE_EXCLUSIONS=left-pad\n' > "$HOME/.zshenv"
   chk BL-SC-04; [ "$(field status)" = FAIL ]; [[ "$(field note)" == *weaken* ]]
 }
+@test "BL-SC-04 exclusions, registries or a malware list in Safe Chain's config file weaken the gate → FAIL, never quoting them" {
+  echo 'export SAFE_CHAIN_MINIMUM_PACKAGE_AGE_HOURS=168' > "$HOME/.zshenv"
+  echo '{"minimumPackageAgeHours": 200, "logFile": "~/sc.log", "npm": {"customRegistries": [], "minimumPackageAgeExclusions": [""]}}' > "$SC/config.json"
+  chk BL-SC-04; [ "$(field status)" = PASS ]
+  for c in '{"pip": {"minimumPackageAgeExclusions": ["left-pad"]}}' '{"npm": {"customRegistries": ["r.example"]}}' '{"malwareListBaseUrl": "https://r.example"}'; do
+    echo "$c" > "$SC/config.json"
+    chk BL-SC-04; [ "$(field status)" = FAIL ]; [[ "$(field note)" == *"weaken the gate in: ~/.safe-chain/config.json." ]]
+    [[ "$output" != *r.example* ]]; [[ "$output" != *left-pad* ]]
+  done
+}
+@test "BL-SC-04 the older ~/.aikido/config.json counts only when Safe Chain's own is missing; one that isn't JSON → ERROR" {
+  echo 'export SAFE_CHAIN_MINIMUM_PACKAGE_AGE_HOURS=168' > "$HOME/.zshenv"
+  mkdir -p "$HOME/.aikido"; echo '{"npm": {"minimumPackageAgeExclusions": ["left-pad"]}}' > "$HOME/.aikido/config.json"
+  echo '{}' > "$SC/config.json"; chk BL-SC-04; [ "$(field status)" = PASS ]
+  rm "$SC/config.json"; chk BL-SC-04; [ "$(field status)" = FAIL ]; [[ "$(field note)" == *"in: ~/.aikido/config.json." ]]
+  echo '{"npm": ' > "$SC/config.json"
+  chk BL-SC-04; [ "$(field status)" = ERROR ]; [[ "$(field note)" == "~/.safe-chain/config.json isn't JSON"* ]]
+}
 @test "BL-SC-04 noisy start-up file still reads the gate → PASS" {
   printf 'echo hello\nexport SAFE_CHAIN_MINIMUM_PACKAGE_AGE_HOURS=168\n' > "$HOME/.zshenv"
   chk BL-SC-04; [ "$(field status)" = PASS ]

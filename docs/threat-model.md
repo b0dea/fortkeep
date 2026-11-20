@@ -169,6 +169,8 @@ People's Macs run signed releases: version tags signed by a maintainer whose SSH
 
 ## Known limits
 
+- **The git scan hook's push check** stops your own `git push`. Malware that pushes by itself with `--no-verify`, or
+  with a git older than 2.54, skips it, and a push the check can't finish within its time limit goes ahead.
 - **Development-session guards** are pattern matching: they miss commands built from globs, names assembled from
   pieces, and shadowed shell functions.
 - **The ready-made agent guard** (`templates/agent-guard.sh`) is pattern matching too, with the same gaps. It also

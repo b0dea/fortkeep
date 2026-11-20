@@ -13,10 +13,13 @@ looks at. In short:
 - **Installed apps and running programs:** names and versions of security tools (`/Applications`,
   `~/Applications`), the system extensions list, and the running processes' names, terminals, ages and working
   folders. GD-RT-03 also lists your own network connections, and reads the process list's command lines only to
-  recognise a hidden node or python loader, never reporting them. Of the open apps' environment, only `PATH` is read.
+  recognise a hidden node or python loader or a reverse SSH tunnel, never reporting them. It reads the start-up files
+  of VS Code, Cursor, Antigravity, GitHub Desktop and Discord that malware patches, and your global git hooks.
+  Of the open apps' environment, only `PATH` is read.
 - **Your start-up and tool configuration:** shell start-up files (`~/.zshrc`, `~/.zprofile`, `~/.zshenv`,
   `~/.zlogin`, `~/.bashrc`, `~/.bash_profile`, `~/.profile`), `~/.gitconfig` and its hooks, the npm, Yarn, pnpm,
-  Bun, pip and uv config files, Safe Chain's files in `~/.safe-chain`, `~/.ssh/config`, and the key files in `~/.ssh`, which
+  Bun, pip and uv config files, Safe Chain's files in `~/.safe-chain` (and its older `~/.aikido/config.json`),
+  `~/.ssh/config`, and the key files in `~/.ssh`, which
   `ssh-keygen` tries to open with an empty passphrase to see whether each has one; no key is printed or kept.
 - **Coding agents' settings:** Claude Code (`~/.claude`, `~/.claude.json`'s MCP servers, the managed settings in
   `/Library/Application Support/ClaudeCode`), Codex (`~/.codex`, `/etc/codex/requirements.toml`), OpenCode, Zed,
@@ -52,7 +55,7 @@ A fix writes only after you answer `Apply <ID>`, and logs what it did in `report
 |---|---|
 | BL-SC-02 | `~/.config/fortkeep/path-front.sh`, and one marked line in `~/.zshenv`, `~/.zshrc`, `~/.zlogin` and your bash start-up files |
 | BL-RC-01 | `"task.allowAutomaticTasks": "off"` in each VS Code-family editor's `settings.json` |
-| BL-RC-02 | the scan hook at `~/.local/bin/git-scan-new-files`, hook entries in `~/.gitconfig`; the hook logs to `~/.local/var/log/git-scan.log` |
+| BL-RC-02 | the scan hook at `~/.local/bin/git-scan-new-files`, hook entries in `~/.gitconfig`; the hook logs to `~/.local/var/log/git-scan.log`. Before a push it copies the files the push sends, from the commits, into a temporary folder it deletes when done |
 | BL-SE-06 | a gitleaks pre-commit hook entry in `~/.gitconfig` |
 | BL-AU-02 | the weekly LaunchAgent `~/Library/LaunchAgents/io.github.b0dea.fortkeep.weekly.plist`, logging to `~/Library/Logs/fortkeep-weekly.log` |
 
@@ -102,6 +105,8 @@ Checks are meant not to use the network, so a run says nothing about you to anyo
 - **The installer:** clones fortkeep from GitHub (Homebrew also downloads the release's source archive).
 - **`checks/update.sh` (`fortkeep update`):** fetches the release tags from fortkeep's git remote, only when you run
   it.
+- **`fortkeep ci-template`:** sends nothing; it prints a GitHub workflow. Once you add that to a repo, it runs on
+  GitHub's machines, which fetch your repo and this fortkeep release from GitHub to scan it.
 - **The weekly check (`checks/weekly.sh`):** `brew update`, then `brew vulns`, which use Homebrew's own servers.
   When KnockKnock is installed, its scan runs with VirusTotal turned off (`-skipVT`).
 

@@ -14,10 +14,13 @@ ns="$(printf '%s\n' "$raw" | awk '
   END { if (!dom) for (i = 1; i <= n; i++) print s[i] }' | sort -u)"
 [ -n "$ns" ] || { fortkeep_result "$ID" ERROR "Couldn't find which DNS servers this Mac uses" "scutil --dns listed no default DNS servers"; exit 0; }
 bad=""
+# Quad9's malware-blocking addresses, with and without ECS; not 9.9.9.10 and the rest of its unfiltered service
+# (https://www.quad9.net/service/service-addresses-and-features/, checked 2026-11-20).
 while IFS= read -r a; do
   case "$a" in
     1.1.1.2|1.0.0.2|1.1.1.3|1.0.0.3|2606:4700:4700::1112|2606:4700:4700::1002|2606:4700:4700::1113|2606:4700:4700::1003) ;;
-    9.9.9.9|149.112.112.112|2620:fe::fe|2620:fe::9|45.90.28.*|45.90.30.*|2a07:a8c0:*|2a07:a8c1:*) ;;
+    9.9.9.9|149.112.112.112|2620:fe::fe|2620:fe::9|9.9.9.11|149.112.112.11|2620:fe::11|2620:fe::fe:11) ;;
+    45.90.28.*|45.90.30.*|2a07:a8c0:*|2a07:a8c1:*) ;;
     *) bad="$bad $a" ;;
   esac
 done <<EOF

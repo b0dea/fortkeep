@@ -3,7 +3,35 @@
 What changed in each release, for someone deciding whether to update. Each
 [GitHub release](https://github.com/b0dea/fortkeep/releases) also lists the merged pull requests.
 
-## Unreleased: 0.1.0
+## Unreleased: 0.1.3
+
+- **Your git hook now checks pushes.** The optional BL-RC-02 hook (installed by its fix) scans what you clone, pull,
+  check out or rebase, and now also refuses a push that carries malware. `git push --no-verify` still skips it for
+  one push.
+- **`fortkeep ci-template`** prints a GitHub workflow that runs the same scan on every push and pull request of your
+  repo, pinned to the release you run.
+- **Indicators updated to November 2026**: newer PolinRider strains and their second stage, more C2 hosts and
+  packages, and more places malware hides on a Mac.
+- **Fixes:** after an update that changes the scanner, the repo sweep runs again instead of reusing last week's
+  result. The README credits the open tools fortkeep checks for.
+
+## 0.1.2
+
+- **Fixes from the first real run:** checks that start an interactive zsh no longer time out when you run
+  `fortkeep check` from Terminal. A repo's own payload-scan workflow that lists markers is a "look", not urgent.
+- **Fixes from a security audit:** the repo scanner can't be made to skip a file by findings in other files; an
+  approval can't be used twice or fail open; the agent can't pre-fill an approval answer, hide a command under a
+  second field name, search outside its folder with brace patterns, or publish anything but the summary page; checks
+  skip private folders they used to read; fix backups are readable only by you.
+
+## 0.1.1
+
+- **Security tools that stop a check** are named in the result, with a page on asking for a narrow exclusion
+  (`docs/security-tools.md`) instead of excluding the whole fortkeep folder.
+- **Fixes:** OpenCode's npm lockfile no longer counts as a local change; the installer no longer prints git 2.54's
+  "is not a commit" warning.
+
+## 0.1.0
 
 The first public release.
 

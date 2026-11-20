@@ -1,0 +1,73 @@
+name: fortkeep-scan
+
+# Made by `fortkeep ci-template` from fortkeep {{TAG}}. It fails any push or pull request that fortkeep's repo
+# scanner flags: the PolinRider / BeaverTail loader, a poisoned config or task file, a git hook that fetches code, or
+# commits with forged dates or names. A finding fortkeep is less sure of shows as a warning and doesn't fail it.
+#
+# It is two checkouts and a read-only scan, never an install or a build, so a poisoned branch has no build step to
+# run its payload through. The scanner comes from fortkeep {{TAG}}, pinned by its commit, never from the branch being
+# scanned. The job holds no secrets and only read access. To move to a newer fortkeep, update it and run
+# `fortkeep ci-template` again.
+on:
+  push:
+  pull_request:
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  fortkeep-scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: check out this repo
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: repo
+          persist-credentials: false
+          # The scanner also reads the commit history for forged dates and names.
+          fetch-depth: 0
+      - name: check out fortkeep {{TAG}}
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: b0dea/fortkeep
+          ref: {{COMMIT}} # {{TAG}}
+          path: fortkeep
+          persist-credentials: false
+      - name: fortkeep's repo scanner finds nothing
+        shell: bash
+        run: |
+          set -euo pipefail
+          # The sweep fortkeep's weekly repo check runs, over this checkout only. It prints one line per finding,
+          # SEVERITY<TAB>REPO<TAB>PATH<TAB>WHAT, then DONE<TAB>swept<TAB>total. A HIGH line, any line but HIGH, WARN
+          # or INFO (a part it couldn't read), or a last line other than one complete sweep fails the job; WARN and
+          # INFO lines only annotate it.
+          out="$(python3 -I "$GITHUB_WORKSPACE/fortkeep/fixes/files/git-scan-new-files" --sweep --budget 300 "$GITHUB_WORKSPACE/repo")"
+          # The findings name the repo's own files: shown with workflow commands off, so no file name can issue one.
+          token="$(od -An -N16 -tx1 /dev/urandom | tr -d ' \n')"
+          echo "::stop-commands::$token"
+          printf '%s\n' "$out"
+          echo "::$token::"
+          esc() { local s="${1//%/%25}"; s="${s//$'\r'/%0D}"; printf '%s' "${s//$'\n'/%0A}"; }
+          fail=""
+          [ "${out##*$'\n'}" = "$(printf 'DONE\t1\t1')" ] || fail=1
+          case "$out" in *$'\n'*)
+            while IFS=$'\t' read -r sev target path what; do
+              case "$sev" in
+                HIGH) echo "::error::$(esc "$path: $what")"; fail=1 ;;
+                WARN) echo "::warning::$(esc "$path: $what")" ;;
+                INFO) echo "::notice::$(esc "$path: $what")" ;;
+                *) echo "::error::$(esc "$sev $target $path $what")"; fail=1 ;;
+              esac
+            done <<<"${out%$'\n'*}" ;;
+          esac
+          if [ -n "$fail" ]; then
+            echo "::error::fortkeep's repo scanner flagged this ref or could not finish. Do not pull, build, install or open it."
+            exit 1
+          fi
+          echo clean
