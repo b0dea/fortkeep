@@ -579,6 +579,16 @@ sweep() { FORTKEEP_WEEKLY_RUN=1 chk GD-RC-01; }  # the weekly run: always sweeps
   rm "$HOME/.config/fortkeep/repo-sweep.json"; mkdir "$HOME/.config/fortkeep/repo-sweep.json.tmp"  # the result can't be written
   chk GD-RC-01; [ "$(field status)" = FAIL ]; [[ "$(field note)" == *"Could not store this result in "*"so the next review sweeps again."* ]]
 }
+@test "GD-RC-01 sweeps again when the stored result came from another version of the scanner" {
+  repo "$HOME/dev/app"; S="$HOME/.config/fortkeep/repo-sweep.json"
+  chk GD-RC-01; [ "$(field status)" = PASS ]
+  gap "$HOME/dev/app"
+  chk GD-RC-01; [ "$(field status)" = PASS ]; [[ "$(field evidence)" == *"(weekly sweep, 0 day(s) ago)" ]]
+  jq '.scanner = "an older scanner"' "$S" > "$BATS_TEST_TMPDIR/s"; mv "$BATS_TEST_TMPDIR/s" "$S"
+  chk GD-RC-01; [ "$(field status)" = FAIL ]; [ "$(field evidence)" = "1 repo-poisoning indicator(s) in 1 repo(s)" ]
+  jq 'del(.scanner)' "$S" > "$BATS_TEST_TMPDIR/s"; mv "$BATS_TEST_TMPDIR/s" "$S"  # a result stored before this check
+  chk GD-RC-01; [ "$(field status)" = FAIL ]; [ "$(field evidence)" = "1 repo-poisoning indicator(s) in 1 repo(s)" ]
+}
 @test "GD-RC-01 a stored result dated more than a day ahead is ERROR, not a PASS that never goes stale" {
   repo "$HOME/dev/app"; S="$HOME/.config/fortkeep/repo-sweep.json"
   sweep; [ "$(field status)" = PASS ]
