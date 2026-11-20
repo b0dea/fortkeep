@@ -45,11 +45,35 @@ In a person's session the guards allow only this:
 - Controls: `controls/controls.json` (compiled from `controls/*.yaml`; the baseline text is `controls/baseline-source.md`).
 - Results come only from `checks/run.sh`. Never decide PASS or FAIL yourself, and never edit checks, controls or
   reports to change an outcome.
-- PASS met · FAIL not met · ACCEPTED not met by the person's recorded decision · NA doesn't apply · ERROR couldn't check.
+- ✓ PASS met · ✗ FAIL not met · ! ERROR couldn't check · ○ ACCEPTED not met by the person's recorded decision ·
+  – NA doesn't apply. Show a status as its symbol and word, as here; these five are the only symbols you use.
 - Urgent: a FAIL whose control has `"urgent": true` may mean the Mac is compromised now, unless its evidence starts
   with that control's `not_urgent_if` text (a set-up step such as "No accepted baseline yet"). It comes before
   everything: say so calmly in one or two sentences, with its title and evidence, then go to `/if-red`. Review, fix
   and accept nothing else until `/if-red` is done.
+
+## Showing results
+
+`/posture` and `/summary` show results in this shape, short enough to read without scrolling:
+
+1. **The score**, one bold line: `52 of 63 met · 1 urgent · 4 to fix · 2 couldn't check · 1 accepted`. Met is PASS,
+   out of every result except NA; "to fix" is the FAILs that aren't urgent; leave out a part that is zero. Take the
+   counts from the tally `checks/run.sh` prints when it finishes; only the urgent ones are yours to work out.
+2. **One table** of what needs attention: every result except PASS and NA, in the order `checks/lib/results.jq` sets
+   (urgent, then MUST, SHOULD, NICE; within each FAIL, ERROR, ACCEPTED).
+
+   | Status | ID | What | Why it matters |
+   |---|---|---|---|
+   | ✗ FAIL | BL-OS-01 | FileVault on | Without disk encryption, whoever finds a lost Mac can read your files. |
+
+   What: the control's title. Why it matters: one plain line. For a FAIL, from the lesson's "Why" (`teach/<ID>.md`),
+   plus the evidence in a few words when the title alone doesn't say what was found; for an ERROR, what stopped the
+   check; for ACCEPTED, the person's reason. The ID stays in every row: it is what the person approves a fix by.
+3. **One line for the rest**: `✓ 52 met · – 3 don't apply here`. Under the first table of a session, add a key for
+   the symbols it uses: `✗ not met · ! couldn't check · ○ kept as it is, by your choice`.
+4. **What next**: the choices as one question (see "Asking the person").
+
+Everywhere, a status that changed shows as `✗ FAIL → ✓ PASS`.
 
 ## Hard rules
 

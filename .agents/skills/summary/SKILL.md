@@ -15,8 +15,8 @@ proof.
 2. Ask the name to show on it: run `summary/name.sh`, then ask with options the name it printed and `Other`.
 3. `summary/build.sh --name "<name>"`. It prints the path of `posture-summary.md` and writes `posture-summary.html`
    beside it.
-4. Show the person its contents, in the order the summary uses: any urgent FAIL first, then MUST, SHOULD, NICE, and
-   within each FAIL, ERROR, ACCEPTED, NA, PASS. Explain:
+4. Show what it says in the shape "Showing results" in AGENTS.md sets, with the counts from its "Result" row. Then
+   three short points:
    - it lists control ids, titles, levels and statuses, the reason the person wrote for each ACCEPTED item, the
      fortkeep version and commit, and a fingerprint (SHA-256 hash) of the controls file, with no file names, paths
      or machine details;

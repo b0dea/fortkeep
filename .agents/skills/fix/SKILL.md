@@ -15,7 +15,20 @@ then read `reports/latest/results.json`. Look up each result in `controls/contro
 1. **Urgent first.** An urgent FAIL (AGENTS.md, "How results work") goes to `/if-red`: offer no fix and no accept,
    for it or anything else.
 2. Then take the rest in this order: MUST, then SHOULD, then NICE; within a level, FAIL before ERROR (ACCEPTED and
-   NA need nothing). Among FAILs of one level, risk low before medium before high. One control at a time.
+   NA need nothing). Among FAILs of one level, risk low before medium before high. This is the queue; say in one line
+   how many it holds ("5 to go, one at a time").
+
+## Each control
+
+One control at a time, in messages of its own. Open it with its marker in bold, then its status and the evidence
+in a few words:
+
+**Fix 2 of 5 · BL-RC-02 · Global git hook scans what a clone, pull or checkout brings in**
+✗ FAIL: no scanner installed.
+
+Then the path below that fits. Each ends by checking again with `checks/run.sh --only <ID>`: show the result as
+`BL-RC-02 ✗ FAIL → ✓ PASS`. If it still isn't met, say plainly what that means and what comes next. Then go on to the
+next control in the queue.
 
 ## ERROR: the check couldn't decide
 
@@ -44,7 +57,7 @@ never turns the tool off. Offer no fix for an ERROR. If the re-run gives a FAIL,
    - Exit 3 (MANUAL): walk the person through the printed steps. Exit 3 can follow partial changes: those are
      logged in `reports/change-log.md` and can be undone.
    - "nothing to change": it was already fixed; re-run the check and move on.
-5. `checks/run.sh --only <ID>` and report the new status.
+5. Check again (see "Each control").
 
 ## b) Admin fix (`fix_needs_admin` is true)
 
@@ -52,7 +65,8 @@ You never run `sudo`. Give the exact commands from the teach file, one numbered 
 to open the Terminal app (Applications → Utilities → Terminal), type each one there and press Return. Not in this
 chat: a command run from this chat can't ask for a password. Tell them before the first one: macOS asks for their
 password (or Touch ID), and nothing appears on screen while they type the password; that is normal, so type it and
-press Return. The teach file's last step is "sudo -k", which ends the admin session; keep it. When they say "done", re-run the check.
+press Return. The teach file's last step is "sudo -k", which ends the admin session; keep it. When they say "done",
+check again.
 
 If the teach file says a restart is needed, tell them how to come back afterwards, before they restart: open the
 Terminal app, type `fortkeep agent` and the agent they use now (`fortkeep agent claude`, `codex` or `opencode`), then
@@ -60,7 +74,7 @@ Terminal app, type `fortkeep agent` and the agent they use now (`fortkeep agent 
 
 ## c) Guided fix (`fix` is null and no admin command)
 
-Give the click-by-click steps from the teach file, one step per message, and wait for "done". Then re-run the check.
+Give the click-by-click steps from the teach file, one step per message, and wait for "done". Then check again.
 
 ## d) The person wants to keep it as it is
 
@@ -86,8 +100,18 @@ follows (allow it once, never "always"), and the approval lasts five minutes.
   - It says `undo incomplete`. Tell the person the undo was incomplete and the backup was kept. Point them to
     `reports/change-log.md` and whoever manages this Mac, and stop.
 
+## Wrap-up
+
+When the queue is done, or the person picks `Stop fixing`, end with one table of every control the queue reached:
+
+| ID | What | Before → after |
+|---|---|---|
+| BL-RC-02 | Global git hook scans what a clone, pull or checkout brings in | ✗ FAIL → ✓ PASS |
+| BL-OS-01 | FileVault on | ✗ FAIL, skipped |
+
+Then one line: every change made is in `reports/change-log.md`, with how to undo it.
+
 ## Rules
 
 - One `Apply <ID>` answer per fix: never batch approvals.
 - Run each command exactly as written here, from the repo folder: the guards refuse any other spelling.
-- Every applied change is in `reports/change-log.md` with its undo; point the person to it at the end.

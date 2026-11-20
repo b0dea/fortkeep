@@ -8,7 +8,8 @@ metadata:
 # /if-red
 
 The person's steps are in `docs/if-red.md`, written so they work after the Mac is offline and you can't help. Read
-it (in Codex: `checks/show.sh docs/if-red.md`) and follow it. Stay calm, short and specific.
+it (in Codex: `checks/show.sh docs/if-red.md`) and follow it. Stay calm, short and specific: plain sentences and
+numbered steps, no tables.
 
 1. **Is the Mac affected?** Two findings can stop short of an emergency; for anything else, go on.
    - Only GD-AI-01 (agent control files changed): name the files from its evidence and ask whether the person, or an
@@ -19,10 +20,16 @@ it (in Codex: `checks/show.sh docs/if-red.md`) and follow it. Stay calm, short a
      page), and run `/posture` to check the Mac.
    If they don't recognise a change, did any of those things, or aren't sure, go on.
 2. **Everything up front.** Step 1 of the page takes the Mac off the network, which ends this conversation. So before
-   it, give the person the whole page in a few short lines: go offline, stop using this Mac, rotate from a clean
-   device, get help, don't wipe yet, report. Tell them the full page is the file `docs/if-red.md` in the fortkeep
-   folder, and that it opens without the internet.
-3. **Then step 1:** ask them to turn off Wi-Fi and unplug any network cable now.
+   it, give the person the whole page at once: one calm sentence on what was found, in plain words, then the six
+   steps as a numbered list, one short line each:
+   1. Go offline: Wi-Fi off, network cable out.
+   2. Stop using this Mac: no passwords, no sign-ins.
+   3. Change passwords and keys from a clean device, such as your phone.
+   4. Get help: on a work Mac, your IT or security team.
+   5. Don't wipe or reinstall it yet.
+   6. Report it.
+   Then: the full page is the file `docs/if-red.md` in the fortkeep folder, and it opens without the internet.
+3. **Then step 1, on its own:** ask them to turn off Wi-Fi and unplug any network cable now.
 
 Rules:
 - Never tell them to rotate credentials, sign in or type passwords on this Mac: always from a clean device.
