@@ -548,7 +548,7 @@ sweep() { FORTKEEP_WEEKLY_RUN=1 chk GD-RC-01; }  # the weekly run: always sweeps
   repo "$HOME/dev/app"; mkdir -p "$HOME/dev/broken/.git"
   sweep; [ "$(field status)" = ERROR ]; [[ "$(field note)" == *"Could not list the files of 1 repo(s): "*"/dev/broken."* ]]
   rm -rf "$HOME/dev/broken"
-  FORTKEEP_SWEEP_TIMEOUT=1 sweep; [ "$(field status)" = ERROR ]; [[ "$(field note)" == *"time ran out after 0 of 1"* ]]
+  FORTKEEP_SWEEP_TIMEOUT=1 sweep; [ "$(field status)" = ERROR ]; [[ "$(field note)" == *"time ran out after 0 of 1"* ]]; [[ "$(field note)" == *"fortkeep scan FOLDER"* ]]
 }
 @test "GD-RC-01 a repo whose history it can't read is ERROR, not PASS" {
   repo "$HOME/dev/app"; echo 0123456789012345678901234567890123456789 > "$HOME/dev/app/.git/refs/heads/broken"

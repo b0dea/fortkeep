@@ -72,7 +72,7 @@ setup() {
   [[ "$output" == *"5: id format"* ]]
 }
 
-@test "check rejects a timeout that is not whole seconds from 1 to 300" {
+@test "check rejects a timeout that is not whole seconds from 1 to 600" {
   yq -i '.[0].timeout = 0 | .[1].timeout = "x" | .[2].timeout = 30' "$T/controls/baseline.yaml"
   "$T/ci/build-controls.sh"
   run "$T/ci/check-controls.sh"

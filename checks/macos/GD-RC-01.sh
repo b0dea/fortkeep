@@ -41,8 +41,6 @@ finish() {  # STATUS EVIDENCE [NOTE] — report the sweep's result and keep it f
   printf '%s\n' "$out"
   exit 0
 }
-t="${FORTKEEP_SWEEP_TIMEOUT:-140}"
-budget=$(( t > 20 ? t - 15 : t / 2 ))  # the scanner stops itself first, so a slow sweep still reports what it found
 skipped=""; looked=""; repos=(); blocked=""
 # Desktop and Downloads too: cloned or unzipped repos often land there.
 for d in dev Developer code src Projects work git repos workspace Development source Documents/GitHub Desktop Downloads; do
@@ -121,6 +119,9 @@ if ! xcode-select -p >/dev/null 2>&1 || [ ! -x /usr/bin/python3 ]; then
   fortkeep_result "$ID" ERROR "The repo sweep needs Apple's Command Line Tools, which aren't installed" "Run xcode-select --install in the Terminal app, then run the check again$skipped"
   exit 0
 fi
+# Time for the repos there are: with a fixed limit, a Mac with many repos could never finish its sweep.
+t="${FORTKEEP_SWEEP_TIMEOUT:-$(fortkeep_sweep_seconds $(( ${#args[@]} + nx + nn )) "${FORTKEEP_WEEKLY_RUN:-}")}"
+budget=$(( t > 20 ? t - 15 : t / 2 ))  # the scanner stops itself first, so a slow sweep still reports what it found
 # npm first (quick), the extension folders last (slow): a sweep cut short still covers the repos.
 out="$(fortkeep_timeout "$t" /usr/bin/python3 -I "$SCAN" --sweep --budget "$budget" ${priv[@]+"${priv[@]}"} ${npms[@]+"${npms[@]}"} \
   ${args[@]+"${args[@]}"} ${trees[@]+"${trees[@]}"} 2>/dev/null)"; rc=$?
@@ -142,7 +143,12 @@ unread=""; [ "$nu" -eq 0 ] || unread=" Could not list the files of $nu repo(s): 
 [ "$ne" -eq 0 ] || unread="$unread Could not read $ne part(s) of the repos: $(show ERROR)."
 part=""; [ "$np" -eq 0 ] || part=" $np repo(s) over 5000 files had only their config, hook and agent files scanned: $(repos_of INFO)."
 what="repo(s)"; [ "$nx" -eq 0 ] || what="repo(s) and extension folder(s)"
-partly=""; [ $((swept + nu)) -ge "$total" ] || partly=" The time ran out after $swept of $total ${what//(s)/s}."
+partly=""
+if [ $((swept + nu)) -lt "$total" ]; then
+  partly=" The time ran out after $swept of $total ${what//(s)/s}: fortkeep scan FOLDER sweeps one folder at a time"
+  [ -n "${FORTKEEP_WEEKLY_RUN:-}" ] || partly="$partly, and the weekly security check (BL-AU-02) gives the whole sweep three times as long"
+  partly="$partly."
+fi
 if [ "$nh" -gt 0 ]; then
   nr="$(fortkeep_count "$(printf '%s\n' "$out" | awk -F'\t' '$1 == "HIGH" {print $2}' | sort -u)")"
   where="repo(s)"; printf '%s\n' "$out" | awk -F'\t' '$1 == "HIGH" {print $2}' | grep -q '/extensions$' && where="repo(s) or extension folder(s)"

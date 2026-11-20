@@ -91,7 +91,7 @@
   risk: low
   alternatives: []
   teach: teach/GD-RC-01.md
-  timeout: 160
+  timeout: 380
   urgent: true
   not_urgent_if: The weekly sweep hasn't run
 - id: GD-RT-03

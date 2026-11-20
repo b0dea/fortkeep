@@ -28,7 +28,7 @@ errors="$(jq -r '
   (.[] | select(has("mscp") and (((.mscp | type) == "array" and (.mscp | length) > 0 and all(.mscp[]; type == "string" and test("^[a-z0-9_]+$"))) | not)) | bad("mscp must be a list of mSCP rule ids")),
   (.[] | select(((.alternatives | type) == "array" and all(.alternatives[]; type == "string" and . != "")) | not) | bad("alternatives must be a list of names")),
   (.[] | select((.layer | strings | startswith("overlay:")) and ((str(.overlay.title) and .overlay.title != "" and str(.overlay.pick_if) and .overlay.pick_if != "") | not)) | bad("overlay needs a title and a pick_if line")),
-  (.[] | select(has("timeout") and ((.timeout | type) != "number" or .timeout != (.timeout | floor) or .timeout < 1 or .timeout > 300)) | bad("timeout must be whole seconds from 1 to 300"))
+  (.[] | select(has("timeout") and ((.timeout | type) != "number" or .timeout != (.timeout | floor) or .timeout < 1 or .timeout > 600)) | bad("timeout must be whole seconds from 1 to 600"))
 ' controls/controls.json)"
 # Path strings are read line by line so spaces and empties are not word-split.
 paths="$(jq -r '.[] | .check, .teach, .fix | select(type == "string" and . != "")' controls/controls.json)"

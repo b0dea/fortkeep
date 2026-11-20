@@ -13,6 +13,11 @@ What's left to build. What fortkeep doesn't stop yet is in the [threat model](th
   and a cross-check against public malicious-package data when a release is built.
 - **A daily light check.** An optional daily run of only the urgent checks (live malware, poisoned repos), which are
   quick; the full review stays weekly.
+- **An agent-led hunt.** An optional scan where your agent looks through this Mac's repos and start-up files for
+  PolinRider-like patterns the fixed indicators don't name yet: odd config files, new hooks, long encoded lines. It
+  needs a safe way to show the agent those excerpts as data; today the agent reads nothing outside fortkeep's folder.
+- **A repo sweep that resumes.** The sweep gets time for the repos there are, up to a limit. On a Mac with more
+  repos than that covers, it should carry on where the last sweep stopped, so a few runs cover them all.
 - **More agents**, as they gain hooks that can carry the guards.
 
 ## Follow-ups
