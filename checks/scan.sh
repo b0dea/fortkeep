@@ -27,7 +27,7 @@ dir="$(fortkeep_private_folder "$1")" || refuse "use an absolute path, or one st
 excluded="Verdict: not scanned. A private folder was excluded."
 if fortkeep_is_private "$dir"; then echo "$excluded"; exit 4; fi
 [ -d "$dir" ] || refuse "no such folder: $dir"
-phys="$(cd "$dir" 2>/dev/null && pwd -P)" || refuse "could not open the folder: $dir"
+phys="$(fortkeep_physical "$dir")" || refuse "could not open the folder: $dir"
 if fortkeep_private_physical "$phys"; then echo "$excluded"; exit 4; fi
 fortkeep_private_refused "$dir" \
   && refuse "that is /, your home folder, a folder above it, or fortkeep's own folder: name one project folder"
@@ -74,7 +74,7 @@ EOF
 priv=()
 while IFS= read -r p; do
   [ -n "$p" ] || continue
-  priv+=(--private "$p"); r="$(cd "$p" 2>/dev/null && pwd -P)" && [ "$r" != "$p" ] && priv+=(--private "$r")
+  priv+=(--private "$p"); r="$(fortkeep_physical "$p")" && [ "$r" != "$p" ] && priv+=(--private "$r")
 done <<EOF
 $(fortkeep_private_list)
 EOF

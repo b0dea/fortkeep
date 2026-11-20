@@ -13,6 +13,16 @@ FORTKEEP_USER_PATH="${FORTKEEP_USER_PATH:-$PATH}"
 if fortkeep_under_test; then PATH="$BATS_TEST_TMPDIR/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
 else PATH="/usr/bin:/bin:/usr/sbin:/sbin:$PATH"; fi
 
+# macOS's bash 3.2 writes every here-document to a temporary file. Where it can't (Codex's read-only sandbox), each
+# `done <<EOF` loop reads nothing, and a loop over the private list would let a private folder through: stop instead.
+if ! { IFS= read -r _ <<'EOF'
+x
+EOF
+} 2>/dev/null; then
+  echo "fortkeep: this can't make a temporary file here, so it stops rather than miss a private folder. The agent's sandbox blocks them (Codex's read-only mode does): start the agent in its default mode, then try again." >&2
+  exit 4
+fi
+
 FORTKEEP_LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 FORTKEEP_REPO="${FORTKEEP_REPO:-$(cd "$FORTKEEP_LIB_DIR/../.." && pwd)}"
 FORTKEEP_SYSROOT="${FORTKEEP_SYSROOT:-}"
@@ -124,6 +134,18 @@ fortkeep_private_list() {
   done < "$FORTKEEP_PRIVATE_PATHS"
 }
 
+fortkeep_physical() {  # DIR — its physical path in the one spelling the private list uses. /bin/bash's pwd -P keeps the
+  # data volume's spelling (/System/Volumes/Data/Users/u) where zsh gives /Users/u, so that prefix goes when the shorter
+  # path is the same folder. Status 1 when DIR can't be opened.
+  local p q
+  p="$(cd "$1" 2>/dev/null && pwd -P)" || return 1
+  case "$p" in /System/Volumes/Data/?*)
+    q="${p#/System/Volumes/Data}"
+    [ "$(/usr/bin/stat -f %d:%i "$q" 2>/dev/null)" != "$(/usr/bin/stat -f %d:%i "$p")" ] || p="$q" ;;
+  esac
+  printf '%s\n' "$p"
+}
+
 fortkeep_fold() {  # TEXT on stdin — as APFS compares names: NFC, upper case, lower case, NFC again (the guards' fold)
   /usr/bin/perl -CSD -MUnicode::Normalize -0777 -pe '$_ = NFC(lc(uc(NFC($_))))'
 }
@@ -167,9 +189,9 @@ fortkeep_private_refused() {  # FOLDER (from fortkeep_private_folder) — true w
   # The account's own home as well as HOME, also under the test suite.
   home="$(/usr/bin/perl -e 'print +(getpwuid($<))[7] // ""')"
   [ -n "$home" ] || { echo "fortkeep: could not read your home folder from your account" >&2; return 0; }
-  # The scanners match private folders by physical path (pwd -P), which turns the data volume's spelling
-  # (/System/Volumes/Data/Users/u) into /Users/u where perl's abs_path keeps it. So compare physical paths too, and
-  # each folder that must stay visible also in the data volume's spelling, so the folders above it there count.
+  # A folder has several physical spellings: /bin/bash's pwd -P and perl's abs_path keep the data volume's
+  # (/System/Volumes/Data/Users/u), zsh's gives /Users/u. So compare physical paths too, and each folder that must
+  # stay visible also in the data volume's spelling, so the folders above it there count.
   plib="$(cd "$lib" && pwd -P)"
   phys="$(cd "$HOME" 2>/dev/null && pwd -P)
 $(cd "$home" 2>/dev/null && pwd -P)

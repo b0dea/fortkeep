@@ -72,7 +72,9 @@ its question named, and `checks/accept.sh` records only that reason. The
 **Codex.** Run `codex` in this folder. Trust the folder, then answer the hooks prompt with "Trust all and continue"
 (or review them with `/hooks`). Codex asks again whenever a hook file changes. If you continue without trusting them,
 no guard runs and no approval is recorded, and only the instructions keep the agent from guarded actions: it should
-say the guards are off and not run `/fix`. Don't use it that way.
+say the guards are off and not run `/fix`. Don't use it that way. Keep Codex out of its read-only mode too: there
+fortkeep's scripts can't make the temporary files the shell needs, so they stop rather than risk missing a private
+folder.
 
 **OpenCode.** Run `opencode` in this folder. The plugin loads by itself; on first run OpenCode also installs its plugin
 library into `.opencode/` (a `.gitignore`, `package.json` and `node_modules`, ignored by git). Starting it with `--pure`
