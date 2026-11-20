@@ -187,6 +187,7 @@ fortkeep                                   a menu in a terminal; otherwise the h
 fortkeep check [--only ID]... [--json]     check this Mac (read-only); exit 1 when something fails
 fortkeep explain ID                        the short lesson for one control
 fortkeep scan FOLDER                       is this repo safe to open? scans it, or the repos in it (read-only)
+fortkeep ci-template                       a GitHub workflow that runs the same scan on every push and pull request
 fortkeep agent [claude|codex|opencode]     start your coding agent here, then type /posture
 fortkeep summary [--name NAME]             a posture summary you can share
 fortkeep update                            move to the newest signed release
@@ -206,6 +207,8 @@ fortkeep uninstall                         remove fortkeep's state, once its fix
   baseline.
 - **`summary`** is self-reported: anyone with your account could edit it before sharing.
 - **`update`** takes only signed releases; use it instead of `git pull`.
+- **`ci-template`** prints the workflow: `fortkeep ci-template > .github/workflows/fortkeep-scan.yml` in your repo.
+  It runs fortkeep's scanner, pinned to this release, so the workflow itself holds no malware markers.
 
 ## How it differs
 
