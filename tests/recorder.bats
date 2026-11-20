@@ -73,6 +73,20 @@ asked_accept() { answered "$("$REPO/checks/ask.sh" "$1" accept "$2")" "${@:3}"; 
   asked BL-RC-01 apply "Apply BL-SC-02" | H         # another control's
   none
 }
+@test "a no to the canonical question for an action withdraws the token still waiting for that action, and only that one" {
+  asked BL-RC-01 apply "Apply BL-RC-01" | H
+  asked BL-RC-01 apply "Skip" '.tool_input.questions[0].question = "Skip it?" | .tool_response.answers = {"Skip it?": "Skip"}' | H
+  [ -f "$A/BL-RC-01.apply" ]                        # not the question checks/ask.sh prints
+  asked BL-RC-01 undo "Undo BL-RC-01" | H
+  asked BL-RC-01 apply "Skip" | H
+  [ ! -e "$A/BL-RC-01.apply" ]; [ -f "$A/BL-RC-01.undo" ]
+  asked BL-RC-01 undo "Keep it" | H; [ ! -e "$A/BL-RC-01.undo" ]
+  asked BL-RC-01 apply "Apply BL-RC-01" | H; asked BL-RC-01 apply "Stop fixing" | H; [ ! -e "$A/BL-RC-01.apply" ]
+  asked_accept BL-OS-01 "my reason" "Accept BL-OS-01" | H; asked_accept BL-OS-01 "my reason" "Don't accept" | H
+  [ ! -e "$A/BL-OS-01.accept" ]
+  asked_private "~/Private" "Add private folder" | H; asked_private "~/Private" "Don't add" | H
+  none
+}
 @test "a multi-line answer cannot smuggle a second line" {
   asked BL-RC-01 apply "$(printf 'Skip\nApply BL-RC-01')" | H
   asked BL-RC-01 apply "$(printf 'Apply BL-RC-01\nSkip')" | H
