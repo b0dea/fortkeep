@@ -1,4 +1,6 @@
-#!/bin/bash
+#!/bin/bash -p
 # The weekly LaunchAgent runs this file: macOS names a background item after the program it starts,
-# so Login Items shows "fortkeep-weekly" instead of "bash".
-exec /bin/bash "$(dirname "$0")/weekly.sh" "$@"
+# so Login Items shows "fortkeep-weekly" instead of "bash". -p and the cleared BASH_ENV and ENV keep a start-up file
+# named in the environment from running in this shell or in weekly.sh's.
+case "$0" in */*) here="${0%/*}" ;; *) here=. ;; esac
+exec /usr/bin/env -u BASH_ENV -u ENV /bin/bash -p "$here/weekly.sh" "$@"

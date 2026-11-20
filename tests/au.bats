@@ -149,6 +149,13 @@ refused() {  # the run stopped before the review: no report, no Homebrew step, n
   echo 'not json' > "$W/controls.json"
   run "$W/checks/fortkeep-weekly"; [ "$status" -eq 1 ]
 }
+@test "the fortkeep-weekly launcher runs no BASH_ENV or ENV file, and passes neither on" {
+  weekly_tree; export FORTKEEP_NO_NOTIFY=1; cp "$REPO/checks/fortkeep-weekly" "$W/checks/"
+  printf 'touch "%s/sourced"\n' "$BATS_TEST_TMPDIR" > "$BATS_TEST_TMPDIR/benv.sh"
+  run env BASH_ENV="$BATS_TEST_TMPDIR/benv.sh" ENV="$BATS_TEST_TMPDIR/benv.sh" "$W/checks/fortkeep-weekly"
+  [ "$status" -eq 0 ]; [ -e "$FORTKEEP_REPORTS/weekly-last" ]
+  [ ! -e "$BATS_TEST_TMPDIR/sourced" ]
+}
 @test "weekly.sh touches weekly-last when the review ran, and not when it couldn't" {
   weekly_tree; export FORTKEEP_NO_NOTIFY=1
   [ ! -e "$FORTKEEP_REPORTS/weekly-last" ]
