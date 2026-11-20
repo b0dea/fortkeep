@@ -267,3 +267,11 @@ refused() {  # the run stopped before the review: no report, no Homebrew step, n
   agent upd $'if brew update; then\n  /opt/homebrew/bin/brew upgrade --greedy\nfi' 1
   LOADED=upd chk BL-AU-01; [ "$(field status)" = PASS ]
 }
+@test "BL-AU-01 a private ~/Library/LaunchAgents is never listed: ERROR saying only that a private folder was excluded" {
+  agent upd 'brew update && brew upgrade' 1
+  echo "$L" > "$FORTKEEP_PRIVATE_PATHS"
+  stub plutil 'echo "$@" >> "$BATS_TEST_TMPDIR/access.log"; exec /usr/bin/plutil "$@"'
+  LOADED=upd chk BL-AU-01
+  [ "$(field status)" = ERROR ]; [ "$(field note)" = "a private folder was excluded" ]; [[ "$output" != *upd* ]]
+  [ ! -e "$BATS_TEST_TMPDIR/access.log" ]
+}

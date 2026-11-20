@@ -249,3 +249,47 @@ sock() { /usr/bin/python3 -c 'import socket,sys; socket.socket(socket.AF_UNIX).b
   [[ "$section" == *'    find ~/Downloads ~/Desktop ~/Documents -maxdepth 4 -type f'* ]]
   [[ "$section" != *'fd '* ]]
 }
+@test "BL-SE-01 never hands a private ~/.ssh/config to ssh: ERROR saying a private folder was excluded, unless SSH_AUTH_SOCK decides" {
+  mkdir -p "$FORTKEEP_SYSROOT/Applications/1Password.app"; S="$SD/a.sock"; sock "$S"
+  printf 'Host *\n  IdentityAgent "%s"\n' "$S" > "$HOME/.ssh/config"; echo '~/.ssh' > "$FORTKEEP_PRIVATE_PATHS"
+  stub ssh 'echo "$@" >> "$BATS_TEST_TMPDIR/access.log"; exec /usr/bin/ssh "$@"'
+  FORTKEEP_OP_SOCK="$S" chk BL-SE-01
+  [ "$(field status)" = ERROR ]; [ "$(field note)" = "a private folder was excluded" ]; [[ "$output" != *1Password* ]]
+  [ -s "$BATS_TEST_TMPDIR/access.log" ]
+  run grep -F .ssh "$BATS_TEST_TMPDIR/access.log"; [ "$status" -eq 1 ]
+  printf 'export SSH_AUTH_SOCK="%s"\n' "$S" > "$HOME/.zshenv"
+  FORTKEEP_OP_SOCK="$S" chk BL-SE-01; [ "$(field status)" = PASS ]
+}
+@test "BL-SE-05 never opens a private ~/.aws or gcloud folder: ERROR saying a private folder was excluded, not PASS" {
+  mkdir -p "$HOME/.aws" "$HOME/.config/gcloud/legacy_credentials/a"
+  printf '[b]\naws_access_key_id = AKIAEXAMPLEONLY\n' > "$HOME/.aws/credentials"
+  echo '{"type":"service_account"}' > "$HOME/.config/gcloud/legacy_credentials/a/adc.json"
+  printf '%s\n' "$HOME/.aws" "$HOME/.config/gcloud" > "$FORTKEEP_PRIVATE_PATHS"
+  stub grep 'echo "$@" >> "$BATS_TEST_TMPDIR/access.log"; exec /usr/bin/grep "$@"'
+  stub jq 'echo "$@" >> "$BATS_TEST_TMPDIR/access.log"; exec /usr/bin/jq "$@"'
+  chk BL-SE-05; [ "$(field status)" = ERROR ]; [ "$(field note)" = "a private folder was excluded" ]
+  run /usr/bin/grep -E '\.aws|gcloud' "$BATS_TEST_TMPDIR/access.log"; [ "$status" -ne 0 ]
+  # A finding outside the private folders still FAILs, and still says one was excluded.
+  echo "$HOME/.config/gcloud/legacy_credentials" > "$FORTKEEP_PRIVATE_PATHS"
+  echo '{"type":"service_account"}' > "$HOME/.config/gcloud/application_default_credentials.json"
+  chk BL-SE-05; [ "$(field status)" = FAIL ]; [[ "$(field evidence)" == *"1 Google service-account"* ]]
+  [[ "$(field note)" == *"a private folder was excluded"* ]]
+  run /usr/bin/grep -F legacy_credentials "$BATS_TEST_TMPDIR/access.log"; [ "$status" -ne 0 ]
+}
+@test "BL-SE-04 a private gh config folder is never read, and gh never asked: ERROR saying a private folder was excluded" {
+  stub gh 'echo ran >> "$BATS_TEST_TMPDIR/access.log"; echo gho_secretpart'
+  mkdir -p "$HOME/.config/gh"; printf 'github.com:\n    oauth_token: gho_secretpart\n' > "$HOME/.config/gh/hosts.yml"
+  echo "$HOME/.config/gh" > "$FORTKEEP_PRIVATE_PATHS"
+  chk BL-SE-04; [ "$(field status)" = ERROR ]; [ "$(field note)" = "a private folder was excluded" ]; [[ "$output" != *hosts.yml* ]]
+  [ ! -e "$BATS_TEST_TMPDIR/access.log" ]
+}
+@test "BL-SE-08 never asks Time Machine about a private codex or opencode folder, and says a private folder was excluded" {
+  C="$BATS_TEST_TMPDIR/c1"; mkdir -p "$C/projects" "$HOME/.codex/sessions" "$HOME/.local/share/opencode"; export FORTKEEP_CLAUDE_DIRS="$C"
+  printf '%s\n' "$HOME/.codex" "$HOME/.local/share/opencode" > "$FORTKEEP_PRIVATE_PATHS"
+  stub tmutil 'case "$1" in destinationinfo) echo "Name : Backups" ;; isexcluded) echo "$2" >> "$BATS_TEST_TMPDIR/access.log"; echo "[Included]    $2" ;; esac'
+  chk BL-SE-08; [ "$(field status)" = FAIL ]; [[ "$(field note)" == *"a private folder was excluded"* ]]
+  [[ "$output" != *codex* ]]; [[ "$output" != *opencode* ]]
+  run grep -E 'codex|opencode' "$BATS_TEST_TMPDIR/access.log"; [ "$status" -eq 1 ]
+  export FORTKEEP_CLAUDE_DIRS="$BATS_TEST_TMPDIR/none"
+  chk BL-SE-08; [ "$(field status)" = ERROR ]; [ "$(field note)" = "a private folder was excluded" ]
+}

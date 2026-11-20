@@ -2,6 +2,9 @@
 . "$(dirname "$0")/../lib/common.sh"
 ID=BL-SE-04
 gh="$(fortkeep_real_cmd gh)" || { fortkeep_result "$ID" NA "GitHub CLI is not installed"; exit 0; }
+# gh reads its config folder to find the token: a private one is neither read here nor handed to gh.
+f="${GH_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/gh}/hosts.yml"
+if fortkeep_is_private "$f"; then fortkeep_result "$ID" ERROR "Could not check the GitHub CLI's token" "a private folder was excluded"; exit 0; fi
 # The token stays in this variable for one case statement and is never printed.
 tok="$(fortkeep_timeout "${FORTKEEP_GH_TIMEOUT:-10}" "$gh" auth token 2>/dev/null </dev/null)"; rc=$?
 [ "$rc" -eq 142 ] && { fortkeep_result "$ID" ERROR "gh did not answer in time" "gh auth token took too long; try again"; exit 0; }
@@ -15,7 +18,6 @@ case "$tok" in
 esac
 tok=""
 plain=""
-f="${GH_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/gh}/hosts.yml"
 [ -f "$f" ] && grep -Eq '^[[:space:]]*oauth_token:' "$f" && plain="The token is stored in a plain file ($(fortkeep_tilde "$f")), readable by any program running as you."
 case "$kind" in
   empty) fortkeep_result "$ID" ERROR "gh returned no token" "gh auth token succeeded but printed nothing" ;;

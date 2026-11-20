@@ -112,3 +112,11 @@ chk() { run env TMPDIR="$T" PATH="$BATS_TEST_TMPDIR/bin:/usr/bin:/bin:/usr/sbin:
   agent bad '<string>/usr/local/bin/node</string><string>-e</string><string>x</string>'
   chk; [ "$(field status)" = FAIL ]; [[ "$(field note)" == "~/Library/LaunchAgents/bad.plist runs inline code"* ]]
 }
+@test "GD-RT-03 a private LaunchAgents folder is never opened or named" {
+  A="$HOME/Library/LaunchAgents"; mkdir -p "$A"
+  printf '<?xml version="1.0" encoding="UTF-8"?>\n<plist version="1.0"><dict><key>Label</key><string>bad</string><key>ProgramArguments</key><array><string>/usr/local/bin/node</string><string>-e</string><string>x</string></array></dict></plist>\n' > "$A/bad.plist"
+  echo "$A" > "$FORTKEEP_PRIVATE_PATHS"
+  stub plutil 'echo "$@" >> "$BATS_TEST_TMPDIR/access.log"; exec /usr/bin/plutil "$@"'
+  chk; [ "$(field status)" = PASS ]; [ "$(field note)" = "(a private folder was excluded)" ]; [[ "$output" != *bad.plist* ]]
+  run grep -F LaunchAgents/ "$BATS_TEST_TMPDIR/access.log"; [ "$status" -ne 0 ]
+}

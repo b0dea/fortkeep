@@ -9,6 +9,7 @@ own() {  # PATH — true for this repo's weekly launcher or script
   case "$1" in "$FORTKEEP_REPO"/checks/fortkeep-weekly|"$FORTKEEP_REPO"/checks/weekly.sh|"$rp"/checks/fortkeep-weekly|"$rp"/checks/weekly.sh) return 0 ;; esac
   return 1
 }
+agents="$(fortkeep_user_agents)" || { fortkeep_result "$ID" ERROR "Could not check the weekly jobs" "a private folder was excluded"; exit 0; }
 found=""; unloaded=""; unread=""; priv=""
 while IFS="$(printf '\t')" read -r l p; do
   [ -n "$l" ] || continue
@@ -28,7 +29,7 @@ while IFS="$(printf '\t')" read -r l p; do
   fi
   if fortkeep_agent_loaded "$l"; then found="$found, $l"; else unloaded="$unloaded, $l"; fi
 done <<EOF
-$(fortkeep_user_agents)
+$agents
 EOF
 if [ -n "$found" ]; then fortkeep_result "$ID" PASS "Weekly update job: ${found#, }" "${priv# }"
 elif [ -n "$unread" ]; then fortkeep_result "$ID" ERROR "Could not read the script of the weekly job: ${unread#, }" "Check the script's permissions$priv"
