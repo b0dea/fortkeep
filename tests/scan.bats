@@ -125,6 +125,23 @@ loader() {  # DIR — a postinstall script that pipes a download into a shell
   [ "$status" -eq 0 ]; [[ "$output" != *lients* ]]
   [ "${lines[${#lines[@]}-1]}" = "Verdict: clean. 1 repo(s) scanned, nothing flagged. A private folder was excluded." ]
 }
+@test "a private folder is never scanned or named by the data volume's spelling, as the folder or above it" {
+  # /bin/bash's pwd -P keeps /System/Volumes/Data/..., where zsh's gives the short spelling the private list holds.
+  repo "$HOME/work/secret"; loader "$HOME/work/secret"; repo "$HOME/work/app"
+  echo "$HOME/work/secret" > "$FORTKEEP_PRIVATE_PATHS"
+  d="/System/Volumes/Data$(cd "$HOME" && pwd -P)"; [ -d "$d/work/secret" ]
+  run "$S" "$d/work/secret"
+  [ "$status" -eq 4 ]; [ "$output" = "Verdict: not scanned. A private folder was excluded." ]
+  run "$S" "$d/work"
+  [ "$status" -eq 0 ]; [[ "$output" != *secret* ]]
+  [ "${lines[${#lines[@]}-1]}" = "Verdict: clean. 1 repo(s) scanned, nothing flagged. A private folder was excluded." ]
+}
+@test "where a here-document can't be written (Codex's read-only sandbox), it refuses rather than read the private list as empty" {
+  repo "$HOME/work/secret"; loader "$HOME/work/secret"
+  echo "$HOME/work/secret" > "$FORTKEEP_PRIVATE_PATHS"
+  run sandbox-exec -p '(version 1)(allow default)(deny file-write*)(allow file-write* (literal "/dev/null"))' "$S" "$HOME/work/secret"
+  [ "$status" -eq 4 ]; [[ "$output" != *secret* ]]; [[ "$output" == *"temporary file"* ]]
+}
 @test "a folder name can't rewrite the terminal or add a line" {
   repo "$HOME/elsewhere/main"
   git -C "$HOME/elsewhere/main" worktree add -q --detach "$HOME/dev/$(printf 'wt\033[2J\033[Ax')"

@@ -59,6 +59,10 @@ read_ok() {  # PATH file|root — refuses unless a person's session may read PAT
   under "$t" "$(agent_dirs read)" && return 0
   case "$t/" in "$repo/"*) ;; *) block "in a person's session the agent reads only this repo's files and its own folders" ;; esac
   rel="${t#"$repo"}"; rel="${rel#/}"
+  # The names .gitignore keeps out as secrets: a person may keep one here, and the agent shows counts, never values.
+  case "/$rel" in */.env|*/.env.*|*.pem|*.key|*/id_*)
+    case "$rel" in *.example) ;; *) block "a file that may hold a secret (.env, a key) is never read in a person's session: the person opens it themselves" ;; esac ;;
+  esac
   [ "$2" = file ] || [ -n "$rel" ] || block "search a folder inside this repo, not all of it: it holds private-paths and .git"
   for f in private-paths reports/.approvals .git; do
     case "$rel/" in "$f/"*) block "private-paths, the approval tokens and .git are never read" ;; esac

@@ -1,16 +1,20 @@
 #!/bin/bash
 # Where Claude Code keeps its configuration. Every folder that counts is checked, and a
 # control passes only if it passes in each of them: the weakest profile decides.
-fortkeep_private_physical() {  # PHYSICAL_DIR: on the private list, by its literal or resolved spelling, in any letter case
+fortkeep_private_physical() {  # PHYSICAL_DIR: on the private list, by its literal or resolved spelling, in any letter case,
+  # the data volume's spelling (/System/Volumes/Data/...) included
   local e f list
   list="$(fortkeep_private_list)"; [ -n "$list" ] || return 1
-  f="$(printf '%s' "$1" | fortkeep_fold)"
-  while IFS= read -r e; do
-    [ -n "$e" ] || continue
-    case "$f" in "$e"|"$e"/*) return 0 ;; esac
-  done <<EOF2
-$(printf '%s\n' "$list" | while IFS= read -r e; do printf '%s\n' "$e"; (cd "$e" 2>/dev/null && pwd -P); done | fortkeep_fold)
+  for f in "$1" "$(fortkeep_physical "$1")"; do
+    [ -n "$f" ] || continue
+    f="$(printf '%s' "$f" | fortkeep_fold)"
+    while IFS= read -r e; do
+      [ -n "$e" ] || continue
+      case "$f" in "$e"|"$e"/*) return 0 ;; esac
+    done <<EOF2
+$(printf '%s\n' "$list" | while IFS= read -r e; do printf '%s\n' "$e"; fortkeep_physical "$e"; done | fortkeep_fold)
 EOF2
+  done
   return 1
 }
 
