@@ -110,7 +110,9 @@ nothing_installed() { [ ! -e "$DEST" ]; [ ! -e "$HOME/.config/fortkeep/release-s
 }
 
 @test "refuses to run with no release pinned, or with a malformed pin" {
-  install
+  # A released install.sh carries its pins, so blank them in a copy to see the refusal.
+  sed -e 's/^PIN_TAG=.*/PIN_TAG=""/' -e 's/^PIN_COMMIT=.*/PIN_COMMIT=""/' "$REPO/install.sh" > "$BATS_TEST_TMPDIR/unpinned.sh"
+  run bash "$BATS_TEST_TMPDIR/unpinned.sh"
   [ "$status" -eq 1 ]; [[ "$output" == *"no release is pinned"* ]]
   install --tag main --commit "$C"
   [ "$status" -eq 1 ]

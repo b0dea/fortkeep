@@ -53,7 +53,7 @@ shasum -a 256 install.sh
 bash install.sh
 ```
 
-The SHA-256 of `install.sh` for the current release: `PINNED-AT-RELEASE`
+The SHA-256 of `install.sh` for the current release: `ca8d3f6f12ff9006ab448301995f2d70d1f48a4bb92289b30d1db09dd6085d6e`
 
 Both put fortkeep in `~/.local/share/fortkeep`: a git checkout of one signed release. The installer refuses any
 release but the one it pins, by tag and commit, checked before anything from it runs, and refuses a tag that isn't
