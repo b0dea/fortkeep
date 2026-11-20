@@ -85,7 +85,7 @@ warned() { start; [[ "$msg" == *"WARNING"*"$1"*"Don't run fixes; reinstall a sig
   echo '* filter=x' > "$(git -C "$T" rev-parse --path-format=absolute --git-path info/attributes)"; warned "local changes"
 }
 @test "a local core.worktree or core.bare, which points git at other files, counts as a local change" {
-  P="$BATS_TEST_TMPDIR/pristine"; git clone -q "$T" "$P"
+  P="$BATS_TEST_TMPDIR/pristine"; git clone -q --no-local "$T" "$P"  # not a file copy, which git's background maintenance in $T can break
   mkdir -p "$T/.claude"; echo '{}' > "$T/.claude/settings.local.json"
   git -C "$T" config core.worktree "$P"; warned "local changes"; git -C "$T" config --unset core.worktree
   rm "$T/.claude/settings.local.json"; clean
