@@ -20,6 +20,8 @@ if [ -z "${FORTKEEP_WEEKLY_RUN:-}" ] && { [ -e "$STORE" ] || [ -L "$STORE" ]; };
     and (.note | type == "string") and (.time | type == "number" and . == floor))' "$STORE" 2>/dev/null)" \
     || { fortkeep_result "$ID" ERROR "Could not read the stored result of the weekly repo sweep" "$(fortkeep_tilde "$STORE") is not a sweep result; the weekly security check (BL-AU-02) writes it again"; exit 0; }
   [ -n "$scanner" ] && [ "$(jq -r '.scanner // ""' <<<"$r")" = "$scanner" ] || r=""
+  # A sweep that couldn't finish has no answer to reuse: sweep again, as a run with nothing stored does.
+  [ -z "$r" ] || [ "$(jq -r '.status' <<<"$r")" != ERROR ] || r=""
 fi
 if [ -n "$r" ]; then
   age=$(( $(date +%s) - $(jq -r '.time' <<<"$r") ))

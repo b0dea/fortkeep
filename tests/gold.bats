@@ -589,6 +589,12 @@ sweep() { FORTKEEP_WEEKLY_RUN=1 chk GD-RC-01; }  # the weekly run: always sweeps
   jq 'del(.scanner)' "$S" > "$BATS_TEST_TMPDIR/s"; mv "$BATS_TEST_TMPDIR/s" "$S"  # a result stored before this check
   chk GD-RC-01; [ "$(field status)" = FAIL ]; [ "$(field evidence)" = "1 repo-poisoning indicator(s) in 1 repo(s)" ]
 }
+@test "GD-RC-01 a stored sweep that didn't finish is swept again, never reused" {
+  repo "$HOME/dev/app"; S="$HOME/.config/fortkeep/repo-sweep.json"
+  FORTKEEP_SWEEP_TIMEOUT=1 sweep; [ "$(field status)" = ERROR ]; [ "$(jq -r .status "$S")" = ERROR ]
+  chk GD-RC-01; [ "$(field status)" = PASS ]; [ "$(field evidence)" = "1 repo(s) swept, none flagged" ]
+  chk GD-RC-01; [[ "$(field evidence)" == *"(weekly sweep, 0 day(s) ago)" ]]  # a finished one is reused
+}
 @test "GD-RC-01 a stored result dated more than a day ahead is ERROR, not a PASS that never goes stale" {
   repo "$HOME/dev/app"; S="$HOME/.config/fortkeep/repo-sweep.json"
   sweep; [ "$(field status)" = PASS ]

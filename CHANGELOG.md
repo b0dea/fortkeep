@@ -3,6 +3,11 @@
 What changed in each release, for someone deciding whether to update. Each
 [GitHub release](https://github.com/b0dea/fortkeep/releases) also lists the merged pull requests.
 
+## Unreleased: 0.1.5
+
+- **A repo sweep that didn't finish is run again**, instead of being reported for a week. After updating to 0.1.4,
+  a Mac whose last sweep had run out of time kept showing "couldn't check" until the next weekly job.
+
 ## 0.1.4
 
 - **The repo sweep finishes on a Mac with many repos.** It gets about two seconds per repo instead of a fixed 140
